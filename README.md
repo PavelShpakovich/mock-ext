@@ -1,8 +1,6 @@
 # MockAPI
 
-A powerful Chrome extension for mocking API requests during development and testing. Intercept HTTP requests and respond with custom data without modifying your application code.
-
-[Русская версия](README.ru.md)
+A powerful Chrome DevTools extension for mocking API requests during development and testing. Intercept HTTP requests and respond with custom data without modifying your application code.
 
 ## Features
 
@@ -40,6 +38,13 @@ Example:
 - **Search & Filter**: Quickly find requests with search functionality
 - **Up to 1000 Requests**: Automatic log rotation keeps recent requests
 - **Quick Mocking**: Create mock rules directly from logged requests with "Mock This" button
+
+### 🛠️ DevTools Integration
+
+- **Native DevTools Panel**: Integrated as a dedicated panel in Chrome DevTools
+- **Developer-Focused**: Designed for seamless integration into your development workflow
+- **Keyboard Shortcut Access**: Quick access via Cmd+Option+I (Mac) or Ctrl+Shift+I (Windows/Linux)
+- **Visual Prompt**: Helpful notification when extension icon is clicked, guiding you to open DevTools
 
 ### 💡 User Interface
 
@@ -93,9 +98,18 @@ npm run dev
 
 ## Quick Start
 
+### Opening MockAPI
+
+1. **Open Chrome DevTools** on any webpage:
+   - Mac: `Cmd + Option + I`
+   - Windows/Linux: `Ctrl + Shift + I`
+   - Right-click anywhere and select "Inspect"
+2. **Look for the "MockAPI" tab** in the DevTools panel (usually at the top or under >> menu)
+3. **Alternative**: Click the extension icon to see a helpful prompt with the keyboard shortcut
+
 ### Creating Your First Mock Rule
 
-1. **Click the extension icon** to open MockAPI
+1. **Open MockAPI in DevTools**
 2. **Go to "Rules" tab**
 3. **Click "+ Add Rule"**
 4. **Fill in the form**:
@@ -120,13 +134,14 @@ Now all GET requests to `https://api.example.com/users/*` will return your mock 
 
 ### Recording and Mocking Requests
 
-1. **Open the website you want to test**
-2. **Click the extension icon**
+1. **Open DevTools** on the website you want to test
+2. **Navigate to MockAPI panel**
 3. **Go to "Requests" tab**
-4. **Click "Start Recording"**
+4. **Click "Record" button** (red circle icon)
 5. **Interact with the website** to generate fetch/XHR requests
 6. **View logged requests** in the list (mocked requests are automatically filtered out)
 7. **Click "Mock This"** on any request to create a mock rule instantly
+8. **Click "Stop" button** (red square icon) when done recording
 
 ## Usage Examples
 
@@ -202,6 +217,8 @@ mock-ext/
 ├── src/
 │   ├── background.ts           # Service worker (request interception)
 │   ├── popup.tsx               # Main React app entry point
+│   ├── devtools.ts             # DevTools panel registration
+│   ├── devtools-prompt.ts      # Content script for DevTools prompt notification
 │   ├── types.ts                # TypeScript type definitions
 │   ├── utils.ts                # Utility functions
 │   ├── storage.ts              # Chrome storage API wrapper
@@ -228,7 +245,8 @@ mock-ext/
 │           └── Toggle.tsx
 ├── public/
 │   ├── manifest.json           # Extension manifest (Manifest V3)
-│   ├── popup.html              # Popup HTML structure
+│   ├── popup.html              # UI HTML structure
+│   ├── devtools.html           # DevTools panel entry point
 │   └── icons/                  # Extension icons (SVG)
 ├── dist/                       # Build output (generated)
 ├── webpack.config.js           # Webpack configuration
@@ -243,38 +261,47 @@ mock-ext/
 ### Architecture
 
 - **Manifest V3**: Uses the latest Chrome Extension APIs
+- **DevTools Integration**: Native panel integrated into Chrome DevTools
 - **TypeScript 5.3.3**: Fully typed codebase for better development experience
 - **React 19.2.3**: Modern React with hooks for UI components
-- **Webpack 5.104.1**: Module bundler for optimized builds
+- **Webpack 5.104.1**: Module bundler with multiple entry points (background, popup, devtools, devtools-prompt)
 - **Tailwind CSS 3.4.1**: Utility-first CSS framework
 - **Service Worker**: Background script for request interception
 - **declarativeNetRequest**: Chrome API for modifying network requests
 - **webRequest API**: For logging and monitoring fetch/XHR requests only
 - **Chrome Storage**: Persistent data storage for rules and logs
+- **Content Script**: Lightweight script for showing DevTools prompt notification
 
 ### Performance Optimizations
 
-- **Simplified Architecture**: Removed content scripts for zero page load impact
+- **DevTools-Only Architecture**: No popup window management overhead
+- **Lightweight Content Script**: Minimal 2.8KB script only for showing prompts
 - **Request Filtering**: Only logs XMLHttpRequest/fetch, excludes images, CSS, fonts
 - **Smart Deduplication**: Prevents duplicate request logging within 100ms window
 - **Mocked Request Filtering**: Automatically excludes mocked requests from logs
 - **Throttled Validation**: JSON validation debounced to 500ms for better UX
 - **Continuous Polling**: Request count updates on all tabs when recording is active
+- **Efficient DevTools Integration**: Panel uses same React app as popup, no duplication
 
 ### Key Features Removed for Performance
 
 - **Response Body Capture**: Not available due to Chrome security limitations and performance impact
   - Users manually enter response bodies when creating mock rules
   - Focus on fast, non-intrusive request logging
+- **Floating Window Mode**: Removed in favor of native DevTools integration
+  - Better developer workflow integration
+  - Reduced complexity and maintenance overhead
 
 ### Permissions
 
 - `declarativeNetRequest`: Modify network requests
-- `declarativeNetRequestWithHostAccess`: Access host permissions for request modification
+- `declarativeNetRequestFeedback`: Access request modification feedback
 - `webRequest`: Monitor network activity (fetch/XHR only)
 - `storage`: Save rules and settings
+- `activeTab`: Access current tab information
 - `tabs`: Access tab information for recording
-- `scripting`: Script injection capabilities
+- `scripting`: Script injection for DevTools prompt
+- `contextMenus`: Right-click menu integration
 - `host_permissions`: `<all_urls>` - Access to all URLs for interception
 
 ### Data Storage
@@ -299,39 +326,63 @@ npm run dev        # Development build with watch mode
 - **Strict TypeScript**: All code fully typed with strict mode enabled
 - **Modern React**: Functional components with hooks
 - **Tailwind CSS**: Utility-first styling for consistent design
-- **No Unused Code**: Clean codebase without legacy content script files
+- **Clean Architecture**: DevTools-focused design with minimal overhead
+- **Multiple Entry Points**: Webpack configured for background, popup, devtools, and devtools-prompt
 
 ### Recent Architectural Changes
 
-The extension previously attempted to capture response bodies using content scripts running in MAIN and ISOLATED worlds. This approach caused:
+#### v1.1.0 - DevTools Integration (Current)
+
+The extension now operates exclusively as a DevTools panel:
+
+- **Native DevTools Panel**: Integrated as "MockAPI" tab in Chrome DevTools
+- **Removed Floating Window**: Simplified architecture with single UI mode
+- **DevTools Prompt**: Lightweight notification guides users to open DevTools when clicking extension icon
+- **Improved Workflow**: Better integration with existing developer tools
+- **Reduced Complexity**: Eliminated window management and multi-mode support
+
+#### v1.0.0 - Performance Optimization
+
+Previously attempted to capture response bodies using content scripts running in MAIN and ISOLATED worlds. This approach caused:
 
 - Severe page load performance degradation
 - Request timeouts
 - Complex dual-script architecture
 
-**Decision Made**: Removed all content scripts and response body capture functionality in favor of:
+**Decision Made**: Removed all response capture content scripts in favor of:
 
 - Pure webRequest API for logging (fast, non-intrusive)
 - Manual response body entry by users
-- Dramatically improved performance with zero page load impact
+- Dramatically improved performance with minimal page load impact
 
 ## Troubleshooting
 
 ### Extension Not Working
 
-- Check if "Enable Mocking" toggle is ON (header)
+- Ensure **DevTools is open** - the extension only works in DevTools panel
+- Check if "Enable Mocking" toggle is ON (in header)
 - Verify individual rule toggles are enabled
 - Check URL pattern matches your request
 - Verify HTTP method matches (or leave empty for all methods)
 - Check JSON syntax is valid (error will prevent rule creation)
 
+### Can't Find MockAPI Panel
+
+- Open Chrome DevTools (Cmd+Option+I or Ctrl+Shift+I)
+- Look for "MockAPI" tab in the top panel
+- If not visible, click the **>>** menu and select "MockAPI"
+- **Reload the extension** if panel doesn't appear
+- Close and reopen DevTools after reloading extension
+
 ### Requests Not Being Logged
 
-- Ensure you clicked "Start Recording"
-- Recording is global across all tabs when enabled
+- Ensure **DevTools is open** on the tab you want to monitor
+- Click "Record" button in MockAPI panel (red circle icon)
+- Recording is tab-specific
 - Only fetch/XHR requests are logged (not images, CSS, fonts)
 - Mocked requests are automatically filtered out
 - Check that the page is making actual network requests
+- Recording status shows the current tab title
 
 ### JSON Validation Errors
 
@@ -341,11 +392,19 @@ The extension previously attempted to capture response bodies using content scri
 - Error message shows specific JSON syntax issue
 - Cannot create/update rule while JSON is invalid
 
+### DevTools Prompt Not Appearing
+
+- The prompt only shows when clicking the extension icon
+- Content script must be loaded on the page (HTTP/HTTPS pages only)
+- Won't appear on chrome:// pages or other restricted pages
+- Reload the page if prompt doesn't show
+
 ### Slow Page Loading
 
-- **This should not happen** - content scripts have been removed
-- If you experience slowness, it's likely unrelated to the extension
-- Try disabling other extensions to isolate the issue
+- **This should not happen** - only a lightweight content script is injected
+- Content script is 2.8KB and runs at document_idle
+- If you experience slowness, try disabling other extensions
+- Check browser console for unrelated errors
 
 ## Contributing
 
@@ -381,6 +440,9 @@ https://github.com/PavelShpakovich/mock-ext/issues
 **Q: Can I mock requests on any website?**  
 A: Yes, the extension has host_permissions for all URLs.
 
+**Q: How do I access MockAPI?**  
+A: Open Chrome DevTools (Cmd+Option+I or Ctrl+Shift+I) and look for the "MockAPI" tab. Click the extension icon for a helpful prompt.
+
 **Q: Are my mock rules shared across devices?**  
 A: No, rules are stored locally in Chrome storage. Export/import features coming soon.
 
@@ -388,10 +450,16 @@ A: No, rules are stored locally in Chrome storage. Export/import features coming
 A: No, currently only HTTP/HTTPS requests are supported.
 
 **Q: Does this work in Incognito mode?**  
-A: Yes, if you enable "Allow in Incognito" in extension settings.
+A: Yes, if you enable "Allow in Incognito" in extension settings (chrome://extensions).
 
 **Q: Can I use this for automated testing?**  
-A: This extension is designed for manual testing. For automated tests, use tools like MSW or Nock.
+A: This extension is designed for manual testing in DevTools. For automated tests, use tools like MSW or Nock.
+
+**Q: Why is recording tab-specific?**  
+A: Recording tracks requests from a specific tab to avoid confusion when working with multiple pages. The recording status shows which tab is being monitored.
+
+**Q: Can I use the extension without opening DevTools?**  
+A: No, MockAPI operates exclusively as a DevTools panel. This design provides better integration with your development workflow.
 
 ## Contributing
 
@@ -411,11 +479,13 @@ MIT License - feel free to use this extension in your projects.
 
 Built with:
 
-- TypeScript
+- TypeScript 5.3.3
+- React 19.2.3
 - Chrome Extension Manifest V3
-- Webpack
-- Modern CSS with Flexbox
+- Webpack 5.104.1
+- Tailwind CSS 3.4.1
+- Chrome DevTools Extension APIs
 
 ---
 
-**Need help?** Open an issue on GitHub or check the troubleshooting section above.
+**Need help?** Open an issue on GitHub: https://github.com/PavelShpakovich/mock-ext/issues

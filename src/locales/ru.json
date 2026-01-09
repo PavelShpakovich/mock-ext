@@ -1,0 +1,85 @@
+{
+  "app": {
+    "name": "MockAPI"
+  },
+  "header": {
+    "recording": "Запись: {{tabTitle}}",
+    "enabled": "Включено",
+    "disabled": "Отключено",
+    "record": "Запись",
+    "stop": "Стоп"
+  },
+  "tabs": {
+    "rules": "Правила",
+    "requests": "Запросы"
+  },
+  "rules": {
+    "title": "Правила мокирования",
+    "addRule": "Добавить правило",
+    "search": "Поиск правил...",
+    "noRules": "Нет правил",
+    "noRulesDesc": "Создайте первое правило для перехвата запросов",
+    "edit": "Редактировать",
+    "delete": "Удалить",
+    "method": "Метод",
+    "status": "Статус",
+    "delay": "Задержка",
+    "contentType": "Тип контента"
+  },
+  "requests": {
+    "title": "Журнал запросов",
+    "clear": "Очистить журнал",
+    "search": "Поиск запросов...",
+    "noRequests": "Нет записанных запросов",
+    "noRequestsDesc": "Нажмите кнопку Запись и взаимодействуйте со страницей для захвата запросов",
+    "mockThis": "Мокировать",
+    "time": "Время"
+  },
+  "editor": {
+    "createRule": "Создать правило",
+    "updateRule": "Обновить правило",
+    "cancel": "Отмена",
+    "ruleName": "Название правила",
+    "ruleNamePlaceholder": "например, Мок API пользователя",
+    "urlPattern": "URL шаблон",
+    "urlPatternPlaceholder": "например, https://api.example.com/users/*",
+    "matchType": "Тип совпадения",
+    "wildcard": "Подстановочные знаки",
+    "exact": "Точное совпадение",
+    "regex": "Регулярное выражение",
+    "method": "HTTP метод",
+    "anyMethod": "Любой метод",
+    "statusCode": "Код статуса",
+    "statusCodePlaceholder": "например, 200, 404, 500",
+    "delay": "Задержка ответа (мс)",
+    "delayPlaceholder": "например, 0, 1000, 3000",
+    "contentType": "Тип контента",
+    "json": "JSON",
+    "text": "Текст",
+    "responseBody": "Тело ответа",
+    "responseBodyPlaceholder": "Введите данные ответа (JSON или текст)",
+    "beautify": "Форматировать",
+    "validationError": "{{error}}",
+    "variables": "Доступные переменные: {{timestamp}}, {{uuid}}, {{random_number}}"
+  },
+  "settings": {
+    "language": "Язык",
+    "theme": "Тема",
+    "notifications": "Уведомления"
+  },
+  "devtoolsPrompt": {
+    "title": "Открыть DevTools",
+    "message": "Нажмите <strong>{{shortcut}}</strong> чтобы открыть DevTools и получить доступ к панели MockAPI",
+    "gotIt": "Понятно"
+  },
+  "common": {
+    "ok": "ОК",
+    "cancel": "Отмена",
+    "save": "Сохранить",
+    "delete": "Удалить",
+    "edit": "Редактировать",
+    "close": "Закрыть",
+    "yes": "Да",
+    "no": "Нет"
+  }
+}

@@ -1,11 +1,34 @@
 // Listen for messages from background to show DevTools prompt
 chrome.runtime.onMessage.addListener((message) => {
   if (message.action === 'openDevTools') {
-    showDevToolsPrompt();
+    showDevToolsPrompt(message.language || 'en');
   }
 });
 
-function showDevToolsPrompt() {
+async function getLanguage(): Promise<string> {
+  try {
+    const result = await chrome.storage.local.get('settings');
+    return result.settings?.language || 'en';
+  } catch {
+    return 'en';
+  }
+}
+
+const translations = {
+  en: {
+    title: 'Open DevTools',
+    message: 'to open DevTools and access MockAPI panel',
+    gotIt: 'Got it',
+  },
+  ru: {
+    title: 'Открыть DevTools',
+    message: 'чтобы открыть DevTools и получить доступ к панели MockAPI',
+    gotIt: 'Понятно',
+  },
+};
+
+function showDevToolsPrompt(language: string = 'en') {
+  const t = translations[language as keyof typeof translations] || translations.en;
   // Remove any existing prompt
   const existing = document.getElementById('mockapi-devtools-prompt');
   if (existing) {
@@ -40,10 +63,14 @@ function showDevToolsPrompt() {
     <div style="display: flex; align-items: start; gap: 12px;">
       <div style="flex: 1;">
         <div style="font-weight: 600; margin-bottom: 8px; font-size: 15px; color: #10b981;">
-          Open DevTools
+          ${t.title}
         </div>
         <div style="opacity: 0.95; margin-bottom: 12px;">
-          Press <strong style="background: rgba(16, 185, 129, 0.15); padding: 2px 8px; border-radius: 4px; font-family: monospace; color: #10b981;">${shortcut}</strong> to open DevTools and access MockAPI panel
+          <span style="margin-right: 4px;">${
+            language === 'ru' ? 'Нажмите' : 'Press'
+          }</span><strong style="background: rgba(16, 185, 129, 0.15); padding: 2px 8px; border-radius: 4px; font-family: monospace; color: #10b981;">${shortcut}</strong><span style="margin-left: 4px;">${
+    t.message
+  }</span>
         </div>
         <button id="mockapi-prompt-close" style="
           background: #10b981;
@@ -55,7 +82,7 @@ function showDevToolsPrompt() {
           font-size: 13px;
           font-weight: 500;
           transition: background 0.2s;
-        ">Got it</button>
+        ">${t.gotIt}</button>
       </div>
       <button id="mockapi-prompt-dismiss" style="
         background: none;

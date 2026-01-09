@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Storage } from '../storage';
 import { MockRule, Settings, RequestLog } from '../types';
+import { useI18n } from '../contexts/I18nContext';
 import Header from './Header';
 import RulesTab from './RulesTab';
 import RequestsTab from './RequestsTab';
 import { TabButton } from './ui/TabButton';
 
 const App: React.FC = () => {
+  const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<'rules' | 'requests'>('rules');
   const [rules, setRules] = useState<MockRule[]>([]);
   const [settings, setSettings] = useState<Settings>({
@@ -183,10 +185,10 @@ const App: React.FC = () => {
 
       <div className='flex border-b border-gray-800 bg-gray-950 shadow-sm'>
         <TabButton active={activeTab === 'rules'} onClick={() => setActiveTab('rules')}>
-          Rules ({rules.length})
+          {t('tabs.rules')} ({rules.length})
         </TabButton>
         <TabButton active={activeTab === 'requests'} onClick={() => setActiveTab('requests')}>
-          Requests ({requestLog.length})
+          {t('tabs.requests')} ({requestLog.length})
         </TabButton>
       </div>
 

@@ -8,6 +8,7 @@ import { Button } from './ui/Button';
 import { Card } from './ui/Card';
 import { Maximize2, X } from 'lucide-react';
 import clsx from 'clsx';
+import { useI18n } from '../contexts/I18nContext';
 
 interface RuleEditorProps {
   rule: MockRule | null;
@@ -17,6 +18,7 @@ interface RuleEditorProps {
 }
 
 const RuleEditor: React.FC<RuleEditorProps> = ({ rule, mockRequest, onSave, onCancel }) => {
+  const { t } = useI18n();
   const [formData, setFormData] = useState({
     name: '',
     urlPattern: '',
@@ -120,18 +122,18 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, mockRequest, onSave, onCa
     const newErrors: Record<string, string> = {};
 
     if (!formData.name.trim()) {
-      newErrors.name = 'Name is required';
+      newErrors.name = t('editor.validationError', { error: 'Name is required' });
     }
 
     if (!formData.urlPattern.trim()) {
-      newErrors.urlPattern = 'URL pattern is required';
+      newErrors.urlPattern = t('editor.validationError', { error: 'URL pattern is required' });
     }
 
     if (formData.matchType === 'regex') {
       try {
         new RegExp(formData.urlPattern);
       } catch (e) {
-        newErrors.urlPattern = 'Invalid regex pattern';
+        newErrors.urlPattern = t('editor.validationError', { error: 'Invalid regex pattern' });
       }
     }
 
@@ -140,7 +142,7 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, mockRequest, onSave, onCa
       if (jsonValidation && !jsonValidation.isValid) {
         newErrors.responseBody = jsonValidation.message;
       } else if (!jsonValidation && !isValidJSON(formData.responseBody)) {
-        newErrors.responseBody = 'Invalid JSON';
+        newErrors.responseBody = t('editor.validationError', { error: 'Invalid JSON' });
       }
     }
 
@@ -193,42 +195,42 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, mockRequest, onSave, onCa
   return (
     <Card className='p-8 shadow-2xl'>
       <h2 className='text-2xl font-bold text-white mb-6 pb-3 border-b border-gray-700'>
-        {rule ? 'Edit Mock Rule' : 'Add Mock Rule'}
+        {rule ? t('editor.updateRule') : t('editor.createRule')}
       </h2>
 
       <form onSubmit={handleSubmit} className='space-y-5'>
         <Input
-          label='Rule Name'
+          label={t('editor.ruleName')}
           required
           value={formData.name}
           onChange={(e) => handleChange('name', e.target.value)}
           error={errors.name}
-          placeholder='e.g., Mock API Response'
+          placeholder={t('editor.ruleNamePlaceholder')}
         />
 
         <Input
-          label='URL Pattern'
+          label={t('editor.urlPattern')}
           required
           value={formData.urlPattern}
           onChange={(e) => handleChange('urlPattern', e.target.value)}
           error={errors.urlPattern}
-          placeholder='e.g., https://api.example.com/users/*'
+          placeholder={t('editor.urlPatternPlaceholder')}
           className='font-mono text-sm'
         />
 
         <div className='grid grid-cols-2 gap-4'>
           <Select
-            label='Match Type'
+            label={t('editor.matchType')}
             value={formData.matchType}
             onChange={(e) => handleChange('matchType', e.target.value)}
           >
-            <option value='wildcard'>Wildcard (*)</option>
-            <option value='exact'>Exact</option>
-            <option value='regex'>Regex</option>
+            <option value='wildcard'>{t('editor.wildcard')}</option>
+            <option value='exact'>{t('editor.exact')}</option>
+            <option value='regex'>{t('editor.regex')}</option>
           </Select>
 
-          <Select label='HTTP Method' value={formData.method} onChange={(e) => handleChange('method', e.target.value)}>
-            <option value=''>All Methods</option>
+          <Select label={t('editor.method')} value={formData.method} onChange={(e) => handleChange('method', e.target.value)}>
+            <option value=''>{t('editor.anyMethod')}</option>
             <option value='GET'>GET</option>
             <option value='POST'>POST</option>
             <option value='PUT'>PUT</option>
@@ -241,7 +243,7 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, mockRequest, onSave, onCa
 
         <div className='grid grid-cols-2 gap-4'>
           <Input
-            label='Status Code'
+            label={t('editor.statusCode')}
             type='number'
             value={formData.statusCode}
             onChange={(e) => handleChange('statusCode', parseInt(e.target.value))}
@@ -250,7 +252,7 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, mockRequest, onSave, onCa
           />
 
           <Select
-            label='Content Type'
+            label={t('editor.contentType')}
             value={formData.contentType}
             onChange={(e) => {
               const newContentType = e.target.value;
@@ -263,18 +265,18 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, mockRequest, onSave, onCa
               }
             }}
           >
-            <option value='application/json'>JSON</option>
-            <option value='text/plain'>Text</option>
+            <option value='application/json'>{t('editor.json')}</option>
+            <option value='text/plain'>{t('editor.text')}</option>
           </Select>
         </div>
 
         <div>
           <TextArea
-            label='Response Body'
+            label={t('editor.responseBody')}
             value={formData.responseBody}
             onChange={(e) => handleChange('responseBody', e.target.value)}
             rows={8}
-            placeholder='{"message": "Success"}'
+            placeholder={t('editor.responseBodyPlaceholder')}
             className='font-mono text-sm custom-scrollbar'
             action={
               <div className='flex items-center gap-3'>
@@ -284,7 +286,7 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, mockRequest, onSave, onCa
                     onClick={formatJSON}
                     className='px-2 py-1 text-xs bg-green-600 hover:bg-green-500 text-white rounded font-medium cursor-pointer transition-colors'
                   >
-                    Beautify
+                    {t('editor.beautify')}
                   </button>
                 )}
                 <button
@@ -315,11 +317,11 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, mockRequest, onSave, onCa
           <div className='fixed inset-0 z-50 bg-black/95 flex flex-col' onClick={() => setIsExpanded(false)}>
             <div className='w-full h-full flex flex-col bg-gray-900' onClick={(e) => e.stopPropagation()}>
               <div className='flex items-center justify-between p-4 border-b border-gray-700 shrink-0'>
-                <h3 className='text-lg font-bold text-white'>Response Body Editor</h3>
+                <h3 className='text-lg font-bold text-white'>{t('editor.responseBody')}</h3>
                 <div className='flex items-center gap-3'>
                   {formData.contentType === 'application/json' && (
                     <Button type='button' onClick={formatJSON} size='sm' variant='primary'>
-                      Beautify
+                      {t('editor.beautify')}
                     </Button>
                   )}
                   <button
@@ -335,7 +337,7 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, mockRequest, onSave, onCa
                 <textarea
                   value={formData.responseBody}
                   onChange={(e) => handleChange('responseBody', e.target.value)}
-                  placeholder='{"message": "Success"}'
+                  placeholder={t('editor.responseBodyPlaceholder')}
                   className='w-full h-full bg-gray-950 text-white border border-gray-700 rounded px-4 py-3 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-green-500 resize-none custom-scrollbar'
                 />
               </div>

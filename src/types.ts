@@ -22,6 +22,7 @@ export interface Settings {
   logRequests: boolean;
   showNotifications: boolean;
   theme: 'light' | 'dark';
+  language?: 'en' | 'ru';
 }
 
 export interface RequestLog {

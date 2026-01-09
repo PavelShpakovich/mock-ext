@@ -3,6 +3,7 @@ import clsx from 'clsx';
 import { Button } from './ui/Button';
 import { Toggle } from './ui/Toggle';
 import { Network, Circle, Square } from 'lucide-react';
+import { useI18n } from '../contexts/I18nContext';
 
 interface HeaderProps {
   enabled: boolean;
@@ -19,8 +20,14 @@ const Header: React.FC<HeaderProps> = ({
   onToggleRecording,
   activeTabTitle,
 }) => {
+  const { t, language, setLanguage } = useI18n();
+
   const handleRecordingClick = () => {
     onToggleRecording(!logRequests);
+  };
+
+  const toggleLanguage = () => {
+    setLanguage(language === 'en' ? 'ru' : 'en');
   };
 
   return (
@@ -28,18 +35,31 @@ const Header: React.FC<HeaderProps> = ({
       <div className='flex items-center justify-between gap-4 flex-wrap'>
         <div className='flex items-center gap-3'>
           <Network className='w-7 h-7 text-green-400 shrink-0' />
-          <h1 className='text-xl font-bold text-white whitespace-nowrap'>MockAPI</h1>
+          <h1 className='text-xl font-bold text-white whitespace-nowrap'>{t('app.name')}</h1>
 
           {logRequests && activeTabTitle && (
             <div className='flex items-center gap-2 bg-red-500/10 border border-red-500/30 rounded-full px-3 py-1'>
               <Circle className='w-2 h-2 fill-red-500 text-red-500 animate-pulse' />
-              <span className='text-xs font-medium text-red-400'>Recording: {activeTabTitle}</span>
+              <span className='text-xs font-medium text-red-400'>
+                {t('header.recording', { tabTitle: activeTabTitle })}
+              </span>
             </div>
           )}
         </div>
 
         <div className='flex items-center gap-4 flex-wrap'>
           <div className='flex items-center gap-2'>
+            <button
+              onClick={toggleLanguage}
+              className='flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors cursor-pointer border border-gray-700 hover:border-gray-600'
+              title={language === 'en' ? 'Switch to Russian' : 'Переключить на английский'}
+            >
+              <span className='text-lg leading-none'>{language === 'en' ? '🇬🇧' : '🇷🇺'}</span>
+              <span className='text-xs font-medium text-gray-300'>{language === 'en' ? 'EN' : 'RU'}</span>
+            </button>
+
+            <div className='w-px h-6 bg-gray-700 mx-1'></div>
+
             <div className='flex items-center gap-2'>
               <Toggle checked={enabled} onChange={() => onToggleEnabled(!enabled)} />
               <span
@@ -48,7 +68,7 @@ const Header: React.FC<HeaderProps> = ({
                   'text-gray-500': !enabled,
                 })}
               >
-                {enabled ? 'Enabled' : 'Disabled'}
+                {enabled ? t('header.enabled') : t('header.disabled')}
               </span>
             </div>
 
@@ -63,12 +83,12 @@ const Header: React.FC<HeaderProps> = ({
               {logRequests ? (
                 <>
                   <Square className='w-3.5 h-3.5' fill='currentColor' />
-                  Stop
+                  {t('header.stop')}
                 </>
               ) : (
                 <>
                   <Circle className='w-3.5 h-3.5' />
-                  Record
+                  {t('header.record')}
                 </>
               )}
             </Button>

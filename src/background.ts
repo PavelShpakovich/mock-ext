@@ -245,10 +245,11 @@ initialize();
 
 // Handle extension icon click to show DevTools prompt
 chrome.action.onClicked.addListener(async () => {
+  const settings = await Storage.getSettings();
   // Send message to show DevTools prompt
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
     if (tabs[0]?.id) {
-      chrome.tabs.sendMessage(tabs[0].id, { action: 'openDevTools' }).catch(() => {
+      chrome.tabs.sendMessage(tabs[0].id, { action: 'openDevTools', language: settings.language || 'en' }).catch(() => {
         // Silent fail - content script may not be loaded yet
       });
     }
@@ -258,12 +259,15 @@ chrome.action.onClicked.addListener(async () => {
 // Context menu handler
 chrome.contextMenus.onClicked.addListener(async (info) => {
   if (info.menuItemId === 'openFloatingWindow') {
+    const settings = await Storage.getSettings();
     // Show DevTools prompt
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       if (tabs[0]?.id) {
-        chrome.tabs.sendMessage(tabs[0].id, { action: 'openDevTools' }).catch(() => {
-          // Silent fail
-        });
+        chrome.tabs
+          .sendMessage(tabs[0].id, { action: 'openDevTools', language: settings.language || 'en' })
+          .catch(() => {
+            // Silent fail
+          });
       }
     });
   }

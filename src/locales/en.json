@@ -1,0 +1,85 @@
+{
+  "app": {
+    "name": "MockAPI"
+  },
+  "header": {
+    "recording": "Recording: {{tabTitle}}",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "record": "Record",
+    "stop": "Stop"
+  },
+  "tabs": {
+    "rules": "Rules",
+    "requests": "Requests"
+  },
+  "rules": {
+    "title": "Mock Rules",
+    "addRule": "Add Rule",
+    "search": "Search rules...",
+    "noRules": "No rules yet",
+    "noRulesDesc": "Create your first mock rule to start intercepting requests",
+    "edit": "Edit",
+    "delete": "Delete",
+    "method": "Method",
+    "status": "Status",
+    "delay": "Delay",
+    "contentType": "Content Type"
+  },
+  "requests": {
+    "title": "Request Log",
+    "clear": "Clear Log",
+    "search": "Search requests...",
+    "noRequests": "No requests logged",
+    "noRequestsDesc": "Click Record button and interact with the page to capture requests",
+    "mockThis": "Mock This",
+    "time": "Time"
+  },
+  "editor": {
+    "createRule": "Create Rule",
+    "updateRule": "Update Rule",
+    "cancel": "Cancel",
+    "ruleName": "Rule Name",
+    "ruleNamePlaceholder": "e.g., Mock User API",
+    "urlPattern": "URL Pattern",
+    "urlPatternPlaceholder": "e.g., https://api.example.com/users/*",
+    "matchType": "Match Type",
+    "wildcard": "Wildcard",
+    "exact": "Exact Match",
+    "regex": "Regex",
+    "method": "HTTP Method",
+    "anyMethod": "Any Method",
+    "statusCode": "Status Code",
+    "statusCodePlaceholder": "e.g., 200, 404, 500",
+    "delay": "Response Delay (ms)",
+    "delayPlaceholder": "e.g., 0, 1000, 3000",
+    "contentType": "Content Type",
+    "json": "JSON",
+    "text": "Text",
+    "responseBody": "Response Body",
+    "responseBodyPlaceholder": "Enter response data (JSON or text)",
+    "beautify": "Beautify",
+    "validationError": "{{error}}",
+    "variables": "Available variables: {{timestamp}}, {{uuid}}, {{random_number}}"
+  },
+  "settings": {
+    "language": "Language",
+    "theme": "Theme",
+    "notifications": "Notifications"
+  },
+  "devtoolsPrompt": {
+    "title": "Open DevTools",
+    "message": "Press <strong>{{shortcut}}</strong> to open DevTools and access MockAPI panel",
+    "gotIt": "Got it"
+  },
+  "common": {
+    "ok": "OK",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "yes": "Yes",
+    "no": "No"
+  }
+}

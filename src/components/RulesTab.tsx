@@ -6,6 +6,7 @@ import { Input } from './ui/Input';
 import { Button } from './ui/Button';
 import { Card } from './ui/Card';
 import { Search, Plus, FileText } from 'lucide-react';
+import { useI18n } from '../contexts/I18nContext';
 
 interface RulesTabProps {
   rules: MockRule[];
@@ -30,6 +31,7 @@ const RulesTab: React.FC<RulesTabProps> = ({
   onToggleRule,
   onCancelEdit,
 }) => {
+  const { t } = useI18n();
   const [mockRequest, setMockRequest] = useState<any>(null);
 
   useEffect(() => {
@@ -61,7 +63,7 @@ const RulesTab: React.FC<RulesTabProps> = ({
             <div className='relative flex-1'>
               <Search className='absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500' />
               <Input
-                placeholder='Search rules...'
+                placeholder={t('rules.search')}
                 value={searchTerm}
                 onChange={(e) => onSearchChange(e.target.value)}
                 fullWidth
@@ -70,18 +72,18 @@ const RulesTab: React.FC<RulesTabProps> = ({
             </div>
             <Button onClick={() => onEditRule('new')} className='whitespace-nowrap flex items-center gap-2'>
               <Plus className='w-4 h-4' />
-              Add Rule
+              {t('rules.addRule')}
             </Button>
           </div>
 
           {filteredRules.length === 0 ? (
             <Card className='flex items-center flex-col text-center py-16 border-2 border-dashed border-gray-700 shadow-sm'>
               <FileText className='w-12 h-12 mx-auto mb-4 text-gray-600' />
-              <div className='text-gray-300 font-bold text-lg mb-2'>No rules yet</div>
-              <div className='text-gray-500 text-sm mb-4'>Create your first mock rule to get started</div>
+              <div className='text-gray-300 font-bold text-lg mb-2'>{t('rules.noRules')}</div>
+              <div className='text-gray-500 text-sm mb-4'>{t('rules.noRulesDesc')}</div>
               <Button onClick={() => onEditRule('new')} className='flex items-center gap-2'>
                 <Plus className='w-4 h-4' />
-                Create First Rule
+                {t('rules.addRule')}
               </Button>
             </Card>
           ) : (

@@ -5,6 +5,7 @@ import { Input } from './ui/Input';
 import { Button } from './ui/Button';
 import { Card } from './ui/Card';
 import { Search, Trash2, Circle } from 'lucide-react';
+import { useI18n } from '../contexts/I18nContext';
 
 interface RequestsTabProps {
   requests: RequestLog[];
@@ -23,6 +24,7 @@ const RequestsTab: React.FC<RequestsTabProps> = ({
   onMockRequest,
   logRequests,
 }) => {
+  const { t } = useI18n();
   const filteredRequests = requests.filter(
     (req) =>
       req.url.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -35,7 +37,7 @@ const RequestsTab: React.FC<RequestsTabProps> = ({
         <div className='relative flex-1'>
           <Search className='absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500' />
           <Input
-            placeholder='Search requests...'
+            placeholder={t('requests.search')}
             value={searchTerm}
             onChange={(e) => onSearchChange(e.target.value)}
             fullWidth
@@ -45,7 +47,7 @@ const RequestsTab: React.FC<RequestsTabProps> = ({
         {requests.length > 0 && (
           <Button onClick={onClearLog} variant='danger' className='whitespace-nowrap flex items-center gap-2'>
             <Trash2 className='w-4 h-4' />
-            Clear All
+            {t('requests.clear')}
           </Button>
         )}
       </div>
@@ -53,24 +55,24 @@ const RequestsTab: React.FC<RequestsTabProps> = ({
       {!logRequests && requests.length === 0 && (
         <Card className='text-center py-16 border-2 border-dashed border-gray-700 shadow-sm mb-4'>
           <Circle className='w-12 h-12 mx-auto mb-4 text-gray-600' />
-          <div className='text-gray-300 font-bold text-lg mb-2'>Start Recording</div>
-          <div className='text-gray-500 text-sm'>Click "Start Recording" in the header to begin logging requests</div>
+          <div className='text-gray-300 font-bold text-lg mb-2'>{t('requests.noRequests')}</div>
+          <div className='text-gray-500 text-sm'>{t('requests.noRequestsDesc')}</div>
         </Card>
       )}
 
       {logRequests && requests.length === 0 && (
         <Card className='text-center py-16 border-2 border-dashed border-gray-700 shadow-sm animate-pulse'>
           <Circle className='w-12 h-12 mx-auto mb-4 text-red-500' fill='currentColor' />
-          <div className='text-gray-300 font-bold text-lg mb-2'>Recording Active</div>
-          <div className='text-gray-500 text-sm'>Refresh the web page to capture API requests</div>
+          <div className='text-gray-300 font-bold text-lg mb-2'>{t('header.recording', { tabTitle: '' })}</div>
+          <div className='text-gray-500 text-sm'>{t('requests.noRequestsDesc')}</div>
         </Card>
       )}
 
       {filteredRequests.length === 0 && requests.length > 0 ? (
         <Card className='text-center py-16 border-2 border-dashed border-gray-700 shadow-sm'>
           <Search className='w-12 h-12 mx-auto mb-4 text-gray-600' />
-          <div className='text-gray-300 font-bold text-lg mb-2'>No matching requests</div>
-          <div className='text-gray-500 text-sm'>Try a different search term</div>
+          <div className='text-gray-300 font-bold text-lg mb-2'>{t('requests.noRequests')}</div>
+          <div className='text-gray-500 text-sm'>{t('requests.search')}</div>
         </Card>
       ) : (
         filteredRequests.length > 0 && (
