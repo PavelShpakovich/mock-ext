@@ -39,6 +39,9 @@ const RulesTab: React.FC<RulesTabProps> = ({
     if (requestData && editingRuleId === 'new') {
       setMockRequest(JSON.parse(requestData));
       sessionStorage.removeItem('mockRequest');
+    } else if (!editingRuleId) {
+      // Clear mockRequest when not editing
+      setMockRequest(null);
     }
   }, [editingRuleId]);
 

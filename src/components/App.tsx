@@ -15,7 +15,6 @@ const App: React.FC = () => {
     enabled: true,
     logRequests: false,
     showNotifications: true,
-    theme: 'light',
   });
   const [requestLog, setRequestLog] = useState<RequestLog[]>([]);
   const [editingRuleId, setEditingRuleId] = useState<string | null>(null);
@@ -125,7 +124,7 @@ const App: React.FC = () => {
   const handleSaveRule = useCallback(
     async (rule: MockRule) => {
       let updatedRules: MockRule[];
-      if (editingRuleId) {
+      if (editingRuleId && editingRuleId !== 'new') {
         updatedRules = rules.map((r) => (r.id === editingRuleId ? rule : r));
       } else {
         updatedRules = [...rules, rule];

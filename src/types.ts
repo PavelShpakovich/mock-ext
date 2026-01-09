@@ -1,5 +1,6 @@
 export type MatchType = 'wildcard' | 'exact' | 'regex';
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' | 'OPTIONS' | 'HEAD' | '';
+export type ResolvedTheme = 'light' | 'dark';
 
 export interface MockRule {
   id: string;
@@ -21,7 +22,6 @@ export interface Settings {
   enabled: boolean;
   logRequests: boolean;
   showNotifications: boolean;
-  theme: 'light' | 'dark';
   language?: 'en' | 'ru';
 }
 

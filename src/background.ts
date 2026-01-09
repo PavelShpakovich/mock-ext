@@ -8,7 +8,12 @@ const matcher = new RuleMatcher();
 const responseGenerator = new ResponseGenerator();
 
 let mockRules: MockRule[] = [];
-let settings: Settings;
+let settings: Settings = {
+  enabled: true,
+  logRequests: false,
+  showNotifications: false,
+  language: undefined,
+};
 let recordingTabId: number | null = null;
 
 // Load initial state
