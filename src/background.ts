@@ -19,7 +19,7 @@ async function initialize(): Promise<void> {
     settings = await Storage.getSettings();
     await updateDeclarativeRules();
   } catch (error) {
-    console.error('[API Mocker] Initialization error:', error);
+    console.error('[MockAPI] Initialization error:', error);
   }
 }
 
@@ -49,7 +49,7 @@ async function updateDeclarativeRules(): Promise<void> {
 
     updateBadge(true, enabledRules.length);
   } catch (error) {
-    console.error('[API Mocker] Failed to update rules:', error);
+    console.error('[MockAPI] Failed to update rules:', error);
   }
 }
 
@@ -76,7 +76,7 @@ chrome.runtime.onMessage.addListener(
     handleMessage(message)
       .then((response) => sendResponse(response))
       .catch((error) => {
-        console.error('[API Mocker] Message handler error:', error);
+        console.error('[MockAPI] Message handler error:', error);
         sendResponse({ success: false, error: error.message });
       });
 
@@ -237,7 +237,7 @@ chrome.runtime.onInstalled.addListener(async (details) => {
 
   chrome.contextMenus.create({
     id: 'openFloatingWindow',
-    title: 'Open API Mocker',
+    title: 'Open MockAPI',
     contexts: ['action'],
   });
 

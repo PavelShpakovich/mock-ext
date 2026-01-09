@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "API Mocker Pro",
+  "name": "MockAPI",
   "version": "1.0.0",
   "description": "Mock API requests for testing and development. Intercept and modify network requests with custom responses.",
   "permissions": [

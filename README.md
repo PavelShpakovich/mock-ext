@@ -1,4 +1,4 @@
-# API Mocker Pro
+# MockAPI
 
 A powerful Chrome extension for mocking API requests during development and testing. Intercept HTTP requests and respond with custom data without modifying your application code.
 
@@ -95,7 +95,7 @@ npm run dev
 
 ### Creating Your First Mock Rule
 
-1. **Click the extension icon** to open API Mocker Pro
+1. **Click the extension icon** to open MockAPI
 2. **Go to "Rules" tab**
 3. **Click "+ Add Rule"**
 4. **Fill in the form**:

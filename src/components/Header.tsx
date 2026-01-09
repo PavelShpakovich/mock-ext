@@ -34,7 +34,7 @@ const Header: React.FC<HeaderProps> = ({
       <div className='flex items-center justify-between gap-4 flex-wrap'>
         <div className='flex items-center gap-3'>
           <Network className='w-7 h-7 text-green-400 shrink-0' />
-          <h1 className='text-xl font-bold text-white whitespace-nowrap'>API Mock</h1>
+          <h1 className='text-xl font-bold text-white whitespace-nowrap'>MockAPI</h1>
 
           {logRequests && activeTabTitle && (
             <div className='flex items-center gap-2 bg-red-500/10 border border-red-500/30 rounded-full px-3 py-1'>
