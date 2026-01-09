@@ -178,9 +178,6 @@ const App: React.FC = () => {
         logRequests={settings.logRequests}
         onToggleEnabled={handleGlobalToggle}
         onToggleRecording={handleRecordingToggle}
-        activeRulesCount={rules.filter((r) => r.enabled).length}
-        totalRulesCount={rules.length}
-        requestsCount={requestLog.length}
         activeTabTitle={activeTabTitle}
       />
 

@@ -298,14 +298,16 @@ chrome.contextMenus.onClicked.addListener(async (info) => {
       }
     }
 
-    // Create new window
+    // Create new window positioned on the right side
     const width = 550;
     const height = 700;
+
     const newWindow = await chrome.windows.create({
       url: chrome.runtime.getURL('popup.html'),
       type: 'popup',
       width: width,
       height: height,
+      focused: true,
     });
 
     popupWindowId = newWindow.id || null;

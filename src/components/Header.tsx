@@ -9,9 +9,6 @@ interface HeaderProps {
   logRequests: boolean;
   onToggleEnabled: (enabled: boolean) => void;
   onToggleRecording: (logRequests: boolean) => void;
-  activeRulesCount: number;
-  totalRulesCount: number;
-  requestsCount: number;
   activeTabTitle?: string;
 }
 
@@ -20,9 +17,6 @@ const Header: React.FC<HeaderProps> = ({
   logRequests,
   onToggleEnabled,
   onToggleRecording,
-  activeRulesCount,
-  totalRulesCount,
-  requestsCount,
   activeTabTitle,
 }) => {
   const handleRecordingClick = () => {
@@ -45,20 +39,6 @@ const Header: React.FC<HeaderProps> = ({
         </div>
 
         <div className='flex items-center gap-4 flex-wrap'>
-          <div className='flex items-center gap-3 text-xs'>
-            <div className='flex items-center gap-1.5'>
-              <span className='text-gray-400'>Rules</span>
-              <span className='font-bold text-white'>
-                {activeRulesCount}/{totalRulesCount}
-              </span>
-            </div>
-            <div className='w-px h-4 bg-gray-700'></div>
-            <div className='flex items-center gap-1.5'>
-              <span className='text-gray-400'>Requests</span>
-              <span className='font-bold text-white'>{requestsCount}</span>
-            </div>
-          </div>
-
           <div className='flex items-center gap-2'>
             <div className='flex items-center gap-2'>
               <Toggle checked={enabled} onChange={() => onToggleEnabled(!enabled)} />
