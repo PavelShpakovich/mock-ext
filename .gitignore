@@ -1,0 +1,30 @@
+# macOS
+.DS_Store
+*.swp
+*.swo
+
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Environment
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+*.sublime-*
+
+# Testing
+coverage/
+
+# Misc
+*.bak
+*.tmp
