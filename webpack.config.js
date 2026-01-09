@@ -9,6 +9,8 @@ module.exports = (env, argv) => {
     entry: {
       background: './src/background.ts',
       popup: './src/popup.tsx',
+      devtools: './src/devtools.ts',
+      'devtools-prompt': './src/devtools-prompt.ts',
     },
     module: {
       rules: [
@@ -37,8 +39,8 @@ module.exports = (env, argv) => {
       usedExports: true,
       splitChunks: {
         chunks(chunk) {
-          // Don't split the background service worker - it must be a single file
-          return chunk.name !== 'background';
+          // Don't split the background service worker and content scripts - they must be single files
+          return chunk.name !== 'background' && chunk.name !== 'devtools-prompt';
         },
         cacheGroups: {
           react: {
@@ -62,6 +64,7 @@ module.exports = (env, argv) => {
         patterns: [
           { from: 'public/manifest.json', to: 'manifest.json' },
           { from: 'public/popup.html', to: 'popup.html' },
+          { from: 'public/devtools.html', to: 'devtools.html' },
           { from: 'public/icons', to: 'icons' },
         ],
       }),

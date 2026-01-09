@@ -14,6 +14,14 @@
     "contextMenus"
   ],
   "host_permissions": ["<all_urls>"],
+  "devtools_page": "devtools.html",
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["devtools-prompt.js"],
+      "run_at": "document_idle"
+    }
+  ],
   "background": {
     "service_worker": "background.js"
   },

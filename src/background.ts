@@ -9,7 +9,6 @@ const responseGenerator = new ResponseGenerator();
 
 let mockRules: MockRule[] = [];
 let settings: Settings;
-let popupWindowId: number | null = null;
 let recordingTabId: number | null = null;
 
 // Load initial state
@@ -205,9 +204,6 @@ chrome.tabs.onRemoved.addListener((tabId) => {
   if (tabId === recordingTabId) {
     recordingTabId = null;
   }
-  if (tabId === popupWindowId) {
-    popupWindowId = null;
-  }
 });
 
 // Install/update handler
@@ -247,70 +243,29 @@ chrome.runtime.onInstalled.addListener(async (details) => {
 // Service worker startup
 initialize();
 
-// Handle extension icon click to open floating window
+// Handle extension icon click to show DevTools prompt
 chrome.action.onClicked.addListener(async () => {
-  // Check if window already exists
-  if (popupWindowId !== null) {
-    try {
-      await chrome.windows.get(popupWindowId);
-      // Window exists, focus it
-      await chrome.windows.update(popupWindowId, { focused: true });
-      return;
-    } catch (error) {
-      // Window doesn't exist anymore, create new one
-      popupWindowId = null;
+  // Send message to show DevTools prompt
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    if (tabs[0]?.id) {
+      chrome.tabs.sendMessage(tabs[0].id, { action: 'openDevTools' }).catch(() => {
+        // Silent fail - content script may not be loaded yet
+      });
     }
-  }
-
-  // Create new window
-  const width = 550;
-  const height = 700;
-  const newWindow = await chrome.windows.create({
-    url: chrome.runtime.getURL('popup.html'),
-    type: 'popup',
-    width: width,
-    height: height,
   });
-
-  popupWindowId = newWindow.id || null;
-});
-
-// Listen for window removal to clear the stored ID
-chrome.windows.onRemoved.addListener((windowId) => {
-  if (windowId === popupWindowId) {
-    popupWindowId = null;
-  }
 });
 
 // Context menu handler
 chrome.contextMenus.onClicked.addListener(async (info) => {
   if (info.menuItemId === 'openFloatingWindow') {
-    // Check if window already exists
-    if (popupWindowId !== null) {
-      try {
-        await chrome.windows.get(popupWindowId);
-        // Window exists, focus it
-        await chrome.windows.update(popupWindowId, { focused: true });
-        return;
-      } catch (error) {
-        // Window doesn't exist anymore, create new one
-        popupWindowId = null;
+    // Show DevTools prompt
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      if (tabs[0]?.id) {
+        chrome.tabs.sendMessage(tabs[0].id, { action: 'openDevTools' }).catch(() => {
+          // Silent fail
+        });
       }
-    }
-
-    // Create new window positioned on the right side
-    const width = 550;
-    const height = 700;
-
-    const newWindow = await chrome.windows.create({
-      url: chrome.runtime.getURL('popup.html'),
-      type: 'popup',
-      width: width,
-      height: height,
-      focused: true,
     });
-
-    popupWindowId = newWindow.id || null;
   }
 });
 
