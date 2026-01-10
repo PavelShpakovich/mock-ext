@@ -6,6 +6,7 @@ import { MethodBadge, StatusCodeBadge } from './ui/Badge';
 import { Toggle } from './ui/Toggle';
 import { Button } from './ui/Button';
 import { Clock } from 'lucide-react';
+import { useI18n } from '../contexts/I18nContext';
 
 interface RuleItemProps {
   rule: MockRule;
@@ -15,6 +16,8 @@ interface RuleItemProps {
 }
 
 const RuleItem: React.FC<RuleItemProps> = ({ rule, onEdit, onDelete, onToggle }) => {
+  const { t } = useI18n();
+
   return (
     <Card
       className={clsx({
@@ -43,7 +46,7 @@ const RuleItem: React.FC<RuleItemProps> = ({ rule, onEdit, onDelete, onToggle })
         <div className='flex items-center gap-2 ml-4 flex-shrink-0'>
           <Toggle checked={rule.enabled} onChange={onToggle} />
 
-          <Button variant='ghost' size='icon' onClick={onEdit} title='Edit'>
+          <Button variant='ghost' size='icon' onClick={onEdit} title={t('common.edit')}>
             <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
               <path
                 strokeLinecap='round'
@@ -58,7 +61,7 @@ const RuleItem: React.FC<RuleItemProps> = ({ rule, onEdit, onDelete, onToggle })
             variant='ghost'
             size='icon'
             onClick={onDelete}
-            title='Delete'
+            title={t('common.delete')}
             className='hover:bg-red-900/50 hover:text-red-400 hover:border-red-900'
           >
             <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>

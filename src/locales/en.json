@@ -80,6 +80,10 @@
     "edit": "Edit",
     "close": "Close",
     "yes": "Yes",
-    "no": "No"
+    "no": "No",
+    "expandEditor": "Expand editor",
+    "mockThisTooltip": "Create mock rule from this request",
+    "switchToRussian": "Switch to Russian",
+    "switchToEnglish": "Switch to English"
   }
 }

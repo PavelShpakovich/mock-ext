@@ -293,7 +293,7 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, mockRequest, onSave, onCa
                   type='button'
                   onClick={() => setIsExpanded(true)}
                   className='text-sm text-gray-400 hover:text-white flex items-center gap-1 cursor-pointer'
-                  title='Expand editor'
+                  title={t('common.expandEditor')}
                 >
                   <Maximize2 className='w-4 h-4' />
                 </button>
@@ -373,10 +373,10 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, mockRequest, onSave, onCa
 
         <div className='flex gap-3 pt-4'>
           <Button type='submit' className='flex-1 w-full'>
-            {rule ? 'Update Rule' : 'Create Rule'}
+            {rule ? t('editor.updateRule') : t('editor.createRule')}
           </Button>
           <Button type='button' variant='secondary' onClick={onCancel} className='flex-1 w-full'>
-            Cancel
+            {t('editor.cancel')}
           </Button>
         </div>
       </form>

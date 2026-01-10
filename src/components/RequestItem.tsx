@@ -4,6 +4,7 @@ import { MethodBadge, StatusCodeBadge, Badge } from './ui/Badge';
 import { Button } from './ui/Button';
 import { Card } from './ui/Card';
 import { Clock, Network } from 'lucide-react';
+import { useI18n } from '../contexts/I18nContext';
 
 interface RequestItemProps {
   request: RequestLog;
@@ -11,6 +12,7 @@ interface RequestItemProps {
 }
 
 const RequestItem: React.FC<RequestItemProps> = ({ request, onMock }) => {
+  const { t } = useI18n();
   const formatTime = (timestamp: number) => {
     const date = new Date(timestamp);
     return date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
@@ -39,10 +41,10 @@ const RequestItem: React.FC<RequestItemProps> = ({ request, onMock }) => {
             size='sm'
             onClick={onMock}
             className='whitespace-nowrap flex items-center gap-2'
-            title='Create mock rule from this request'
+            title={t('common.mockThisTooltip')}
           >
             <Network className='w-4 h-4' />
-            Mock This
+            {t('requests.mockThis')}
           </Button>
         </div>
       </div>
