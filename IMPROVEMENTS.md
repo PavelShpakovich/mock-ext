@@ -221,6 +221,7 @@ This document outlines all planned improvements for the MockAPI extension, organ
 - `src/locales/ru.json` ✅
 
 **Features:**
+
 - Downloads `mockapi-rules-YYYY-MM-DD.json`
 - Validates structure and required fields
 - Merges with existing rules (avoids duplicates)

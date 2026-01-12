@@ -98,7 +98,7 @@ const RulesTab: React.FC<RulesTabProps> = ({
               variant='secondary'
               className='whitespace-nowrap flex items-center gap-2'
             >
-              <Upload className='w-4 h-4' />
+              <Download className='w-4 h-4' />
               {t('rules.import')}
             </Button>
             <Button
@@ -107,7 +107,7 @@ const RulesTab: React.FC<RulesTabProps> = ({
               className='whitespace-nowrap flex items-center gap-2'
               disabled={rules.length === 0}
             >
-              <Download className='w-4 h-4' />
+              <Upload className='w-4 h-4' />
               {t('rules.export')}
             </Button>
             <Button onClick={() => onEditRule('new')} className='whitespace-nowrap flex items-center gap-2'>
