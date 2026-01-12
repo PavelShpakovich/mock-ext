@@ -12,7 +12,6 @@ export interface MockRule {
   statusCode: number;
   response: string | object;
   contentType: string;
-  headers?: Record<string, string>;
   delay: number;
   created: number;
   modified: number;
