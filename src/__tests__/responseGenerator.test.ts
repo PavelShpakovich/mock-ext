@@ -117,7 +117,7 @@ describe('ResponseGenerator', () => {
         modified: Date.now(),
       };
 
-      // @ts-ignore - testing runtime behavior
+      // @ts-expect-error - testing runtime behavior
       rule.contentType = undefined;
       const dataUrl = generator.createDataURL(rule);
       expect(dataUrl).toContain('data:application/json,');

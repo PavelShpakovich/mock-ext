@@ -11,29 +11,23 @@ describe('RuleMatcher', () => {
   describe('matchURL', () => {
     describe('exact matching', () => {
       it('should match exact URLs', () => {
-        expect(matcher.matchURL('https://api.example.com/users', 'https://api.example.com/users', 'exact')).toBe(
-          true
-        );
+        expect(matcher.matchURL('https://api.example.com/users', 'https://api.example.com/users', 'exact')).toBe(true);
       });
 
       it('should not match different URLs', () => {
-        expect(matcher.matchURL('https://api.example.com/users', 'https://api.example.com/posts', 'exact')).toBe(
-          false
-        );
+        expect(matcher.matchURL('https://api.example.com/users', 'https://api.example.com/posts', 'exact')).toBe(false);
       });
 
       it('should be case-sensitive', () => {
-        expect(matcher.matchURL('https://api.example.com/Users', 'https://api.example.com/users', 'exact')).toBe(
-          false
-        );
+        expect(matcher.matchURL('https://api.example.com/Users', 'https://api.example.com/users', 'exact')).toBe(false);
       });
     });
 
     describe('wildcard matching', () => {
       it('should match URLs with wildcards', () => {
-        expect(matcher.matchURL('https://api.example.com/users/123', 'https://api.example.com/users/*', 'wildcard')).toBe(
-          true
-        );
+        expect(
+          matcher.matchURL('https://api.example.com/users/123', 'https://api.example.com/users/*', 'wildcard')
+        ).toBe(true);
         expect(matcher.matchURL('https://api.example.com/users', 'https://api.example.com/*', 'wildcard')).toBe(true);
         expect(matcher.matchURL('https://api.example.com/v1/users', 'https://*/users', 'wildcard')).toBe(true);
       });
@@ -51,9 +45,9 @@ describe('RuleMatcher', () => {
 
     describe('regex matching', () => {
       it('should match URLs with regex patterns', () => {
-        expect(matcher.matchURL('https://api.example.com/users/123', 'https://api\\.example\\.com/users/\\d+', 'regex')).toBe(
-          true
-        );
+        expect(
+          matcher.matchURL('https://api.example.com/users/123', 'https://api\\.example\\.com/users/\\d+', 'regex')
+        ).toBe(true);
         expect(matcher.matchURL('https://api.example.com/users', 'https://.*\\.example\\.com/.*', 'regex')).toBe(true);
       });
 
@@ -62,9 +56,9 @@ describe('RuleMatcher', () => {
       });
 
       it('should not match when regex does not match', () => {
-        expect(matcher.matchURL('https://api.example.com/users/abc', 'https://api\\.example\\.com/users/\\d+', 'regex')).toBe(
-          false
-        );
+        expect(
+          matcher.matchURL('https://api.example.com/users/abc', 'https://api\\.example\\.com/users/\\d+', 'regex')
+        ).toBe(false);
       });
 
       it('should handle invalid regex gracefully', () => {
