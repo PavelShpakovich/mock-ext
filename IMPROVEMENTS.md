@@ -202,25 +202,31 @@ This document outlines all planned improvements for the MockAPI extension, organ
 
 ---
 
-### 2.2 Export/Import Rules
+### 2.2 Export/Import Rules ✅ (Completed: Jan 12, 2026)
 
-- [ ] Add "Export" button to RulesTab
-- [ ] Implement `exportRules()` function (download JSON)
-- [ ] Add "Import" button with file picker
-- [ ] Implement `importRules()` function (parse and merge)
-- [ ] Add validation for imported JSON structure
-- [ ] Add success/error toast notifications
-- [ ] Update i18n translations
+- [x] Add "Export" button to RulesTab
+- [x] Implement `exportRules()` function (download JSON)
+- [x] Add "Import" button with file picker
+- [x] Implement `importRules()` function (parse and merge)
+- [x] Add validation for imported JSON structure
+- [x] Add success/error toast notifications
+- [x] Update i18n translations
 
-**Files to modify:**
+**Files modified:**
 
-- `src/components/RulesTab.tsx`
-- `src/components/App.tsx`
-- `src/storage.ts` (already has importRules method)
-- `src/locales/en.json`
-- `src/locales/ru.json`
+- `src/components/RulesTab.tsx` ✅
+- `src/components/App.tsx` ✅
+- `src/storage.ts` (already has importRules method) ✅
+- `src/locales/en.json` ✅
+- `src/locales/ru.json` ✅
 
-**Estimated time:** 3-4 hours
+**Features:**
+- Downloads `mockapi-rules-YYYY-MM-DD.json`
+- Validates structure and required fields
+- Merges with existing rules (avoids duplicates)
+- Disabled export button when no rules exist
+
+**Actual time:** 1.5 hours
 
 ---
 
