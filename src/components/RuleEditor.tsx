@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { MockRule, HttpMethod, MatchType, RequestLog } from '../types';
 import { generateUUID, isValidJSON } from '../utils';
-import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import { Input } from './ui/Input';
 import { Select } from './ui/Select';
 import { TextArea } from './ui/TextArea';
@@ -199,22 +198,6 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, mockRequest, onSave, onCa
       }
     }
   };
-
-  // Keyboard shortcuts for editor
-  useKeyboardShortcuts([
-    {
-      key: 's',
-      ctrlOrCmd: true,
-      handler: (e) => {
-        e.preventDefault();
-        handleSubmit(e as any);
-      },
-    },
-    {
-      key: 'Escape',
-      handler: onCancel,
-    },
-  ]);
 
   return (
     <Card className='p-8 shadow-2xl'>
