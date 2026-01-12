@@ -180,7 +180,7 @@ This document outlines all planned improvements for the MockAPI extension, organ
 
 ## Phase 2: Quick Wins & UX Improvements (Week 2)
 
-### 2.1 Response Headers UI ✅ (Completed: Jan 12, 2026)
+### 2.1 Response Headers UI ❌ (Attempted: Jan 12, 2026)
 
 - [x] Add headers section to `RuleEditor.tsx`
 - [x] Create `HeadersInput` component (key-value pairs)
@@ -188,17 +188,11 @@ This document outlines all planned improvements for the MockAPI extension, organ
 - [x] Add visual indicator when headers are present in `RuleItem.tsx`
 - [x] Add to i18n translations (en.json, ru.json)
 
-**Files created/modified:**
+**Status:** Reverted. Chrome's declarativeNetRequest REDIRECT action cannot set custom response headers. Headers were stored in the database but completely non-functional. Removed all related code to prevent confusion.
 
-- `src/components/ui/HeadersInput.tsx` ✅ (new component)
-- `src/components/RuleEditor.tsx` ✅
-- `src/components/RuleItem.tsx` ✅
-- `src/locales/en.json` ✅
-- `src/locales/ru.json` ✅
+**Lesson:** Chrome's declarativeNetRequest with REDIRECT action is fundamentally incompatible with custom headers. See "Header Modifier" feature above for proper header manipulation using MODIFY_HEADERS action.
 
-**Note:** Chrome's declarativeNetRequest API doesn't support custom response headers with data URL redirects. Headers are stored in rules for future backend support.
-
-**Actual time:** 45 minutes
+**Actual time:** 45 minutes (implementation) + 20 minutes (removal) = 65 minutes total
 
 ---
 
@@ -311,6 +305,7 @@ This document outlines all planned improvements for the MockAPI extension, organ
   - `Escape`: Close editor
 
 **Status:** Reverted. All useful keyboard shortcuts conflict with Chrome's native shortcuts:
+
 - Cmd/Ctrl+K = Chrome address bar search
 - Cmd/Ctrl+R = Page reload
 - Cmd/Ctrl+N = New window
