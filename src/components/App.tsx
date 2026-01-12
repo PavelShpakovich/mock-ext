@@ -194,6 +194,59 @@ const App: React.FC = () => {
     sessionStorage.setItem('mockRequest', JSON.stringify(request));
   }, []);
 
+  const handleExportRules = useCallback(() => {
+    const dataStr = JSON.stringify(rules, null, 2);
+    const blob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `mockapi-rules-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }, [rules]);
+
+  const handleImportRules = useCallback(
+    async (file: File) => {
+      try {
+        const text = await file.text();
+        const importedRules = JSON.parse(text);
+
+        // Validate structure
+        if (!Array.isArray(importedRules)) {
+          alert(t('rules.importError') + ': Invalid format - expected array');
+          return;
+        }
+
+        // Validate each rule has required fields
+        const isValid = importedRules.every(
+          (rule) => rule.id && rule.name && rule.urlPattern && rule.method && rule.statusCode !== undefined
+        );
+
+        if (!isValid) {
+          alert(t('rules.importError') + ': Missing required fields');
+          return;
+        }
+
+        // Merge with existing rules (avoid duplicates by ID)
+        const existingIds = new Set(rules.map((r) => r.id));
+        const newRules = importedRules.filter((rule: MockRule) => !existingIds.has(rule.id));
+        const updatedRules = [...rules, ...newRules];
+
+        setRules(updatedRules);
+        await Storage.saveRules(updatedRules);
+        chrome.runtime.sendMessage({ action: 'updateRules', rules: updatedRules });
+
+        alert(t('rules.importSuccess').replace('{count}', newRules.length.toString()));
+      } catch (error) {
+        console.error('Import error:', error);
+        alert(t('rules.importError') + ': ' + (error as Error).message);
+      }
+    },
+    [rules, t]
+  );
+
   return (
     <div className='min-h-screen bg-black text-white'>
       <Header
@@ -225,6 +278,8 @@ const App: React.FC = () => {
           onToggleRule={handleToggleRule}
           onDuplicateRule={handleDuplicateRule}
           onCancelEdit={() => setEditingRuleId(null)}
+          onExportRules={handleExportRules}
+          onImportRules={handleImportRules}
         />
       ) : (
         <RequestsTab

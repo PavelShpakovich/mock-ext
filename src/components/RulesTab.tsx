@@ -5,7 +5,7 @@ import RuleEditor from './RuleEditor';
 import { Input } from './ui/Input';
 import { Button } from './ui/Button';
 import { Card } from './ui/Card';
-import { Search, Plus, FileText } from 'lucide-react';
+import { Search, Plus, FileText, Download, Upload } from 'lucide-react';
 import { useI18n } from '../contexts/I18nContext';
 
 interface RulesTabProps {
@@ -19,6 +19,8 @@ interface RulesTabProps {
   onToggleRule: (id: string) => void;
   onDuplicateRule: (id: string) => void;
   onCancelEdit: () => void;
+  onExportRules: () => void;
+  onImportRules: (file: File) => void;
 }
 
 const RulesTab: React.FC<RulesTabProps> = ({
@@ -32,9 +34,25 @@ const RulesTab: React.FC<RulesTabProps> = ({
   onToggleRule,
   onDuplicateRule,
   onCancelEdit,
+  onExportRules,
+  onImportRules,
 }) => {
   const { t } = useI18n();
   const [mockRequest, setMockRequest] = useState<any>(null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      onImportRules(file);
+      // Reset input so same file can be imported again
+      e.target.value = '';
+    }
+  };
 
   useEffect(() => {
     const requestData = sessionStorage.getItem('mockRequest');
@@ -75,10 +93,28 @@ const RulesTab: React.FC<RulesTabProps> = ({
                 className='pl-10'
               />
             </div>
+            <Button
+              onClick={handleImportClick}
+              variant='secondary'
+              className='whitespace-nowrap flex items-center gap-2'
+            >
+              <Upload className='w-4 h-4' />
+              {t('rules.import')}
+            </Button>
+            <Button
+              onClick={onExportRules}
+              variant='secondary'
+              className='whitespace-nowrap flex items-center gap-2'
+              disabled={rules.length === 0}
+            >
+              <Download className='w-4 h-4' />
+              {t('rules.export')}
+            </Button>
             <Button onClick={() => onEditRule('new')} className='whitespace-nowrap flex items-center gap-2'>
               <Plus className='w-4 h-4' />
               {t('rules.addRule')}
             </Button>
+            <input ref={fileInputRef} type='file' accept='.json' onChange={handleFileChange} className='hidden' />
           </div>
 
           {filteredRules.length === 0 ? (
