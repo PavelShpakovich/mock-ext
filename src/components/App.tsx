@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Storage } from '../storage';
 import { MockRule, Settings, RequestLog } from '../types';
 import { useI18n } from '../contexts/I18nContext';
+import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import Header from './Header';
 import RulesTab from './RulesTab';
 import RequestsTab from './RequestsTab';
@@ -245,6 +246,43 @@ const App: React.FC = () => {
       }
     },
     [rules, t]
+  );
+
+  // Keyboard shortcuts
+  useKeyboardShortcuts(
+    [
+      {
+        key: 'k',
+        ctrlOrCmd: true,
+        handler: () => {
+          // Focus search based on active tab
+          if (activeTab === 'rules') {
+            const searchInput = document.querySelector('input[placeholder*="Search rules"]') as HTMLInputElement;
+            searchInput?.focus();
+          } else {
+            const searchInput = document.querySelector('input[placeholder*="Search requests"]') as HTMLInputElement;
+            searchInput?.focus();
+          }
+        },
+      },
+      {
+        key: 'n',
+        ctrlOrCmd: true,
+        handler: () => {
+          if (activeTab === 'rules') {
+            setEditingRuleId('new');
+          }
+        },
+      },
+      {
+        key: 'r',
+        ctrlOrCmd: true,
+        handler: () => {
+          handleRecordingToggle(!settings.logRequests);
+        },
+      },
+    ],
+    !editingRuleId // Disable global shortcuts when editing
   );
 
   return (
