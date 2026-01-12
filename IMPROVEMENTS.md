@@ -251,22 +251,19 @@ This document outlines all planned improvements for the MockAPI extension, organ
 
 ---
 
-### 2.4 Rule Hit Counter
+### 2.4 Rule Hit Counter ❌ (Attempted: Jan 12, 2026)
 
-- [ ] Add `hits: number` field to `MockRule` interface in `types.ts`
-- [ ] Track hits in `background.ts` when rule matches
-- [ ] Display hit count in `RuleItem.tsx` with badge
-- [ ] Add "Reset Hits" option
-- [ ] Update storage migration for existing rules
+- [x] Add `hits: number` field to `MockRule` interface in `types.ts`
+- [x] Track hits in `background.ts` when rule matches
+- [x] Display hit count in `RuleItem.tsx` with badge
+- [x] Add "Reset Hits" option
+- [x] Update storage migration for existing rules
 
-**Files to modify:**
+**Status:** Reverted. `onRuleMatchedDebug` API only works in unpacked extension debug mode, not in production/packaged extensions. Feature was implemented without verifying API limitations.
 
-- `src/types.ts`
-- `src/background.ts`
-- `src/components/RuleItem.tsx`
-- `src/storage.ts`
+**Lesson:** Always verify Chrome API availability in production before implementing features.
 
-**Estimated time:** 2-3 hours
+**Actual time:** 2.5 hours (implementation + troubleshooting + revert)
 
 ---
 
