@@ -5,6 +5,43 @@ All notable changes to MockAPI Extension will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-01-12
+
+### Added
+
+- **Advanced Request Filtering**: New filtering system for request logs
+  - Filter by HTTP method (GET, POST, PUT, DELETE, PATCH, OPTIONS)
+  - Filter by status code range (2xx, 3xx, 4xx, 5xx)
+  - Collapsible filter panel with active filter count badge
+  - Filters button positioned in header for easy access
+- **Export/Import Rules**: Export rules to JSON file and import them back
+  - Downloads as `mockapi-rules-YYYY-MM-DD.json`
+  - Validates imported rules structure
+  - Merges with existing rules avoiding duplicates
+- **Duplicate Rule Feature**: Quick copy of existing rules
+  - Creates new rule with "(Copy)" suffix
+  - Generates new UUID automatically
+- **Code Quality Tools**: Development infrastructure improvements
+  - ESLint and Prettier configuration
+  - Pre-commit hooks with husky and lint-staged
+  - Pre-push hook runs full test suite
+  - Comprehensive test suite with 58 passing tests
+
+### Improved
+
+- Cleaner request log UI with better filter organization
+- All filter buttons have proper cursor-pointer styling
+- Consistent button heights across the interface
+- Better UX for managing large numbers of logged requests
+
+### Technical
+
+- New `FilterPanel` component with `FilterState` interface
+- Enhanced `RequestsTab` with integrated filter logic
+- Test coverage for utils, ruleMatcher, storage, and responseGenerator
+- Jest testing infrastructure with React Testing Library
+- Automated code formatting and linting on commit
+
 ## [1.0.1] - 2026-01-10
 
 ### Fixed

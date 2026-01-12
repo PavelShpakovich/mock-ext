@@ -30,14 +30,24 @@ Example:
 }
 ```
 
-### 📊 Request Logging
+### 📊 Request Logging & Filtering
 
 - **Page-Specific Recording**: Record XMLHttpRequest/fetch requests from a specific browser tab
 - **Manual Control**: Start/stop recording with button controls
+- **Advanced Filtering**: Filter logged requests by HTTP method and status code range
+  - Method filters: GET, POST, PUT, DELETE, PATCH, OPTIONS
+  - Status code filters: 2xx Success, 3xx Redirect, 4xx Client Error, 5xx Server Error
+- **Search & Filter**: Quickly find requests with text search and multiple filters
 - **Request Details**: View URL, method, status code, content type, and timestamp
-- **Search & Filter**: Quickly find requests with search functionality
 - **Up to 1000 Requests**: Automatic log rotation keeps recent requests
 - **Quick Mocking**: Create mock rules directly from logged requests with "Mock This" button
+
+### 🛠️ Rule Management
+
+- **Export/Import**: Backup rules to JSON file and restore them later
+- **Duplicate Rules**: Quickly copy existing rules to create variations
+- **Enable/Disable**: Toggle rules on/off without deleting them
+- **Search Rules**: Find rules by name or URL pattern
 
 ### 🛠️ DevTools Integration
 
