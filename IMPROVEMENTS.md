@@ -6,6 +6,94 @@ This document outlines all planned improvements for the MockAPI extension, organ
 
 ---
 
+## ⚠️ **ARCHITECTURAL LIMITATION DISCOVERED**
+
+### ❌ Service Worker Fetch Interception - NOT VIABLE
+
+**Why we tried this approach:**
+
+- Current approach shows "307 Internal Redirect" in DevTools (poor UX)
+- Response tab is empty (cannot view mock data in DevTools)
+- Headers functionality is non-functional (declarativeNetRequest REDIRECT cannot set custom headers)
+
+**Why it doesn't work:**
+
+- ❌ Service Worker fetch events **only intercept requests made BY the extension itself**
+- ❌ Cannot intercept web page requests (fetch/XHR from sites user visits)
+- ❌ Chrome architecture limitation - not a bug, but by design
+- ❌ After 3 hours of implementation and debugging, confirmed this is impossible
+
+**What we learned:**
+
+- declarativeNetRequest with REDIRECT is the ONLY way to intercept web page requests in Chrome extensions
+- 307 redirect is cosmetic - mocks actually work perfectly
+- Headers with REDIRECT action are fundamentally incompatible
+
+**Conclusion:** Reverted Service Worker changes. Using declarativeNetRequest correctly.
+
+---
+
+## ⚡ **NEW FEATURE: Separate Header Modification Tool**
+
+### 🎯 Header Modifier (Independent Feature)
+
+**Concept:** Separate tool from API mocking - modify request/response headers without redirecting.
+
+**Why this is different:**
+
+- API Mocking = intercept request → return fake data (REDIRECT action)
+- Header Modification = pass request through → modify headers (MODIFY_HEADERS action)
+- These are two independent use cases, should NOT be combined
+
+**Implementation tasks:**
+
+- [ ] Create new "Header Rules" tab alongside "Mock Rules"
+- [ ] New `HeaderRule` type (separate from MockRule)
+  - `id`, `name`, `enabled`, `urlPattern`, `matchType`
+  - `requestHeaders: HeaderModification[]`
+  - `responseHeaders: HeaderModification[]`
+- [ ] Create `HeaderRuleEditor` component
+- [ ] Create `HeaderModificationInput` component (header, operation, value)
+- [ ] Support operations: `set`, `append`, `remove`
+- [ ] Implement in `background.ts` using MODIFY_HEADERS action
+- [ ] Separate storage: `getHeaderRules()`, `saveHeaderRules()`
+- [ ] Independent enable/disable from mock rules
+- [ ] Test with real requests (headers pass through to server)
+- [ ] Add to i18n translations
+- [ ] Update documentation
+
+**Use cases:**
+
+- Remove cookies for testing
+- Add custom auth headers for development
+- Set CORS headers for local testing
+- Modify User-Agent for browser testing
+- Add/remove cache-control headers
+
+**Files to create:**
+
+- `src/types.ts` (add HeaderRule, HeaderModification interfaces)
+- `src/components/HeaderRulesTab.tsx` (new tab)
+- `src/components/HeaderRuleEditor.tsx` (new editor)
+- `src/components/HeaderRuleItem.tsx` (new list item)
+- `src/components/ui/HeaderModificationInput.tsx` (new UI)
+
+**Files to modify:**
+
+- `src/components/App.tsx` (add HeaderRulesTab)
+- `src/storage.ts` (add header rules methods)
+- `src/background.ts` (create modifyHeaders rules)
+- `src/locales/en.json`
+- `src/locales/ru.json`
+
+**Estimated time:** 6-8 hours
+
+**Priority:** Medium (useful feature, but separate from core mocking)
+
+**Note:** This leverages Chrome's MODIFY_HEADERS action properly - requests still go to server, but headers are modified.
+
+---
+
 ## Phase 1: Code Quality & Foundation (Week 1)
 
 ### 1.1 Setup ESLint & Prettier ✅ (Completed: Jan 12, 2026)
@@ -92,25 +180,25 @@ This document outlines all planned improvements for the MockAPI extension, organ
 
 ## Phase 2: Quick Wins & UX Improvements (Week 2)
 
-### 2.1 Response Headers UI (Backend Already Exists)
+### 2.1 Response Headers UI ✅ (Completed: Jan 12, 2026)
 
-- [ ] Add headers section to `RuleEditor.tsx`
-- [ ] Create `HeadersInput` component (key-value pairs)
-- [ ] Update `ResponseGenerator.toDeclarativeRule()` to include headers
-- [ ] Add visual indicator when headers are present in `RuleItem.tsx`
-- [ ] Update form validation
-- [ ] Add to i18n translations (en.json, ru.json)
+- [x] Add headers section to `RuleEditor.tsx`
+- [x] Create `HeadersInput` component (key-value pairs)
+- [x] Headers stored in MockRule.headers (optional)
+- [x] Add visual indicator when headers are present in `RuleItem.tsx`
+- [x] Add to i18n translations (en.json, ru.json)
 
-**Files to modify:**
+**Files created/modified:**
 
-- `src/components/RuleEditor.tsx`
-- `src/components/ui/HeadersInput.tsx` (create new)
-- `src/responseGenerator.ts`
-- `src/components/RuleItem.tsx`
-- `src/locales/en.json`
-- `src/locales/ru.json`
+- `src/components/ui/HeadersInput.tsx` ✅ (new component)
+- `src/components/RuleEditor.tsx` ✅
+- `src/components/RuleItem.tsx` ✅
+- `src/locales/en.json` ✅
+- `src/locales/ru.json` ✅
 
-**Estimated time:** 3-4 hours
+**Note:** Chrome's declarativeNetRequest API doesn't support custom response headers with data URL redirects. Headers are stored in rules for future backend support.
+
+**Actual time:** 45 minutes
 
 ---
 

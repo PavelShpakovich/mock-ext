@@ -29,32 +29,35 @@ async function initialize(): Promise<void> {
 
 // Update declarativeNetRequest rules
 async function updateDeclarativeRules(): Promise<void> {
-  try {
+  if (!settings.enabled) {
+    // Clear all rules if mocking is disabled
     const existingRules = await chrome.declarativeNetRequest.getDynamicRules();
-    const existingRuleIds = existingRules.map((rule) => rule.id);
-
-    if (!settings.enabled) {
-      if (existingRuleIds.length > 0) {
-        await chrome.declarativeNetRequest.updateDynamicRules({
-          removeRuleIds: existingRuleIds,
-        });
-      }
-      updateBadge(false);
-      return;
+    const ruleIdsToRemove = existingRules.map((rule) => rule.id);
+    if (ruleIdsToRemove.length > 0) {
+      await chrome.declarativeNetRequest.updateDynamicRules({
+        removeRuleIds: ruleIdsToRemove,
+      });
     }
-
-    const enabledRules = mockRules.filter((rule) => rule.enabled);
-    const dynamicRules = enabledRules.map((rule, index) => responseGenerator.toDeclarativeRule(rule, index + 1));
-
-    await chrome.declarativeNetRequest.updateDynamicRules({
-      removeRuleIds: existingRuleIds,
-      addRules: dynamicRules,
-    });
-
-    updateBadge(true, enabledRules.length);
-  } catch (error) {
-    console.error('[MockAPI] Failed to update rules:', error);
+    updateBadge(false);
+    return;
   }
+
+  const enabledRules = mockRules.filter((rule) => rule.enabled);
+
+  // Remove all existing rules
+  const existingRules = await chrome.declarativeNetRequest.getDynamicRules();
+  const ruleIdsToRemove = existingRules.map((rule) => rule.id);
+
+  // Convert enabled rules to declarative rules
+  const newRules = enabledRules.map((rule, index) => responseGenerator.toDeclarativeRule(rule, index + 1));
+
+  // Update rules
+  await chrome.declarativeNetRequest.updateDynamicRules({
+    removeRuleIds: ruleIdsToRemove,
+    addRules: newRules,
+  });
+
+  updateBadge(settings.enabled, enabledRules.length);
 }
 
 // Update extension badge

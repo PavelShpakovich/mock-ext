@@ -3,7 +3,9 @@ import { MockRule } from './types';
 export class ResponseGenerator {
   createDataURL(rule: MockRule): string {
     const contentType = rule.contentType || 'application/json';
-    const content = this.prepareResponseContent(rule.response);
+    let content = this.prepareResponseContent(rule.response);
+    // Apply dynamic variables to the content
+    content = this.applyDynamicVariables(content);
     return `data:${contentType},${encodeURIComponent(content)}`;
   }
 

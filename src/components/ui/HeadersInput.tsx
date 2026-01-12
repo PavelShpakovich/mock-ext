@@ -13,11 +13,7 @@ export const HeadersInput: React.FC<HeadersInputProps> = ({ headers, onChange })
   const { t } = useI18n();
   const headerEntries = Object.entries(headers || {});
 
-  const addHeader = () => {
-    // Use a temporary unique key to allow multiple empty headers
-    const tempKey = `_temp_${Date.now()}`;
-    onChange({ ...headers, [tempKey]: '' });
-  };
+  const addHeader = () => onChange({ ...headers, '': '' });
 
   const updateHeader = (oldKey: string, newKey: string, value: string) => {
     const newHeaders = { ...headers };
@@ -42,7 +38,7 @@ export const HeadersInput: React.FC<HeadersInputProps> = ({ headers, onChange })
     <div className='flex flex-col gap-2'>
       <div className='flex items-center justify-between'>
         <label className='block text-sm font-medium text-gray-700 dark:text-gray-300'>{t('headers')}</label>
-        <Button onClick={addHeader} variant='secondary' size='sm'>
+        <Button type='button' onClick={addHeader} variant='secondary' size='sm' className='flex items-center'>
           <Plus className='w-4 h-4 mr-1' />
           {t('addHeader')}
         </Button>
@@ -66,7 +62,13 @@ export const HeadersInput: React.FC<HeadersInputProps> = ({ headers, onChange })
                 placeholder={t('headerValue')}
                 className='flex-1'
               />
-              <Button onClick={() => removeHeader(key)} variant='secondary' size='sm' className='flex-shrink-0'>
+              <Button
+                type='button'
+                onClick={() => removeHeader(key)}
+                variant='secondary'
+                size='sm'
+                className='shrink-0'
+              >
                 <X className='w-4 h-4' />
               </Button>
             </div>
