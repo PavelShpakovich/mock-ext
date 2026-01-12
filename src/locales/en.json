@@ -63,6 +63,11 @@
     "validationError": "{{error}}",
     "variables": "Available variables: {{timestamp}}, {{uuid}}, {{random_number}}"
   },
+  "headers": "Response Headers",
+  "addHeader": "Add Header",
+  "noHeaders": "No headers configured",
+  "headerKey": "Header Name",
+  "headerValue": "Header Value",
   "settings": {
     "language": "Language",
     "theme": "Theme",

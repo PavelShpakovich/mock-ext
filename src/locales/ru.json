@@ -63,6 +63,11 @@
     "validationError": "{{error}}",
     "variables": "Доступные переменные: {{timestamp}}, {{uuid}}, {{random_number}}"
   },
+  "headers": "Заголовки ответа",
+  "addHeader": "Добавить заголовок",
+  "noHeaders": "Заголовки не настроены",
+  "headerKey": "Имя заголовка",
+  "headerValue": "Значение заголовка",
   "settings": {
     "language": "Язык",
     "theme": "Тема",

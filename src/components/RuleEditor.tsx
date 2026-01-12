@@ -6,6 +6,7 @@ import { Select } from './ui/Select';
 import { TextArea } from './ui/TextArea';
 import { Button } from './ui/Button';
 import { Card } from './ui/Card';
+import { HeadersInput } from './ui/HeadersInput';
 import { Maximize2, X } from 'lucide-react';
 import clsx from 'clsx';
 import { useI18n } from '../contexts/I18nContext';
@@ -27,6 +28,7 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, mockRequest, onSave, onCa
     statusCode: 200,
     contentType: 'application/json',
     responseBody: '',
+    headers: {} as Record<string, string>,
     delay: 0,
   });
 
@@ -49,6 +51,7 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, mockRequest, onSave, onCa
         statusCode: rule.statusCode,
         contentType: rule.contentType,
         responseBody,
+        headers: rule.headers || {},
         delay: rule.delay,
       });
       // Validate JSON on load
@@ -65,6 +68,7 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, mockRequest, onSave, onCa
         statusCode: 200,
         contentType: mockRequest.contentType || 'application/json',
         responseBody,
+        headers: {},
         delay: 0,
       });
       // Validate JSON on load
@@ -175,6 +179,7 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, mockRequest, onSave, onCa
       statusCode: formData.statusCode,
       response,
       contentType: formData.contentType,
+      headers: Object.keys(formData.headers).length > 0 ? formData.headers : undefined,
       delay: formData.delay,
       created: rule?.created || now,
       modified: now,
@@ -318,6 +323,8 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, mockRequest, onSave, onCa
           )}
           {errors.responseBody && <p className='text-red-400 text-sm mt-1'>{errors.responseBody}</p>}
         </div>
+
+        <HeadersInput headers={formData.headers} onChange={(headers) => handleChange('headers', headers)} />
 
         {isExpanded && (
           <div className='fixed inset-0 z-50 bg-black/95 flex flex-col' onClick={() => setIsExpanded(false)}>
