@@ -85,8 +85,8 @@ This extension is built with transparency in mind. The source code is available 
 
 If you have questions or concerns about this privacy policy, please contact us at:
 
-- GitHub Issues: [Your repository URL]
-- Email: [Your contact email]
+- GitHub Issues: https://github.com/PavelShpakovich/mock-ext/issues
+- Email: pavelekname@gmail.com
 
 ## Your Rights
 

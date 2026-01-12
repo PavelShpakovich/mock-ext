@@ -1,8 +1,9 @@
 {
   "manifest_version": 3,
   "name": "MockAPI",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Mock API requests for testing and development. Intercept and modify network requests with custom responses.",
+  "privacy_policy": "https://github.com/PavelShpakovich/mock-ext/blob/main/PRIVACY.md",
   "permissions": [
     "storage",
     "declarativeNetRequest",
