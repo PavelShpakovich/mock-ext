@@ -38,7 +38,11 @@
     "noRequests": "No requests logged",
     "noRequestsDesc": "Click Record button and interact with the page to capture requests",
     "mockThis": "Mock This",
-    "time": "Time"
+    "time": "Time",
+    "filters": "Filters",
+    "filterByMethod": "Filter by Method",
+    "filterByStatus": "Filter by Status Code",
+    "clearFilters": "Clear All Filters"
   },
   "editor": {
     "createRule": "Create Rule",

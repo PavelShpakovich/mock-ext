@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { RequestLog } from '../types';
 import RequestItem from './RequestItem';
 import { Input } from './ui/Input';
 import { Button } from './ui/Button';
 import { Card } from './ui/Card';
+import { FilterPanel, FilterState } from './ui/FilterPanel';
 import { Search, Trash2, Circle } from 'lucide-react';
 import { useI18n } from '../contexts/I18nContext';
 
@@ -25,11 +26,35 @@ const RequestsTab: React.FC<RequestsTabProps> = ({
   logRequests,
 }) => {
   const { t } = useI18n();
-  const filteredRequests = requests.filter(
-    (req) =>
+  const [filters, setFilters] = useState<FilterState>({
+    statusCodes: [],
+    methods: [],
+  });
+  const [isFilterExpanded, setIsFilterExpanded] = useState(false);
+
+  const matchesStatusCodeFilter = (statusCode: number | undefined, filterCodes: number[]): boolean => {
+    if (filterCodes.length === 0) return true;
+    if (!statusCode) return false;
+    return filterCodes.some((filterCode) => {
+      const statusRange = Math.floor(statusCode / 100) * 100;
+      return statusRange === filterCode;
+    });
+  };
+
+  const filteredRequests = requests.filter((req) => {
+    // Text search filter
+    const matchesSearch =
       req.url.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      req.method.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+      req.method.toLowerCase().includes(searchTerm.toLowerCase());
+
+    // Method filter
+    const matchesMethod = filters.methods.length === 0 || filters.methods.includes(req.method.toUpperCase());
+
+    // Status code filter
+    const matchesStatus = matchesStatusCodeFilter(req.statusCode, filters.statusCodes);
+
+    return matchesSearch && matchesMethod && matchesStatus;
+  });
 
   return (
     <div className='p-4'>
@@ -45,10 +70,26 @@ const RequestsTab: React.FC<RequestsTabProps> = ({
           />
         </div>
         {requests.length > 0 && (
-          <Button onClick={onClearLog} variant='danger' className='whitespace-nowrap flex items-center gap-2'>
-            <Trash2 className='w-4 h-4' />
-            {t('requests.clear')}
-          </Button>
+          <>
+            <div className='relative'>
+              <FilterPanel
+                filters={filters}
+                onFilterChange={setFilters}
+                onClear={() =>
+                  setFilters({
+                    statusCodes: [],
+                    methods: [],
+                  })
+                }
+                isExpanded={isFilterExpanded}
+                onToggle={() => setIsFilterExpanded(!isFilterExpanded)}
+              />
+            </div>
+            <Button onClick={onClearLog} variant='danger' className='whitespace-nowrap flex items-center gap-2'>
+              <Trash2 className='w-4 h-4' />
+              {t('requests.clear')}
+            </Button>
+          </>
         )}
       </div>
 
