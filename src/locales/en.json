@@ -38,10 +38,7 @@
     "noRequests": "No requests logged",
     "noRequestsDesc": "Click Record button and interact with the page to capture requests",
     "mockThis": "Mock This",
-    "time": "Time",
-    "copyURL": "Copy URL",
-    "copy": "Copy",
-    "copied": "Copied!"
+    "time": "Time"
   },
   "editor": {
     "createRule": "Create Rule",
