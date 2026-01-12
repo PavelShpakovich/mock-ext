@@ -161,6 +161,28 @@ const App: React.FC = () => {
     [rules]
   );
 
+  const handleDuplicateRule = useCallback(
+    async (id: string) => {
+      const ruleToDuplicate = rules.find((r) => r.id === id);
+      if (!ruleToDuplicate) return;
+
+      const now = Date.now();
+      const duplicatedRule: MockRule = {
+        ...ruleToDuplicate,
+        id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        name: `${ruleToDuplicate.name} (Copy)`,
+        created: now,
+        modified: now,
+      };
+
+      const updatedRules = [...rules, duplicatedRule];
+      setRules(updatedRules);
+      await Storage.saveRules(updatedRules);
+      chrome.runtime.sendMessage({ action: 'updateRules', rules: updatedRules });
+    },
+    [rules]
+  );
+
   const handleClearLog = useCallback(async () => {
     await Storage.clearRequestLog();
     setRequestLog([]);
@@ -201,6 +223,7 @@ const App: React.FC = () => {
           onSaveRule={handleSaveRule}
           onDeleteRule={handleDeleteRule}
           onToggleRule={handleToggleRule}
+          onDuplicateRule={handleDuplicateRule}
           onCancelEdit={() => setEditingRuleId(null)}
         />
       ) : (

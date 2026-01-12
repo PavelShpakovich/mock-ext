@@ -5,7 +5,7 @@ import { Card } from './ui/Card';
 import { MethodBadge, StatusCodeBadge } from './ui/Badge';
 import { Toggle } from './ui/Toggle';
 import { Button } from './ui/Button';
-import { Clock } from 'lucide-react';
+import { Clock, Copy } from 'lucide-react';
 import { useI18n } from '../contexts/I18nContext';
 
 interface RuleItemProps {
@@ -13,9 +13,10 @@ interface RuleItemProps {
   onEdit: () => void;
   onDelete: () => void;
   onToggle: () => void;
+  onDuplicate: () => void;
 }
 
-const RuleItem: React.FC<RuleItemProps> = ({ rule, onEdit, onDelete, onToggle }) => {
+const RuleItem: React.FC<RuleItemProps> = ({ rule, onEdit, onDelete, onToggle, onDuplicate }) => {
   const { t } = useI18n();
 
   return (
@@ -45,6 +46,10 @@ const RuleItem: React.FC<RuleItemProps> = ({ rule, onEdit, onDelete, onToggle })
 
         <div className='flex items-center gap-2 ml-4 flex-shrink-0'>
           <Toggle checked={rule.enabled} onChange={onToggle} />
+
+          <Button variant='ghost' size='icon' onClick={onDuplicate} title={t('rules.duplicate')}>
+            <Copy className='w-5 h-5' />
+          </Button>
 
           <Button variant='ghost' size='icon' onClick={onEdit} title={t('common.edit')}>
             <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>

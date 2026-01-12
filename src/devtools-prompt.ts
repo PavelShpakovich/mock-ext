@@ -69,8 +69,8 @@ function showDevToolsPrompt(language: string = 'en') {
           <span style="margin-right: 4px;">${
             language === 'ru' ? 'Нажмите' : 'Press'
           }</span><strong style="background: rgba(16, 185, 129, 0.15); padding: 2px 8px; border-radius: 4px; font-family: monospace; color: #10b981;">${shortcut}</strong><span style="margin-left: 4px;">${
-    t.message
-  }</span>
+            t.message
+          }</span>
         </div>
         <button id="mockapi-prompt-close" style="
           background: #10b981;

@@ -21,6 +21,7 @@
     "noRulesDesc": "Create your first mock rule to start intercepting requests",
     "edit": "Edit",
     "delete": "Delete",
+    "duplicate": "Duplicate",
     "method": "Method",
     "status": "Status",
     "delay": "Delay",

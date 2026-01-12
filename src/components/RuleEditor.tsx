@@ -188,7 +188,9 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, mockRequest, onSave, onCa
       try {
         const formatted = JSON.stringify(JSON.parse(formData.responseBody), null, 2);
         handleChange('responseBody', formatted);
-      } catch {}
+      } catch {
+        // JSON parsing already validated by isValidJSON
+      }
     }
   };
 
@@ -229,7 +231,11 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, mockRequest, onSave, onCa
             <option value='regex'>{t('editor.regex')}</option>
           </Select>
 
-          <Select label={t('editor.method')} value={formData.method} onChange={(e) => handleChange('method', e.target.value)}>
+          <Select
+            label={t('editor.method')}
+            value={formData.method}
+            onChange={(e) => handleChange('method', e.target.value)}
+          >
             <option value=''>{t('editor.anyMethod')}</option>
             <option value='GET'>GET</option>
             <option value='POST'>POST</option>

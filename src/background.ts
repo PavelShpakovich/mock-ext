@@ -115,9 +115,10 @@ async function handleMessage(message: MessageAction): Promise<MessageResponse> {
     case 'getSettings':
       return { success: true, data: settings };
 
-    case 'exportRules':
+    case 'exportRules': {
       const dataStr = JSON.stringify(mockRules, null, 2);
       return { success: true, data: dataStr };
+    }
 
     case 'startRecording':
       if (message.tabId !== undefined) {

@@ -17,6 +17,7 @@ interface RulesTabProps {
   onSaveRule: (rule: MockRule) => void;
   onDeleteRule: (id: string) => void;
   onToggleRule: (id: string) => void;
+  onDuplicateRule: (id: string) => void;
   onCancelEdit: () => void;
 }
 
@@ -29,6 +30,7 @@ const RulesTab: React.FC<RulesTabProps> = ({
   onSaveRule,
   onDeleteRule,
   onToggleRule,
+  onDuplicateRule,
   onCancelEdit,
 }) => {
   const { t } = useI18n();
@@ -98,6 +100,7 @@ const RulesTab: React.FC<RulesTabProps> = ({
                   onEdit={() => onEditRule(rule.id)}
                   onDelete={() => onDeleteRule(rule.id)}
                   onToggle={() => onToggleRule(rule.id)}
+                  onDuplicate={() => onDuplicateRule(rule.id)}
                 />
               ))}
             </div>
