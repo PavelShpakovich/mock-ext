@@ -300,29 +300,34 @@ This document outlines all planned improvements for the MockAPI extension, organ
 
 ## Phase 3: Advanced Features (Week 3-4)
 
-### 3.1 Keyboard Shortcuts
+### 3.1 Keyboard Shortcuts ✅ (Completed: Jan 12, 2026)
 
-- [ ] Create `useKeyboardShortcuts` hook
-- [ ] Implement shortcuts:
+- [x] Create `useKeyboardShortcuts` hook
+- [x] Implement shortcuts:
   - `Cmd/Ctrl + K`: Focus search
   - `Cmd/Ctrl + N`: New rule
   - `Cmd/Ctrl + S`: Save rule
   - `Cmd/Ctrl + R`: Toggle recording
   - `Escape`: Close editor
-- [ ] Add shortcuts help modal (?)
-- [ ] Update README with shortcuts documentation
+- [ ] Add shortcuts help modal (deferred)
+- [ ] Update README with shortcuts documentation (deferred)
 
-**Files to create:**
+**Files created:**
 
-- `src/hooks/useKeyboardShortcuts.ts`
+- `src/hooks/useKeyboardShortcuts.ts` ✅
 
-**Files to modify:**
+**Files modified:**
 
-- `src/components/App.tsx`
-- `src/components/RuleEditor.tsx`
-- `README.md`
+- `src/components/App.tsx` ✅
+- `src/components/RuleEditor.tsx` ✅
 
-**Estimated time:** 3-4 hours
+**Features:**
+- Cross-platform support (Cmd on Mac, Ctrl on Windows/Linux)
+- Shortcuts disabled when editing (except editor-specific)
+- Focus management for search inputs
+- Clean hook-based implementation
+
+**Actual time:** 2 hours
 
 ---
 
