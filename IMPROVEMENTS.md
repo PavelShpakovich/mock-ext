@@ -269,25 +269,16 @@ This document outlines all planned improvements for the MockAPI extension, organ
 
 ---
 
-### 2.5 Copy URL Feature in Request Log ✅ (Completed: Jan 12, 2026)
+### 2.5 Copy URL Feature in Request Log ❌ (Attempted: Jan 12, 2026)
 
 - [x] Add "Copy URL" button to `RequestItem.tsx`
 - [x] Implement clipboard API integration with `navigator.clipboard.writeText()`
 - [x] Add visual feedback (check icon + text toggle for 2 seconds)
 - [x] Update i18n translations
 
-**Files modified:**
+**Status:** Reverted due to clipboard API permissions policy issues in Chrome extension context. Feature was not essential for core functionality.
 
-- `src/components/RequestItem.tsx` ✅
-- `src/locales/en.json` ✅
-- `src/locales/ru.json` ✅
-
-**Features:**
-- Copy button next to Mock This button
-- Visual feedback: button shows Check icon and "Copied!" for 2 seconds
-- Full i18n support (EN/RU)
-
-**Actual time:** 45 minutes
+**Actual time:** 1 hour (implementation + troubleshooting + revert)
 
 ---
 
