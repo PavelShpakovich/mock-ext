@@ -300,7 +300,7 @@ This document outlines all planned improvements for the MockAPI extension, organ
 
 ## Phase 3: Advanced Features (Week 3-4)
 
-### 3.1 Keyboard Shortcuts ✅ (Completed: Jan 12, 2026)
+### 3.1 Keyboard Shortcuts ❌ (Attempted: Jan 12, 2026)
 
 - [x] Create `useKeyboardShortcuts` hook
 - [x] Implement shortcuts:
@@ -309,25 +309,19 @@ This document outlines all planned improvements for the MockAPI extension, organ
   - `Cmd/Ctrl + S`: Save rule
   - `Cmd/Ctrl + R`: Toggle recording
   - `Escape`: Close editor
-- [ ] Add shortcuts help modal (deferred)
-- [ ] Update README with shortcuts documentation (deferred)
 
-**Files created:**
+**Status:** Reverted. All useful keyboard shortcuts conflict with Chrome's native shortcuts:
+- Cmd/Ctrl+K = Chrome address bar search
+- Cmd/Ctrl+R = Page reload
+- Cmd/Ctrl+N = New window
+- Cmd/Ctrl+Shift+N = New incognito window
+- Cmd/Ctrl+T = New tab
 
-- `src/hooks/useKeyboardShortcuts.ts` ✅
+Browser shortcuts always take precedence over extension shortcuts in popup windows, making this feature non-functional.
 
-**Files modified:**
+**Lesson:** Verify browser shortcut conflicts before implementation. Extension popups cannot override browser shortcuts.
 
-- `src/components/App.tsx` ✅
-- `src/components/RuleEditor.tsx` ✅
-
-**Features:**
-- Cross-platform support (Cmd on Mac, Ctrl on Windows/Linux)
-- Shortcuts disabled when editing (except editor-specific)
-- Focus management for search inputs
-- Clean hook-based implementation
-
-**Actual time:** 2 hours
+**Actual time:** 2.5 hours (implementation + testing + revert)
 
 ---
 
