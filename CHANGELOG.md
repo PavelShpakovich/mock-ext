@@ -5,6 +5,29 @@ All notable changes to MockAPI Extension will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-01-13
+
+### Fixed
+
+- **HTTP Method Matching**: Rules now correctly filter by HTTP method (GET, POST, etc.) instead of matching all methods
+- **Regex Pattern Support**: Regex match type now properly uses `regexFilter` instead of `urlFilter` in declarativeNetRequest rules
+
+### Improved
+
+- **Logging Performance**: Request logging is now significantly faster
+  - Uses `chrome.storage.session` (in-memory) instead of `local` storage
+  - Implements batched writes every 500ms instead of per-request writes
+  - Reduces CPU/IO usage during high network activity
+- **Extension Reliability**: Added graceful handling for extension context invalidation
+  - Prevents crashes when service worker is terminated or extension is reloaded
+  - Implements fallback values for Chrome API calls
+  - Better error recovery for long-lived popup windows
+
+### Removed
+
+- Removed redundant `RuleMatcher` class - URL matching logic is now handled natively by the browser's declarativeNetRequest API
+- The internal helper functions for matching are only used for log filtering, not rule processing
+
 ## [1.1.0] - 2026-01-12
 
 ### Added

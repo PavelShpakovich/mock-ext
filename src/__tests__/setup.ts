@@ -8,6 +8,11 @@ import '@testing-library/jest-dom';
       set: jest.fn(),
       remove: jest.fn(),
     },
+    session: {
+      get: jest.fn(),
+      set: jest.fn(),
+      remove: jest.fn(),
+    },
   },
   runtime: {
     sendMessage: jest.fn(),

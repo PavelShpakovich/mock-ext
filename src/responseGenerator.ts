@@ -36,6 +36,25 @@ export class ResponseGenerator {
   }
 
   toDeclarativeRule(rule: MockRule, ruleId: number): chrome.declarativeNetRequest.Rule {
+    // Build the condition based on match type
+    const condition: chrome.declarativeNetRequest.RuleCondition = {
+      resourceTypes: [
+        chrome.declarativeNetRequest.ResourceType.XMLHTTPREQUEST,
+      ] as chrome.declarativeNetRequest.ResourceType[],
+    };
+
+    // Use regexFilter for regex match type, urlFilter otherwise
+    if (rule.matchType === 'regex') {
+      condition.regexFilter = rule.urlPattern;
+    } else {
+      condition.urlFilter = rule.urlPattern;
+    }
+
+    // Add request method filter if specified
+    if (rule.method) {
+      condition.requestMethods = [rule.method.toLowerCase() as chrome.declarativeNetRequest.RequestMethod];
+    }
+
     return {
       id: ruleId,
       priority: 1,
@@ -45,12 +64,7 @@ export class ResponseGenerator {
           url: this.createDataURL(rule),
         },
       },
-      condition: {
-        urlFilter: rule.urlPattern,
-        resourceTypes: [
-          chrome.declarativeNetRequest.ResourceType.XMLHTTPREQUEST,
-        ] as chrome.declarativeNetRequest.ResourceType[],
-      },
+      condition,
     };
   }
 }

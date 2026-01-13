@@ -1,11 +1,45 @@
 import { Storage } from './storage';
-import { RuleMatcher } from './ruleMatcher';
 import { ResponseGenerator } from './responseGenerator';
-import { MockRule, Settings, MessageAction, MessageResponse } from './types';
+import { MockRule, Settings, MessageAction, MessageResponse, MatchType } from './types';
+import { escapeRegExp } from './utils';
 
 // Initialize modules
-const matcher = new RuleMatcher();
 const responseGenerator = new ResponseGenerator();
+
+// URL matching helper functions (used for logging to check if request would be mocked)
+function matchURL(url: string, pattern: string, type: MatchType): boolean {
+  switch (type) {
+    case 'exact':
+      return url === pattern;
+    case 'wildcard': {
+      const regexPattern = pattern
+        .split('*')
+        .map((part) => escapeRegExp(part))
+        .join('.*');
+      try {
+        return new RegExp('^' + regexPattern + '$').test(url);
+      } catch {
+        return false;
+      }
+    }
+    case 'regex':
+      try {
+        return new RegExp(pattern).test(url);
+      } catch {
+        console.error('Invalid regex pattern:', pattern);
+        return false;
+      }
+    default:
+      return false;
+  }
+}
+
+function findMatchingRule(url: string, method: string, rules: MockRule[]): MockRule | undefined {
+  return rules.find(
+    (rule) =>
+      rule.enabled && matchURL(url, rule.urlPattern, rule.matchType) && (rule.method === '' || rule.method === method)
+  );
+}
 
 let mockRules: MockRule[] = [];
 let settings: Settings = {
@@ -173,7 +207,7 @@ chrome.webRequest.onCompleted.addListener(
       }
     }
 
-    const matchedRule = matcher.findMatchingRule(details.url, details.method, mockRules);
+    const matchedRule = findMatchingRule(details.url, details.method, mockRules);
 
     // Don't log mocked requests - they're being intercepted by the extension
     if (matchedRule && settings.enabled) {

@@ -231,8 +231,7 @@ mock-ext/
 │   ├── devtools-prompt.ts      # Content script for DevTools prompt notification
 │   ├── types.ts                # TypeScript type definitions
 │   ├── utils.ts                # Utility functions
-│   ├── storage.ts              # Chrome storage API wrapper
-│   ├── ruleMatcher.ts          # URL pattern matching logic
+│   ├── storage.ts              # Chrome storage API wrapper (with batched logging)
 │   ├── responseGenerator.ts    # Dynamic response generation
 │   ├── performance.ts          # Performance monitoring utilities
 │   ├── styles.css              # Global styles with Tailwind

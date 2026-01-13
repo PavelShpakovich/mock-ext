@@ -1,37 +1,75 @@
 import { Storage } from '../storage';
 import { MockRule, Settings, RequestLog } from '../types';
 
-// Mock chrome.storage.local
-const mockStorage: { [key: string]: any } = {};
+// Mock chrome.storage.local and session
+const mockLocalStorage: { [key: string]: any } = {};
+const mockSessionStorage: { [key: string]: any } = {};
 
-beforeEach(() => {
+// Use fake timers to control batching
+beforeEach(async () => {
+  jest.useFakeTimers();
+
   // Clear mock storage before each test
-  Object.keys(mockStorage).forEach((key) => delete mockStorage[key]);
+  Object.keys(mockLocalStorage).forEach((key) => delete mockLocalStorage[key]);
+  Object.keys(mockSessionStorage).forEach((key) => delete mockSessionStorage[key]);
 
   (globalThis as any).chrome.storage.local.get = jest.fn((keys: string | string[] | null) => {
     const result: any = {};
     if (typeof keys === 'string') {
-      result[keys] = mockStorage[keys];
+      result[keys] = mockLocalStorage[keys];
     } else if (Array.isArray(keys)) {
       keys.forEach((key) => {
-        result[key] = mockStorage[key];
+        result[key] = mockLocalStorage[key];
       });
     } else {
-      Object.assign(result, mockStorage);
+      Object.assign(result, mockLocalStorage);
     }
     return Promise.resolve(result);
   });
 
   (globalThis as any).chrome.storage.local.set = jest.fn((items: { [key: string]: any }) => {
-    Object.assign(mockStorage, items);
+    Object.assign(mockLocalStorage, items);
     return Promise.resolve();
   });
 
   (globalThis as any).chrome.storage.local.remove = jest.fn((keys: string | string[]) => {
     const keysArray = typeof keys === 'string' ? [keys] : keys;
-    keysArray.forEach((key) => delete mockStorage[key]);
+    keysArray.forEach((key) => delete mockLocalStorage[key]);
     return Promise.resolve();
   });
+
+  // Mock session storage
+  (globalThis as any).chrome.storage.session.get = jest.fn((keys: string | string[] | null) => {
+    const result: any = {};
+    if (typeof keys === 'string') {
+      result[keys] = mockSessionStorage[keys];
+    } else if (Array.isArray(keys)) {
+      keys.forEach((key) => {
+        result[key] = mockSessionStorage[key];
+      });
+    } else {
+      Object.assign(result, mockSessionStorage);
+    }
+    return Promise.resolve(result);
+  });
+
+  (globalThis as any).chrome.storage.session.set = jest.fn((items: { [key: string]: any }) => {
+    Object.assign(mockSessionStorage, items);
+    return Promise.resolve();
+  });
+
+  (globalThis as any).chrome.storage.session.remove = jest.fn((keys: string | string[]) => {
+    const keysArray = typeof keys === 'string' ? [keys] : keys;
+    keysArray.forEach((key) => delete mockSessionStorage[key]);
+    return Promise.resolve();
+  });
+
+  // Clear any lingering buffer state from previous tests
+  await Storage.clearRequestLog();
+});
+
+afterEach(() => {
+  jest.useRealTimers();
 });
 
 describe('Storage', () => {
@@ -53,7 +91,7 @@ describe('Storage', () => {
           modified: Date.now(),
         },
       ];
-      mockStorage.mockRules = mockRules;
+      mockLocalStorage.mockRules = mockRules;
 
       const rules = await Storage.getRules();
       expect(rules).toEqual(mockRules);
@@ -85,7 +123,7 @@ describe('Storage', () => {
       ];
 
       await Storage.saveRules(mockRules);
-      expect(mockStorage.mockRules).toEqual(mockRules);
+      expect(mockLocalStorage.mockRules).toEqual(mockRules);
     });
   });
 
@@ -97,7 +135,7 @@ describe('Storage', () => {
         showNotifications: false,
         language: 'en',
       };
-      mockStorage.settings = mockSettings;
+      mockLocalStorage.settings = mockSettings;
 
       const settings = await Storage.getSettings();
       expect(settings).toEqual(mockSettings);
@@ -120,7 +158,7 @@ describe('Storage', () => {
       };
 
       await Storage.saveSettings(mockSettings);
-      expect(mockStorage.settings).toEqual(mockSettings);
+      expect(mockLocalStorage.settings).toEqual(mockSettings);
     });
   });
 
@@ -135,7 +173,7 @@ describe('Storage', () => {
           matched: false,
         },
       ];
-      mockStorage.requestLog = mockLog;
+      mockSessionStorage.requestLog = mockLog;
 
       const log = await Storage.getRequestLog();
       expect(log).toEqual(mockLog);
@@ -148,7 +186,7 @@ describe('Storage', () => {
   });
 
   describe('addToRequestLog', () => {
-    it('should add entry to request log', async () => {
+    it('should add entry to request log (buffered)', async () => {
       const entry: RequestLog = {
         id: '1',
         url: 'https://api.example.com/test',
@@ -158,6 +196,7 @@ describe('Storage', () => {
       };
 
       await Storage.addToRequestLog(entry);
+      // Entry is in buffer, not yet flushed to storage
       const log = await Storage.getRequestLog();
       expect(log).toHaveLength(1);
       expect(log[0]).toEqual(entry);
@@ -187,27 +226,29 @@ describe('Storage', () => {
       expect(log[1]).toEqual(entry1);
     });
 
-    it('should limit log to 1000 entries', async () => {
-      // Add 1001 entries
-      for (let i = 0; i < 1001; i++) {
-        await Storage.addToRequestLog({
-          id: `${i}`,
-          url: `https://api.example.com/test${i}`,
-          method: 'GET',
-          timestamp: Date.now(),
-          matched: false,
-        });
-      }
+    it('should flush buffer after timeout', async () => {
+      const entry: RequestLog = {
+        id: '1',
+        url: 'https://api.example.com/test',
+        method: 'GET',
+        timestamp: Date.now(),
+        matched: false,
+      };
 
-      const log = await Storage.getRequestLog();
-      expect(log).toHaveLength(1000);
-      expect(log[0].id).toBe('1000'); // Most recent
+      await Storage.addToRequestLog(entry);
+
+      // Run timers to trigger flush
+      await jest.runAllTimersAsync();
+
+      // Now it should be in session storage
+      expect(mockSessionStorage.requestLog).toHaveLength(1);
+      expect(mockSessionStorage.requestLog[0]).toEqual(entry);
     });
   });
 
   describe('clearRequestLog', () => {
     it('should clear request log', async () => {
-      mockStorage.requestLog = [{ id: '1', url: 'test', method: 'GET', timestamp: Date.now(), matched: false }];
+      mockSessionStorage.requestLog = [{ id: '1', url: 'test', method: 'GET', timestamp: Date.now(), matched: false }];
 
       await Storage.clearRequestLog();
       const log = await Storage.getRequestLog();
@@ -238,9 +279,9 @@ describe('Storage', () => {
         { id: '1', url: 'https://example.com', method: 'GET', timestamp: Date.now(), matched: false },
       ];
 
-      mockStorage.mockRules = mockRules;
-      mockStorage.settings = mockSettings;
-      mockStorage.requestLog = mockLog;
+      mockLocalStorage.mockRules = mockRules;
+      mockLocalStorage.settings = mockSettings;
+      mockSessionStorage.requestLog = mockLog;
 
       const exported = await Storage.exportAll();
       expect(exported.mockRules).toEqual(mockRules);

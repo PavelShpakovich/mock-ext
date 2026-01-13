@@ -82,7 +82,7 @@ const RulesTab: React.FC<RulesTabProps> = ({
         />
       ) : (
         <>
-          <div className='mb-4 flex gap-3 items-center'>
+          <div className='mb-4 flex flex-col gap-3 sm:flex-row sm:items-center'>
             <div className='relative flex-1'>
               <Search className='absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500' />
               <Input
@@ -93,28 +93,30 @@ const RulesTab: React.FC<RulesTabProps> = ({
                 className='pl-10'
               />
             </div>
-            <Button
-              onClick={handleImportClick}
-              variant='secondary'
-              className='whitespace-nowrap flex items-center gap-2'
-            >
-              <Download className='w-4 h-4' />
-              {t('rules.import')}
-            </Button>
-            <Button
-              onClick={onExportRules}
-              variant='secondary'
-              className='whitespace-nowrap flex items-center gap-2'
-              disabled={rules.length === 0}
-            >
-              <Upload className='w-4 h-4' />
-              {t('rules.export')}
-            </Button>
-            <Button onClick={() => onEditRule('new')} className='whitespace-nowrap flex items-center gap-2'>
-              <Plus className='w-4 h-4' />
-              {t('rules.addRule')}
-            </Button>
-            <input ref={fileInputRef} type='file' accept='.json' onChange={handleFileChange} className='hidden' />
+            <div className='flex justify-center flex-wrap gap-3'>
+              <Button
+                onClick={handleImportClick}
+                variant='secondary'
+                className='whitespace-nowrap flex items-center gap-2'
+              >
+                <Download className='w-4 h-4' />
+                {t('rules.import')}
+              </Button>
+              <Button
+                onClick={onExportRules}
+                variant='secondary'
+                className='whitespace-nowrap flex items-center gap-2'
+                disabled={rules.length === 0}
+              >
+                <Upload className='w-4 h-4' />
+                {t('rules.export')}
+              </Button>
+              <Button onClick={() => onEditRule('new')} className='whitespace-nowrap flex items-center gap-2'>
+                <Plus className='w-4 h-4' />
+                {t('rules.addRule')}
+              </Button>
+              <input ref={fileInputRef} type='file' accept='.json' onChange={handleFileChange} className='hidden' />
+            </div>
           </div>
 
           {filteredRules.length === 0 ? (

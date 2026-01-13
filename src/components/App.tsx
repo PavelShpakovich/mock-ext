@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Storage } from '../storage';
 import { MockRule, Settings, RequestLog } from '../types';
 import { useI18n } from '../contexts/I18nContext';
+import { withContextCheck } from '../contextHandler';
 import Header from './Header';
 import RulesTab from './RulesTab';
 import RequestsTab from './RequestsTab';
@@ -23,7 +24,7 @@ const App: React.FC = () => {
   const [activeTabTitle, setActiveTabTitle] = useState<string>('');
 
   const loadRequestLog = useCallback(async () => {
-    const loadedRequestLog = await Storage.getRequestLog();
+    const loadedRequestLog = await withContextCheck(() => Storage.getRequestLog(), []);
     setRequestLog(loadedRequestLog);
   }, []);
 
@@ -44,9 +45,13 @@ const App: React.FC = () => {
 
   const loadData = async () => {
     const [loadedRules, loadedSettings, loadedRequestLog] = await Promise.all([
-      Storage.getRules(),
-      Storage.getSettings(),
-      Storage.getRequestLog(),
+      withContextCheck(() => Storage.getRules(), []),
+      withContextCheck(() => Storage.getSettings(), {
+        enabled: true,
+        logRequests: false,
+        showNotifications: false,
+      }),
+      withContextCheck(() => Storage.getRequestLog(), []),
     ]);
 
     setRules(loadedRules);
@@ -55,7 +60,9 @@ const App: React.FC = () => {
 
     if (loadedSettings.logRequests) {
       try {
-        const response = await chrome.runtime.sendMessage({ action: 'getRecordingStatus' });
+        const response = await withContextCheck(() => chrome.runtime.sendMessage({ action: 'getRecordingStatus' }), {
+          success: false,
+        });
         if (response.success && response.data?.tabId) {
           const tab = await chrome.tabs.get(response.data.tabId);
           setActiveTabTitle(tab.title || 'Unknown Tab');
@@ -71,7 +78,9 @@ const App: React.FC = () => {
       const newSettings = { ...settings, enabled };
       setSettings(newSettings);
       await Storage.saveSettings(newSettings);
-      chrome.runtime.sendMessage({ action: 'toggleMocking', enabled });
+      await withContextCheck(() => chrome.runtime.sendMessage({ action: 'toggleMocking', enabled })).catch(() => {
+        // Silent fail - context invalidated
+      });
     },
     [settings]
   );
@@ -95,10 +104,14 @@ const App: React.FC = () => {
             return;
           }
 
-          const response = await chrome.runtime.sendMessage({
-            action: 'startRecording',
-            tabId: webTab.id,
-          });
+          const response = await withContextCheck(
+            () =>
+              chrome.runtime.sendMessage({
+                action: 'startRecording',
+                tabId: webTab.id,
+              }),
+            { success: false }
+          );
 
           if (response?.success) {
             const newSettings = { ...settings, logRequests: true };
@@ -108,7 +121,9 @@ const App: React.FC = () => {
             setActiveTab('requests');
           }
         } else {
-          await chrome.runtime.sendMessage({ action: 'stopRecording' });
+          await withContextCheck(() => chrome.runtime.sendMessage({ action: 'stopRecording' })).catch(() => {
+            // Silent fail - context invalidated
+          });
           const newSettings = { ...settings, logRequests: false };
           setSettings(newSettings);
           await Storage.saveSettings(newSettings);
@@ -132,7 +147,11 @@ const App: React.FC = () => {
 
       setRules(updatedRules);
       await Storage.saveRules(updatedRules);
-      chrome.runtime.sendMessage({ action: 'updateRules', rules: updatedRules });
+      await withContextCheck(() => chrome.runtime.sendMessage({ action: 'updateRules', rules: updatedRules })).catch(
+        () => {
+          // Silent fail - context invalidated
+        }
+      );
       setEditingRuleId(null);
     },
     [editingRuleId, rules]
@@ -143,7 +162,11 @@ const App: React.FC = () => {
       const updatedRules = rules.filter((r) => r.id !== id);
       setRules(updatedRules);
       await Storage.saveRules(updatedRules);
-      chrome.runtime.sendMessage({ action: 'updateRules', rules: updatedRules });
+      await withContextCheck(() => chrome.runtime.sendMessage({ action: 'updateRules', rules: updatedRules })).catch(
+        () => {
+          // Silent fail - context invalidated
+        }
+      );
       if (editingRuleId === id) {
         setEditingRuleId(null);
       }
@@ -156,7 +179,11 @@ const App: React.FC = () => {
       const updatedRules = rules.map((r) => (r.id === id ? { ...r, enabled: !r.enabled } : r));
       setRules(updatedRules);
       await Storage.saveRules(updatedRules);
-      chrome.runtime.sendMessage({ action: 'updateRules', rules: updatedRules });
+      await withContextCheck(() => chrome.runtime.sendMessage({ action: 'updateRules', rules: updatedRules })).catch(
+        () => {
+          // Silent fail - context invalidated
+        }
+      );
     },
     [rules]
   );
@@ -178,7 +205,11 @@ const App: React.FC = () => {
       const updatedRules = [...rules, duplicatedRule];
       setRules(updatedRules);
       await Storage.saveRules(updatedRules);
-      chrome.runtime.sendMessage({ action: 'updateRules', rules: updatedRules });
+      await withContextCheck(() => chrome.runtime.sendMessage({ action: 'updateRules', rules: updatedRules })).catch(
+        () => {
+          // Silent fail - context invalidated
+        }
+      );
     },
     [rules]
   );
@@ -236,7 +267,11 @@ const App: React.FC = () => {
 
         setRules(updatedRules);
         await Storage.saveRules(updatedRules);
-        chrome.runtime.sendMessage({ action: 'updateRules', rules: updatedRules });
+        await withContextCheck(() => chrome.runtime.sendMessage({ action: 'updateRules', rules: updatedRules })).catch(
+          () => {
+            // Silent fail - context invalidated
+          }
+        );
 
         alert(t('rules.importSuccess').replace('{count}', newRules.length.toString()));
       } catch (error) {

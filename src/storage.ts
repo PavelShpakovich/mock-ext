@@ -1,5 +1,11 @@
 import { MockRule, Settings, StorageData, RequestLog } from './types';
 
+// Batch buffer for log entries
+let logBuffer: RequestLog[] = [];
+let flushTimeout: ReturnType<typeof setTimeout> | null = null;
+const BATCH_INTERVAL_MS = 500;
+const MAX_LOG_ENTRIES = 1000;
+
 export class Storage {
   private static readonly RULES_KEY = 'mockRules';
   private static readonly SETTINGS_KEY = 'settings';
@@ -32,28 +38,56 @@ export class Storage {
   }
 
   static async getRequestLog(): Promise<RequestLog[]> {
-    const result = await chrome.storage.local.get(this.LOG_KEY);
-    return result[this.LOG_KEY] || [];
+    // Include any pending buffered entries
+    const result = await chrome.storage.session.get(this.LOG_KEY);
+    const storedLog = result[this.LOG_KEY] || [];
+    // Prepend buffered entries (they are the most recent)
+    return [...logBuffer, ...storedLog];
   }
 
   static async saveRequestLog(log: RequestLog[]): Promise<void> {
-    await chrome.storage.local.set({ [this.LOG_KEY]: log });
+    await chrome.storage.session.set({ [this.LOG_KEY]: log });
   }
 
   static async addToRequestLog(entry: RequestLog): Promise<void> {
-    const log = await this.getRequestLog();
-    log.unshift(entry);
+    // Add to buffer instead of immediately writing to storage
+    logBuffer.unshift(entry);
 
-    // Keep only last 1000 entries
-    if (log.length > 1000) {
-      log.splice(1000);
+    // Schedule a flush if not already scheduled
+    if (!flushTimeout) {
+      flushTimeout = setTimeout(() => this.flushLogBuffer(), BATCH_INTERVAL_MS);
+    }
+  }
+
+  private static async flushLogBuffer(): Promise<void> {
+    if (logBuffer.length === 0) {
+      flushTimeout = null;
+      return;
     }
 
-    await this.saveRequestLog(log);
+    try {
+      const result = await chrome.storage.session.get(this.LOG_KEY);
+      const existingLog: RequestLog[] = result[this.LOG_KEY] || [];
+
+      // Prepend buffered entries and limit total size
+      const combinedLog = [...logBuffer, ...existingLog].slice(0, MAX_LOG_ENTRIES);
+
+      await chrome.storage.session.set({ [this.LOG_KEY]: combinedLog });
+    } catch (error) {
+      console.error('[MockAPI] Error flushing log buffer:', error);
+    } finally {
+      logBuffer = [];
+      flushTimeout = null;
+    }
   }
 
   static async clearRequestLog(): Promise<void> {
-    await chrome.storage.local.remove(this.LOG_KEY);
+    logBuffer = [];
+    if (flushTimeout) {
+      clearTimeout(flushTimeout);
+      flushTimeout = null;
+    }
+    await chrome.storage.session.remove(this.LOG_KEY);
   }
 
   static async exportAll(): Promise<StorageData> {
