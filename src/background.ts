@@ -1,10 +1,6 @@
 import { Storage } from './storage';
-import { ResponseGenerator } from './responseGenerator';
 import { MockRule, Settings, MessageAction, MessageResponse, MatchType } from './types';
 import { escapeRegExp } from './utils';
-
-// Initialize modules
-const responseGenerator = new ResponseGenerator();
 
 // URL matching helper functions (used for logging to check if request would be mocked)
 function matchURL(url: string, pattern: string, type: MatchType): boolean {
@@ -55,43 +51,35 @@ async function initialize(): Promise<void> {
   try {
     mockRules = await Storage.getRules();
     settings = await Storage.getSettings();
-    await updateDeclarativeRules();
+    await updateRulesInAllTabs();
   } catch (error) {
     console.error('[MockAPI] Initialization error:', error);
   }
 }
 
-// Update declarativeNetRequest rules
-async function updateDeclarativeRules(): Promise<void> {
-  if (!settings.enabled) {
-    // Clear all rules if mocking is disabled
-    const existingRules = await chrome.declarativeNetRequest.getDynamicRules();
-    const ruleIdsToRemove = existingRules.map((rule) => rule.id);
-    if (ruleIdsToRemove.length > 0) {
-      await chrome.declarativeNetRequest.updateDynamicRules({
-        removeRuleIds: ruleIdsToRemove,
-      });
+// Update rules in all tabs via content script
+async function updateRulesInAllTabs(): Promise<void> {
+  const enabledRules = settings.enabled ? mockRules.filter((rule) => rule.enabled) : [];
+
+  // Query all tabs
+  const tabs = await chrome.tabs.query({});
+
+  // Send rules to each tab's content script
+  for (const tab of tabs) {
+    if (tab.id && tab.url && !tab.url.startsWith('chrome://') && !tab.url.startsWith('chrome-extension://')) {
+      chrome.tabs
+        .sendMessage(tab.id, {
+          action: 'updateRulesInPage',
+          rules: enabledRules,
+        })
+        .catch(() => {
+          // Silent fail - content script may not be injected yet
+        });
     }
-    updateBadge(false);
-    return;
   }
 
-  const enabledRules = mockRules.filter((rule) => rule.enabled);
-
-  // Remove all existing rules
-  const existingRules = await chrome.declarativeNetRequest.getDynamicRules();
-  const ruleIdsToRemove = existingRules.map((rule) => rule.id);
-
-  // Convert enabled rules to declarative rules
-  const newRules = enabledRules.map((rule, index) => responseGenerator.toDeclarativeRule(rule, index + 1));
-
-  // Update rules
-  await chrome.declarativeNetRequest.updateDynamicRules({
-    removeRuleIds: ruleIdsToRemove,
-    addRules: newRules,
-  });
-
-  updateBadge(settings.enabled, enabledRules.length);
+  // Update badge
+  updateBadge(settings.enabled && enabledRules.length > 0, enabledRules.length);
 }
 
 // Update extension badge
@@ -132,7 +120,7 @@ async function handleMessage(message: MessageAction): Promise<MessageResponse> {
       if (message.rules) {
         mockRules = message.rules;
         await Storage.saveRules(mockRules);
-        await updateDeclarativeRules();
+        await updateRulesInAllTabs();
         return { success: true };
       }
       return { success: false, error: 'No rules provided' };
@@ -141,7 +129,7 @@ async function handleMessage(message: MessageAction): Promise<MessageResponse> {
       if (message.enabled !== undefined) {
         settings.enabled = message.enabled;
         await Storage.saveSettings(settings);
-        await updateDeclarativeRules();
+        await updateRulesInAllTabs();
         return { success: true };
       }
       return { success: false, error: 'No enabled state provided' };
@@ -170,6 +158,28 @@ async function handleMessage(message: MessageAction): Promise<MessageResponse> {
 
     case 'getRecordingStatus':
       return { success: true, data: { tabId: recordingTabId } };
+
+    case 'logMockedRequest':
+      // Log intercepted requests from content script
+      if (message.data) {
+        const { url, method, statusCode, ruleId, timestamp } = message.data;
+        const matchedRule = mockRules.find((r) => r.id === ruleId);
+
+        await Storage.addToRequestLog({
+          id: `${timestamp}-${Math.random().toString(36).substr(2, 9)}`,
+          url,
+          method,
+          timestamp,
+          matched: true,
+          ruleId,
+          statusCode,
+          contentType: matchedRule?.contentType || '',
+        });
+
+        return { success: true };
+      }
+      return { success: false, error: 'No request data provided' };
+
     default:
       return { success: false, error: 'Unknown action' };
   }
@@ -209,7 +219,8 @@ chrome.webRequest.onCompleted.addListener(
 
     const matchedRule = findMatchingRule(details.url, details.method, mockRules);
 
-    // Don't log mocked requests - they're being intercepted by the extension
+    // Don't log mocked requests - they're being intercepted at the client-side level
+    // The interceptor will send 'logMockedRequest' messages instead
     if (matchedRule && settings.enabled) {
       return;
     }

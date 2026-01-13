@@ -5,15 +5,6 @@ chrome.runtime.onMessage.addListener((message) => {
   }
 });
 
-async function getLanguage(): Promise<string> {
-  try {
-    const result = await chrome.storage.local.get('settings');
-    return result.settings?.language || 'en';
-  } catch {
-    return 'en';
-  }
-}
-
 const translations = {
   en: {
     title: 'Open DevTools',

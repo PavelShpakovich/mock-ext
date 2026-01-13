@@ -5,6 +5,96 @@ All notable changes to MockAPI Extension will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2026-01-13
+
+### 🚀 Major Architecture Change: Client-Side Interception
+
+**BREAKING CHANGE**: Completely redesigned the mocking architecture from Chrome's `declarativeNetRequest` API to client-side JavaScript interception. This is a major version bump due to fundamental changes in how requests are intercepted.
+
+### Added
+
+- **✅ Custom Status Codes**: Now correctly returns any HTTP status code (200, 404, 500, etc.)
+  - Previously always returned 200 OK due to declarativeNetRequest limitations
+  - Full control over status codes in both fetch() and XMLHttpRequest
+- **✅ Response Delays**: Fully functional response delay simulation
+  - Accurately simulates network latency for testing loading states
+  - Works with both fetch() and XMLHttpRequest
+- **✅ Client-Side Interception**: Intercepts requests at JavaScript level before they reach the network
+  - `interceptor.ts`: Runs in MAIN world, intercepts fetch() and XMLHttpRequest
+  - `content-script.ts`: Runs in ISOLATED world, bridges communication between page and extension
+  - Real-time rule updates without page reload
+- **🎨 Visual UI Improvements**: Enhanced visual design without text labels
+  - Blue accent (border-left) for request matching section
+  - Green accent (border-left) for response configuration section
+  - Clean, professional appearance with pure visual separation
+- **🐛 Comprehensive Debugging**: Added detailed logging for troubleshooting
+  - Request matching logs with emoji indicators
+  - Rule reception and update confirmations
+  - Interception success/failure tracking
+
+### Changed
+
+- **Architecture**: Migrated from `declarativeNetRequest` to client-side interception
+  - Removed dependency on Chrome's declarativeNetRequest API
+  - Requests are now intercepted in page context before network calls
+  - More reliable and powerful mocking capabilities
+- **Permissions**: Updated manifest permissions
+  - Removed `declarativeNetRequest` and `declarativeNetRequestFeedback`
+  - Added content scripts with web_accessible_resources
+- **Build System**: Added new webpack entry points
+  - `interceptor.js`: MAIN world script
+  - `content-script.js`: ISOLATED world bridge
+
+### Fixed
+
+- **NaN Errors**: Fixed multiple NaN parsing issues
+  - Validated numeric values (delay, statusCode) before use
+  - Proper Blob.size calculation for ProgressEvent
+  - Safe defaults for invalid numeric values
+- **Timing Issues**: Fixed race conditions in rule delivery
+  - Content script now waits for interceptor to load
+  - Rules are sent after interceptor initialization completes
+
+### Technical Details
+
+**Why This Change Was Necessary:**
+
+Chrome's `declarativeNetRequest` API with REDIRECT action has fundamental limitations:
+- Redirects to data URLs always return 200 OK status
+- No mechanism for response delays
+- Cannot capture response bodies
+- Limited header control
+
+**New Architecture:**
+
+```
+┌─────────────────────────────────────────────┐
+│          Extension Background               │
+│  - Manages rules in chrome.storage          │
+│  - Sends updates to all tabs                │
+└──────────────┬──────────────────────────────┘
+               │ chrome.tabs.sendMessage
+               ▼
+┌─────────────────────────────────────────────┐
+│       Content Script (ISOLATED world)       │
+│  - Injects interceptor into page            │
+│  - Forwards rule updates via postMessage    │
+│  - Logs mocked requests to background       │
+└──────────────┬──────────────────────────────┘
+               │ window.postMessage
+               ▼
+┌─────────────────────────────────────────────┐
+│        Interceptor (MAIN world)             │
+│  - Wraps window.fetch()                     │
+│  - Wraps window.XMLHttpRequest              │
+│  - Matches URLs, returns mock responses     │
+│  - Applies delays, status codes, headers    │
+└─────────────────────────────────────────────┘
+```
+
+**Migration Note:**
+Existing rules will continue to work. No user action required. The extension automatically uses the new interception method.
+
 ## [1.2.0] - 2026-01-13
 
 ### Fixed

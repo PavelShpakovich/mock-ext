@@ -1,6 +1,15 @@
 # MockAPI
 
-A powerful Chrome DevTools extension for mocking API requests during development and testing. Intercept HTTP requests and respond with custom data without modifying your application code.
+A powerful Chrome DevTools extension for mocking API requests during development and testing. Intercepts HTTP requests at the JavaScript level and responds with custom data, status codes, and delays without modifying your application code.
+
+## ✨ What's New in v2.0
+
+**🚀 Complete Architecture Redesign**: MockAPI now uses client-side JavaScript interception instead of Chrome's declarativeNetRequest API, unlocking full control over:
+
+- ✅ **Custom Status Codes** - Finally works! Return 404, 500, or any status code
+- ✅ **Response Delays** - Accurately simulate network latency
+- ✅ **Better Reliability** - Intercepts at JavaScript level before network calls
+- ✅ **Enhanced Debugging** - Comprehensive console logging for troubleshooting
 
 ## Features
 
@@ -9,8 +18,9 @@ A powerful Chrome DevTools extension for mocking API requests during development
 - **URL Pattern Matching**: Use wildcards (`*`), exact match, or regex patterns to match URLs
 - **HTTP Method Filtering**: Mock specific methods (GET, POST, PUT, DELETE, PATCH, OPTIONS, HEAD) or all methods
 - **Custom Responses**: Define JSON or text responses
-- **Status Code Control**: Set any HTTP status code (200, 404, 500, etc.)
-- **Response Delay**: Simulate network latency for testing loading states
+- **✨ Status Code Control**: Set any HTTP status code (200, 404, 500, etc.) - **Now fully functional!**
+- **✨ Response Delay**: Simulate network latency for testing loading states - **Now fully functional!**
+- **Client-Side Interception**: Intercepts fetch() and XMLHttpRequest before they reach the network
 
 ### 🔄 Dynamic Variables
 

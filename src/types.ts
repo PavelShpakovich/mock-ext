@@ -54,12 +54,16 @@ export interface MessageAction {
     | 'stopRecording'
     | 'getRecordingStatus'
     | 'captureResponse'
-    | 'setRecordingState';
+    | 'setRecordingState'
+    | 'updateRulesInPage'
+    | 'logMockedRequest'
+    | 'openDevTools';
   rules?: MockRule[];
   enabled?: boolean;
   tabId?: number;
   data?: any;
   isRecording?: boolean;
+  language?: 'en' | 'ru';
 }
 
 export interface MessageResponse {

@@ -1,26 +1,31 @@
 {
   "manifest_version": 3,
   "name": "MockAPI",
-  "version": "1.2.0",
-  "description": "Mock API requests for testing and development. Intercept and modify network requests with custom responses.",
+  "version": "2.0.0",
+  "description": "Mock API requests for testing and development. Intercept and modify network requests with custom responses, status codes, and delays.",
   "privacy_policy": "https://github.com/PavelShpakovich/mock-ext/blob/main/PRIVACY.md",
-  "permissions": [
-    "storage",
-    "declarativeNetRequest",
-    "declarativeNetRequestFeedback",
-    "activeTab",
-    "tabs",
-    "scripting",
-    "webRequest",
-    "contextMenus"
-  ],
+  "permissions": ["storage", "activeTab", "tabs", "scripting", "webRequest", "contextMenus"],
   "host_permissions": ["<all_urls>"],
   "devtools_page": "devtools.html",
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
       "js": ["devtools-prompt.js"],
-      "run_at": "document_idle"
+      "run_at": "document_idle",
+      "all_frames": false
+    },
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content-script.js"],
+      "run_at": "document_start",
+      "all_frames": true,
+      "world": "ISOLATED"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["interceptor.js"],
+      "matches": ["<all_urls>"]
     }
   ],
   "background": {
@@ -37,8 +42,5 @@
     "16": "icons/icon16.svg",
     "48": "icons/icon48.svg",
     "128": "icons/icon128.svg"
-  },
-  "declarative_net_request": {
-    "rule_resources": []
   }
 }

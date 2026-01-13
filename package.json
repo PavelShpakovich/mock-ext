@@ -1,7 +1,7 @@
 {
   "name": "mockapi-extension",
-  "version": "1.2.0",
-  "description": "Chrome extension for mocking API requests",
+  "version": "2.0.0",
+  "description": "Chrome extension for mocking API requests with full control over status codes, delays, and responses",
   "scripts": {
     "build": "webpack --mode production",
     "dev": "webpack --mode development --watch",

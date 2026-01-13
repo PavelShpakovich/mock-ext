@@ -11,6 +11,8 @@ module.exports = (env, argv) => {
       popup: './src/popup.tsx',
       devtools: './src/devtools.ts',
       'devtools-prompt': './src/devtools-prompt.ts',
+      'content-script': './src/content-script.ts',
+      interceptor: './src/interceptor.ts',
     },
     module: {
       rules: [
@@ -39,8 +41,13 @@ module.exports = (env, argv) => {
       usedExports: true,
       splitChunks: {
         chunks(chunk) {
-          // Don't split the background service worker and content scripts - they must be single files
-          return chunk.name !== 'background' && chunk.name !== 'devtools-prompt';
+          // Don't split the background service worker, content scripts, and interceptor - they must be single files
+          return (
+            chunk.name !== 'background' &&
+            chunk.name !== 'devtools-prompt' &&
+            chunk.name !== 'content-script' &&
+            chunk.name !== 'interceptor'
+          );
         },
         cacheGroups: {
           react: {

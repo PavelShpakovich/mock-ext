@@ -210,113 +210,127 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, mockRequest, onSave, onCa
           placeholder={t('editor.ruleNamePlaceholder')}
         />
 
-        <Input
-          label={t('editor.urlPattern')}
-          required
-          value={formData.urlPattern}
-          onChange={(e) => handleChange('urlPattern', e.target.value)}
-          error={errors.urlPattern}
-          placeholder={t('editor.urlPatternPlaceholder')}
-          className='font-mono text-sm'
-        />
-
-        <div className='grid grid-cols-2 gap-4'>
-          <Select
-            label={t('editor.matchType')}
-            value={formData.matchType}
-            onChange={(e) => handleChange('matchType', e.target.value)}
-          >
-            <option value='wildcard'>{t('editor.wildcard')}</option>
-            <option value='exact'>{t('editor.exact')}</option>
-            <option value='regex'>{t('editor.regex')}</option>
-          </Select>
-
-          <Select
-            label={t('editor.method')}
-            value={formData.method}
-            onChange={(e) => handleChange('method', e.target.value)}
-          >
-            <option value=''>{t('editor.anyMethod')}</option>
-            <option value='GET'>GET</option>
-            <option value='POST'>POST</option>
-            <option value='PUT'>PUT</option>
-            <option value='DELETE'>DELETE</option>
-            <option value='PATCH'>PATCH</option>
-            <option value='OPTIONS'>OPTIONS</option>
-            <option value='HEAD'>HEAD</option>
-          </Select>
-        </div>
-
-        <div className='grid grid-cols-2 gap-4'>
+        <div className='border-l-4 border-blue-500 bg-blue-500/5 rounded-r-lg pl-4 pr-4 py-4 space-y-4'>
           <Input
-            label={t('editor.statusCode')}
-            type='number'
-            value={formData.statusCode}
-            onChange={(e) => handleChange('statusCode', parseInt(e.target.value))}
-            min='100'
-            max='599'
+            label={t('editor.urlPattern')}
+            required
+            value={formData.urlPattern}
+            onChange={(e) => handleChange('urlPattern', e.target.value)}
+            error={errors.urlPattern}
+            placeholder={t('editor.urlPatternPlaceholder')}
+            className='font-mono text-sm'
           />
 
-          <Select
-            label={t('editor.contentType')}
-            value={formData.contentType}
-            onChange={(e) => {
-              const newContentType = e.target.value;
-              handleChange('contentType', newContentType);
-              // Re-validate when content type changes
-              if (newContentType === 'application/json') {
-                validateJSON(formData.responseBody);
-              } else {
-                setJsonValidation(null);
-              }
-            }}
-          >
-            <option value='application/json'>{t('editor.json')}</option>
-            <option value='text/plain'>{t('editor.text')}</option>
-          </Select>
+          <div className='grid grid-cols-2 gap-4'>
+            <Select
+              label={t('editor.matchType')}
+              value={formData.matchType}
+              onChange={(e) => handleChange('matchType', e.target.value)}
+            >
+              <option value='wildcard'>{t('editor.wildcard')}</option>
+              <option value='exact'>{t('editor.exact')}</option>
+              <option value='regex'>{t('editor.regex')}</option>
+            </Select>
+
+            <Select
+              label={t('editor.method')}
+              value={formData.method}
+              onChange={(e) => handleChange('method', e.target.value)}
+            >
+              <option value=''>{t('editor.anyMethod')}</option>
+              <option value='GET'>GET</option>
+              <option value='POST'>POST</option>
+              <option value='PUT'>PUT</option>
+              <option value='DELETE'>DELETE</option>
+              <option value='PATCH'>PATCH</option>
+              <option value='OPTIONS'>OPTIONS</option>
+              <option value='HEAD'>HEAD</option>
+            </Select>
+          </div>
         </div>
 
-        <div>
-          <TextArea
-            label={t('editor.responseBody')}
-            value={formData.responseBody}
-            onChange={(e) => handleChange('responseBody', e.target.value)}
-            rows={8}
-            placeholder={t('editor.responseBodyPlaceholder')}
-            className='font-mono text-sm custom-scrollbar'
-            action={
-              <div className='flex items-center gap-3'>
-                {formData.contentType === 'application/json' && (
+        <div className='border-l-4 border-green-500 bg-green-500/5 rounded-r-lg pl-4 pr-4 py-4 space-y-4'>
+          <div className='grid grid-cols-2 gap-4'>
+            <Input
+              label={t('editor.statusCode')}
+              type='number'
+              value={formData.statusCode}
+              onChange={(e) => handleChange('statusCode', parseInt(e.target.value))}
+              min='100'
+              max='599'
+            />
+
+            <Select
+              label={t('editor.contentType')}
+              value={formData.contentType}
+              onChange={(e) => {
+                const newContentType = e.target.value;
+                handleChange('contentType', newContentType);
+                // Re-validate when content type changes
+                if (newContentType === 'application/json') {
+                  validateJSON(formData.responseBody);
+                } else {
+                  setJsonValidation(null);
+                }
+              }}
+            >
+              <option value='application/json'>{t('editor.json')}</option>
+              <option value='text/plain'>{t('editor.text')}</option>
+            </Select>
+          </div>
+
+          <Input
+            label={t('editor.delay')}
+            type='number'
+            value={formData.delay}
+            onChange={(e) => handleChange('delay', parseInt(e.target.value) || 0)}
+            min='0'
+            step='100'
+            placeholder={t('editor.delayPlaceholder')}
+          />
+
+          <div>
+            <TextArea
+              label={t('editor.responseBody')}
+              value={formData.responseBody}
+              onChange={(e) => handleChange('responseBody', e.target.value)}
+              rows={8}
+              placeholder={t('editor.responseBodyPlaceholder')}
+              className='font-mono text-sm custom-scrollbar'
+              action={
+                <div className='flex items-center gap-3'>
+                  {formData.contentType === 'application/json' && (
+                    <button
+                      type='button'
+                      onClick={formatJSON}
+                      className='px-2 py-1 text-xs bg-green-600 hover:bg-green-500 text-white rounded font-medium cursor-pointer transition-colors'
+                    >
+                      {t('editor.beautify')}
+                    </button>
+                  )}
                   <button
                     type='button'
-                    onClick={formatJSON}
-                    className='px-2 py-1 text-xs bg-green-600 hover:bg-green-500 text-white rounded font-medium cursor-pointer transition-colors'
+                    onClick={() => setIsExpanded(true)}
+                    className='text-sm text-gray-400 hover:text-white flex items-center gap-1 cursor-pointer'
+                    title={t('common.expandEditor')}
                   >
-                    {t('editor.beautify')}
+                    <Maximize2 className='w-4 h-4' />
                   </button>
-                )}
-                <button
-                  type='button'
-                  onClick={() => setIsExpanded(true)}
-                  className='text-sm text-gray-400 hover:text-white flex items-center gap-1 cursor-pointer'
-                  title={t('common.expandEditor')}
-                >
-                  <Maximize2 className='w-4 h-4' />
-                </button>
-              </div>
-            }
-          />
-          {formData.contentType === 'application/json' && jsonValidation && (
-            <p
-              className={clsx('text-xs mt-1 italic', {
-                'text-gray-400': jsonValidation.isValid,
-                'text-red-400 font-medium': !jsonValidation.isValid,
-              })}
-            >
-              {jsonValidation.message}
-            </p>
-          )}
-          {errors.responseBody && <p className='text-red-400 text-sm mt-1'>{errors.responseBody}</p>}
+                </div>
+              }
+            />
+            {formData.contentType === 'application/json' && jsonValidation && (
+              <p
+                className={clsx('text-xs mt-1 italic', {
+                  'text-gray-400': jsonValidation.isValid,
+                  'text-red-400 font-medium': !jsonValidation.isValid,
+                })}
+              >
+                {jsonValidation.message}
+              </p>
+            )}
+            {errors.responseBody && <p className='text-red-400 text-sm mt-1'>{errors.responseBody}</p>}
+          </div>
         </div>
 
         {isExpanded && (
@@ -367,15 +381,6 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, mockRequest, onSave, onCa
             </div>
           </div>
         )}
-
-        <Input
-          label='Delay (ms)'
-          type='number'
-          value={formData.delay}
-          onChange={(e) => handleChange('delay', parseInt(e.target.value) || 0)}
-          min='0'
-          step='100'
-        />
 
         <div className='flex gap-3 pt-4'>
           <Button type='submit' className='flex-1 w-full'>
