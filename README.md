@@ -283,6 +283,8 @@ mock-ext/
 
 ### Performance Optimizations
 
+- **In-Memory Request Logging**: Uses `chrome.storage.session` (fast in-memory storage) instead of persistent storage for logs
+- **Batched Write Operations**: Logs are batch written every 500ms instead of on every request, reducing CPU/IO usage
 - **DevTools-Only Architecture**: No popup window management overhead
 - **Lightweight Content Script**: Minimal 2.8KB script only for showing prompts
 - **Request Filtering**: Only logs XMLHttpRequest/fetch, excludes images, CSS, fonts
@@ -340,7 +342,19 @@ npm run dev        # Development build with watch mode
 
 ### Recent Architectural Changes
 
-#### v1.1.0 - DevTools Integration (Current)
+#### v1.2.0 - Performance & Reliability (Current)
+
+Major improvements to logging performance and extension reliability:
+
+- **Session Storage Logging**: Switched from persistent local storage to in-memory session storage for request logs
+- **Batched Writes**: Request logs are batch written every 500ms instead of per-request, reducing I/O by up to 99%
+- **Context Invalidation Handling**: Added graceful handling for service worker termination and extension reloads
+- **Fallback Values**: Chrome API calls now have fallback values to prevent crashes
+- **Simplified URL Matching**: Removed internal `RuleMatcher` class - URL matching is now handled natively by declarativeNetRequest
+- **Fixed Regex Support**: Regex patterns now correctly use `regexFilter` instead of `urlFilter`
+- **Fixed HTTP Methods**: Rules now correctly filter by HTTP method instead of matching all methods
+
+#### v1.1.0 - DevTools Integration
 
 The extension now operates exclusively as a DevTools panel:
 
