@@ -199,5 +199,33 @@ describe('I18n Translations', () => {
       checkForEmpty(enTranslations, 'EN');
       checkForEmpty(ruTranslations, 'RU');
     });
+
+    it('should have time translation keys', () => {
+      expect(enTranslations.time).toBeDefined();
+      expect(enTranslations.time.justNow).toBe('just now');
+      expect(enTranslations.time.minutesAgo).toContain('{{count}}');
+      expect(enTranslations.time.hoursAgo).toContain('{{count}}');
+      expect(enTranslations.time.daysAgo).toContain('{{count}}');
+      expect(enTranslations.time.weeksAgo).toContain('{{count}}');
+
+      expect(ruTranslations.time).toBeDefined();
+      expect(ruTranslations.time.justNow).toBe('только что');
+      expect(ruTranslations.time.minutesAgo).toContain('{{count}}');
+      expect(ruTranslations.time.hoursAgo).toContain('{{count}}');
+      expect(ruTranslations.time.daysAgo).toContain('{{count}}');
+      expect(ruTranslations.time.weeksAgo).toContain('{{count}}');
+    });
+
+    it('should have plural forms in time translations', () => {
+      expect(enTranslations.time.minutesAgo).toContain('plural');
+      expect(enTranslations.time.hoursAgo).toContain('plural');
+      expect(enTranslations.time.daysAgo).toContain('plural');
+      expect(enTranslations.time.weeksAgo).toContain('plural');
+
+      expect(ruTranslations.time.minutesAgo).toContain('plural');
+      expect(ruTranslations.time.hoursAgo).toContain('plural');
+      expect(ruTranslations.time.daysAgo).toContain('plural');
+      expect(ruTranslations.time.weeksAgo).toContain('plural');
+    });
   });
 });

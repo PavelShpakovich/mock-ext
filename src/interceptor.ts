@@ -12,6 +12,8 @@ interface MockRule {
   contentType: string;
   delay: number;
   headers?: Record<string, string>;
+  matchCount?: number;
+  lastMatched?: number;
 }
 
 class RequestInterceptor {
@@ -142,6 +144,15 @@ class RequestInterceptor {
         method,
         ruleId,
         statusCode,
+      },
+      '*'
+    );
+
+    // Increment rule counter
+    window.postMessage(
+      {
+        type: 'MOCKAPI_INCREMENT_COUNTER',
+        ruleId,
       },
       '*'
     );

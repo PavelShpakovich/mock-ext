@@ -28,6 +28,7 @@
     "importError": "Ошибка импорта",
     "method": "Метод",
     "status": "Статус",
+    "lastMatched": "Последнее совпадение",
     "delay": "Задержка",
     "contentType": "Тип контента"
   },
@@ -102,5 +103,12 @@
     "mockThisTooltip": "Создать правило из этого запроса",
     "switchToRussian": "Переключить на русский",
     "switchToEnglish": "Переключить на английский"
+  },
+  "time": {
+    "justNow": "только что",
+    "minutesAgo": "{{count}} минут{{count, plural, one {у} few {ы} other {}}} назад",
+    "hoursAgo": "{{count}} час{{count, plural, one {} few {а} other {ов}}} назад",
+    "daysAgo": "{{count}} {{count, plural, one {день} few {дня} other {дней}}} назад",
+    "weeksAgo": "{{count}} недел{{count, plural, one {ю} few {и} other {ь}}} назад"
   }
 }

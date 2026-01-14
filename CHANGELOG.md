@@ -5,6 +5,29 @@ All notable changes to MockAPI Extension will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.1] - 2026-01-15
+
+### Added
+- **Rule Hit Counter**: Track rule usage with match counts and last matched timestamps
+  - Display hit count badge on each rule card
+  - Show relative time since last match ("just now", "5 minutes ago", etc.)
+  - Real-time updates when rules are matched
+  - Counter persists through rule edits
+  - Helps identify unused rules and debug which rules are triggering
+- **Internationalized Time Formatting**: Full i18n support for relative time display
+  - Proper plural forms for English ("1 minute", "2 minutes")
+  - Correct Russian grammar ("1 минуту", "2 минуты", "5 минут")
+  - Comprehensive plural form handling in translation context
+
+### Fixed
+- Plural form parsing in i18n context for nested curly braces
+- Time formatting now fully respects language settings
+
+### Tests
+- Added 5 comprehensive tests for time formatting utilities
+- Added 2 tests for time translation keys and plural forms
+- Total test count: 93 tests (all passing)
+
 ## [2.1.0] - 2026-01-15
 
 ### Added

@@ -165,6 +165,8 @@ function buildMockRule(formData: any, rule: MockRule | null): MockRule {
     headers: convertArrayToHeaders(formData.headers),
     created: rule?.created || now,
     modified: now,
+    matchCount: rule?.matchCount,
+    lastMatched: rule?.lastMatched,
   };
 }
 

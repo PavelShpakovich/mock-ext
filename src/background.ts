@@ -45,6 +45,23 @@ function getEnabledRules(): MockRule[] {
   return settings.enabled ? mockRules.filter((rule) => rule.enabled) : [];
 }
 
+// Helper: Increment rule match counter
+async function incrementRuleCounter(ruleId: string): Promise<void> {
+  const rule = mockRules.find((r) => r.id === ruleId);
+  if (!rule) return;
+
+  rule.matchCount = (rule.matchCount || 0) + 1;
+  rule.lastMatched = Date.now();
+
+  // Save updated rules
+  await Storage.saveRules(mockRules);
+
+  // Notify popup to reload rules for real-time counter updates
+  chrome.runtime.sendMessage({ action: 'rulesUpdated' }).catch(() => {
+    // Popup might not be open, ignore
+  });
+}
+
 // Update rules in all tabs via content script
 async function updateRulesInAllTabs(): Promise<void> {
   const enabledRules = getEnabledRules();
@@ -95,6 +112,13 @@ chrome.runtime.onMessage.addListener(
 
 async function handleMessage(message: MessageAction, sender?: chrome.runtime.MessageSender): Promise<MessageResponse> {
   switch (message.action) {
+    case 'incrementRuleCounter':
+      if (message.ruleId) {
+        await incrementRuleCounter(message.ruleId);
+        return { success: true };
+      }
+      return { success: false, error: 'Missing ruleId' };
+
     case 'updateRules':
       if (message.rules) {
         mockRules = message.rules;

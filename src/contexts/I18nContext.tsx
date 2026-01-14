@@ -67,9 +67,64 @@ export const I18nProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return key;
       }
 
-      // Replace parameters
+      // Replace parameters and handle plural forms
       if (params) {
-        return value.replace(/\{\{(\w+)\}\}/g, (match, paramKey) => {
+        // Handle plural forms: {{count, plural, one {...} few {...} other {...}}}
+        // Use a more robust regex that handles nested braces
+        value = value.replace(/\{\{(\w+),\s*plural,\s*((?:[^{}]|\{[^}]*\})*)\}\}/g, (match, paramKey, pluralRules) => {
+          const count = params[paramKey] as number;
+          if (count === undefined) return match;
+
+          // Parse plural rules manually to handle nested braces
+          let selectedForm = '';
+          const rulePattern = /(one|few|other)\s*\{([^}]*)\}/g;
+          const matches: Array<{ form: string; text: string }> = [];
+          let ruleMatch;
+
+          while ((ruleMatch = rulePattern.exec(pluralRules)) !== null) {
+            matches.push({
+              form: ruleMatch[1],
+              text: ruleMatch[2],
+            });
+          }
+
+          // Select appropriate form based on count and language
+          for (const { form, text } of matches) {
+            if (language === 'en') {
+              if (form === 'one' && count === 1) {
+                selectedForm = text;
+                break;
+              } else if (form === 'other' && count !== 1) {
+                selectedForm = text;
+                break;
+              }
+            } else if (language === 'ru') {
+              const lastDigit = count % 10;
+              const lastTwoDigits = count % 100;
+
+              if (form === 'one' && lastDigit === 1 && lastTwoDigits !== 11) {
+                selectedForm = text;
+                break;
+              } else if (
+                form === 'few' &&
+                lastDigit >= 2 &&
+                lastDigit <= 4 &&
+                (lastTwoDigits < 12 || lastTwoDigits > 14)
+              ) {
+                selectedForm = text;
+                break;
+              } else if (form === 'other') {
+                selectedForm = text;
+                break;
+              }
+            }
+          }
+
+          return selectedForm;
+        });
+
+        // Replace simple parameters
+        value = value.replace(/\{\{(\w+)\}\}/g, (match: string, paramKey: string) => {
           return params[paramKey] !== undefined ? String(params[paramKey]) : match;
         });
       }

@@ -28,6 +28,7 @@
     "importError": "Import failed",
     "method": "Method",
     "status": "Status",
+    "lastMatched": "Last matched",
     "delay": "Delay",
     "contentType": "Content Type"
   },
@@ -102,5 +103,12 @@
     "mockThisTooltip": "Create mock rule from this request",
     "switchToRussian": "Switch to Russian",
     "switchToEnglish": "Switch to English"
+  },
+  "time": {
+    "justNow": "just now",
+    "minutesAgo": "{{count}} minute{{count, plural, one {} other {s}}} ago",
+    "hoursAgo": "{{count}} hour{{count, plural, one {} other {s}}} ago",
+    "daysAgo": "{{count}} day{{count, plural, one {} other {s}}} ago",
+    "weeksAgo": "{{count}} week{{count, plural, one {} other {s}}} ago"
   }
 }

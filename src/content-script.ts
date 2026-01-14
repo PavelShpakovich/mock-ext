@@ -50,6 +50,10 @@ class ContentScriptBridge {
     if (event.data.type === 'MOCKAPI_RESPONSE_CAPTURED') {
       this.forwardCapturedResponse(event.data);
     }
+
+    if (event.data.type === 'MOCKAPI_INCREMENT_COUNTER') {
+      this.incrementRuleCounter(event.data.ruleId);
+    }
   }
 
   private async loadAndSendInitialRules(): Promise<void> {
@@ -97,6 +101,19 @@ class ContentScriptBridge {
         contentType: data.contentType,
         responseBody: data.responseBody,
         responseHeaders: data.responseHeaders,
+      })
+      .catch(() => {
+        // Extension context might be invalidated, ignore silently
+      });
+  }
+
+  private incrementRuleCounter(ruleId: string): void {
+    if (!chrome.runtime?.id) return;
+
+    chrome.runtime
+      .sendMessage({
+        action: 'incrementRuleCounter',
+        ruleId: ruleId,
       })
       .catch(() => {
         // Extension context might be invalidated, ignore silently

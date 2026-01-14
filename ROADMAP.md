@@ -4,11 +4,11 @@ This document outlines potential features and improvements for future releases.
 
 ## Active Priorities
 
-### 1. Custom Response Headers
+### 1. Custom Response Headers ✅
 
 **Estimated effort:** 30 minutes  
 **Value:** High  
-**Status:** Ready to implement
+**Status:** ✅ **COMPLETED in v2.1.0**
 
 - Add custom headers to mocked responses
 - **Use cases:**
@@ -17,15 +17,17 @@ This document outlines potential features and improvements for future releases.
   - Content-Disposition for file downloads
   - Cache-Control directives
 - **Implementation:**
-  - Add `headers` field to `MockRule` interface
-  - Update interceptor to include custom headers in Response
-  - Add header editor UI in rule editor
+  - ✅ Added `headers` field to `MockRule` interface
+  - ✅ Updated interceptor to include custom headers in Response
+  - ✅ Added header editor UI in rule editor
+  - ✅ Auto-population from captured response headers
+  - ✅ Response headers capture in request log
 
-### 2. Rule Hit Counter
+### 2. Rule Hit Counter ✅
 
 **Estimated effort:** 1 hour  
 **Value:** High  
-**Status:** Ready to implement
+**Status:** ✅ **COMPLETED in v2.1.1**
 
 - Track how many times each rule has been matched
 - Display "Last matched: X minutes ago" in UI
@@ -34,15 +36,18 @@ This document outlines potential features and improvements for future releases.
   - Debug which rules are actually triggering
   - Usage analytics
 - **Implementation:**
-  - Add `matchCount` and `lastMatched` to `MockRule`
-  - Increment counter on each match
-  - Display in rules list UI
+  - ✅ Added `matchCount` and `lastMatched` to `MockRule`
+  - ✅ Increment counter on each match in interceptor
+  - ✅ Display counter badge and relative time in rules list UI
+  - ✅ Real-time updates via message passing
+  - ✅ Counter preservation through rule edits
+  - ✅ Full internationalization support for time formatting
 
-### 3. Import/Export Enhancement
+### 3. Import/Export Enhancement ⏳
 
 **Estimated effort:** 30 minutes  
 **Value:** Medium  
-**Status:** Partially implemented
+**Status:** ⏳ **PARTIALLY COMPLETED**
 
 - **Current implementation:**
   - ✅ Export all rules (implemented)
@@ -113,10 +118,10 @@ This document outlines potential features and improvements for future releases.
 
 ## Recommended Implementation Order
 
-### Sprint 1 (This Week)
+### Sprint 1 (Current Week) ✅ In Progress
 
-1. Custom Response Headers (30 min)
-2. Rule Hit Counter (1 hour)
+1. ✅ Custom Response Headers (30 min) - **COMPLETED v2.1.0**
+2. 🚧 Rule Hit Counter (1 hour) - **NEXT**
 
 ### Sprint 2 (Next Week)
 
@@ -232,9 +237,9 @@ Suggestions for new features? Open an issue on GitHub with:
 
 ---
 
-**Last Updated:** January 14, 2026  
-**Current Version:** 2.0.3  
-**Next Milestone:** 2.1.0 (Custom Headers + Rule Hit Counter + CORS Auto-Fix)
+**Last Updated:** January 15, 2026  
+**Current Version:** 2.1.0  
+**Next Milestone:** 2.2.0 (Rule Hit Counter + CORS Auto-Fix + Rule Validation)
 
 ### 1. Custom Response Headers
 

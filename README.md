@@ -60,6 +60,11 @@ Example:
 
 ### 🛠️ Rule Management
 
+- **Rule Hit Counter**: Track rule usage in real-time (NEW in v2.1.1)
+  - See how many times each rule has been matched
+  - View "Last matched: X minutes ago" timestamps
+  - Identify unused rules for cleanup
+  - Debug which rules are actually triggering
 - **Export/Import**: Backup rules to JSON file and restore them later
 - **Duplicate Rules**: Quickly copy existing rules to create variations
 - **Enable/Disable**: Toggle rules on/off without deleting them

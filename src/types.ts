@@ -16,6 +16,8 @@ export interface MockRule {
   headers?: Record<string, string>;
   created: number;
   modified: number;
+  matchCount?: number;
+  lastMatched?: number;
 }
 
 export interface Settings {
@@ -60,6 +62,8 @@ export interface MessageAction {
     | 'updateRulesInPage'
     | 'logMockedRequest'
     | 'logCapturedResponse'
+    | 'incrementRuleCounter'
+    | 'rulesUpdated'
     | 'openDevTools';
   rules?: MockRule[];
   enabled?: boolean;

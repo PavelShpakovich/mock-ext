@@ -81,6 +81,19 @@ const App: React.FC = () => {
 
   useEffect(() => {
     loadData();
+
+    // Listen for rule updates from background (e.g., counter increments)
+    const messageListener = (message: any) => {
+      if (message.action === 'rulesUpdated') {
+        loadData();
+      }
+    };
+
+    chrome.runtime.onMessage.addListener(messageListener);
+
+    return () => {
+      chrome.runtime.onMessage.removeListener(messageListener);
+    };
   }, []);
 
   useEffect(() => {
