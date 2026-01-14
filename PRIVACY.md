@@ -26,15 +26,7 @@ The extension requires the following permissions to function:
 
 ### storage
 
-Used exclusively to save your mock rules and settings locally in your browser. No data leaves your device.
-
-### declarativeNetRequest
-
-Core functionality that intercepts HTTP requests matching your defined URL patterns and returns custom mock responses. This happens entirely within your browser.
-
-### declarativeNetRequestFeedback
-
-Monitors which mock rules are triggered, providing feedback in the DevTools panel about rule effectiveness.
+Used exclusively to save your mock rules, settings, and request logs locally in your browser. No data leaves your device.
 
 ### activeTab
 
@@ -44,17 +36,13 @@ Identifies the currently active browser tab to display its title in the recordin
 
 Queries basic tab information (title only) to show which tab's network traffic is being monitored.
 
-### scripting
+### contextMenus
 
-Injects a content script that displays a helpful notification when you click the extension icon, guiding you to the DevTools panel.
-
-### webRequest
-
-Logs HTTP request details (URL, method, timestamp) locally when recording mode is enabled. Helps you debug and monitor network traffic.
+Creates a context menu item on the extension icon that provides quick access to open the MockAPI DevTools panel.
 
 ### Host Permissions (<all_urls>)
 
-Required to intercept and mock HTTP requests to any domain you want to test. You maintain complete control over which URLs are mocked through your rule configurations.
+Required for content scripts to run on all websites to intercept fetch() and XMLHttpRequest at the JavaScript level. You maintain complete control over which specific URLs are mocked through your custom rule configurations. The extension uses client-side interception and does not access or transmit data from websites.
 
 ## Third-Party Services
 

@@ -1,10 +1,10 @@
 {
   "manifest_version": 3,
   "name": "MockAPI",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "Mock API requests for testing and development. Intercept and modify network requests with custom responses, status codes, and delays.",
   "privacy_policy": "https://github.com/PavelShpakovich/mock-ext/blob/main/PRIVACY.md",
-  "permissions": ["storage", "activeTab", "tabs", "scripting", "webRequest", "contextMenus"],
+  "permissions": ["storage", "activeTab", "tabs", "contextMenus"],
   "host_permissions": ["<all_urls>"],
   "devtools_page": "devtools.html",
   "content_scripts": [

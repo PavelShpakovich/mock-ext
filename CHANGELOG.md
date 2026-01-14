@@ -5,6 +5,17 @@ All notable changes to MockAPI Extension will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.2] - 2026-01-14
+
+### Fixed
+- **Chrome Web Store Compliance**: Removed unused `scripting` permission that caused extension rejection
+- **Removed Unused Permissions**: Removed `webRequest` permission (obsolete after v2.0.0 architecture migration)
+- **Updated Documentation**: Updated PRIVACY.md to accurately reflect only the permissions currently in use
+
+### Changed
+- **Permissions**: Reduced from 6 to 4 permissions (`storage`, `activeTab`, `tabs`, `contextMenus`)
+- Extension now uses only the minimum required permissions for its functionality
+
 ## [2.0.1] - 2026-01-14
 
 ### Fixed
