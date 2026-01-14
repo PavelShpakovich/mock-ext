@@ -5,6 +5,33 @@ All notable changes to MockAPI Extension will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.1] - 2026-01-14
+
+### Fixed
+- **Duplicate Request Logging**: Removed redundant webRequest.onCompleted listener that caused requests to appear twice in the recording tab
+- **Request Log Cleanup**: Request logging now exclusively handled by interceptor for better accuracy
+
+### Changed
+- **UUID Generation**: Migrated from custom UUID implementation to industry-standard `uuid` library (v4)
+  - Updated ID generation in background.ts, App.tsx, and RuleEditor.tsx
+  - Better RFC 4122 compliance and uniqueness guarantees
+- **Code Cleanup**: Removed obsolete responseGenerator.ts and unused utility functions
+  - Deleted: generateUUID(), isValidURL(), debounce() from utils.ts
+  - Removed: responseGenerator.ts and its test file
+  - Result: ~150 lines of dead code removed
+
+### Added
+- **Test Coverage**: Added 56 new unit tests across 3 new test suites
+  - contextHandler.test.ts (7 tests) - Extension context invalidation handling
+  - urlMatching.test.ts (36 tests) - URL matching logic (exact, wildcard, regex)
+  - i18n.test.ts (20 tests) - Translation validation and language parity
+- **Total Test Count**: 78 tests (up from 22)
+- **Coverage**: utils.ts (100%), contextHandler.ts (100%), storage.ts (85%)
+
+### Dependencies
+- Added: uuid@^11.0.2
+- Added: @types/uuid@^10.0.0
+
 ## [2.0.0] - 2026-01-13
 
 ### 🚀 Major Architecture Change: Client-Side Interception

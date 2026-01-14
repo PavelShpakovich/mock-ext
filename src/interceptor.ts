@@ -27,31 +27,13 @@ class RequestInterceptor {
   }
 
   private matchesRule(url: string, method: string): MockRule | null {
-    // eslint-disable-next-line no-console
-    console.log(`[MockAPI] 🔍 Checking ${method} ${url} against ${this.rules.length} rules`);
-
     for (const rule of this.rules) {
-      if (!rule.enabled) {
-        // eslint-disable-next-line no-console
-        console.log(`  ⏭️  Skipping disabled rule: ${rule.urlPattern}`);
-        continue;
-      }
-      if (rule.method && rule.method !== method) {
-        // eslint-disable-next-line no-console
-        console.log(`  ⏭️  Method mismatch: ${rule.method} !== ${method}`);
-        continue;
-      }
-      const matches = this.matchesPattern(url, rule.urlPattern, rule.matchType);
-      // eslint-disable-next-line no-console
-      console.log(`  ${matches ? '✅' : '❌'} ${rule.matchType}: ${rule.urlPattern}`);
-      if (matches) {
-        // eslint-disable-next-line no-console
-        console.log(`[MockAPI] 🎯 MATCH FOUND! Rule: ${rule.id}`);
+      if (!rule.enabled) continue;
+      if (rule.method && rule.method !== method) continue;
+      if (this.matchesPattern(url, rule.urlPattern, rule.matchType)) {
         return rule;
       }
     }
-    // eslint-disable-next-line no-console
-    console.log('[MockAPI] ❌ No matching rule found');
     return null;
   }
 
@@ -123,8 +105,6 @@ class RequestInterceptor {
       const rule = matchesRule(url, method.toUpperCase());
 
       if (rule) {
-        // eslint-disable-next-line no-console
-        console.log('[MockAPI] Intercepted fetch:', url);
         // Notify content script about interception
         window.postMessage(
           {
@@ -140,8 +120,43 @@ class RequestInterceptor {
         return createMockResponse(rule);
       }
 
-      // Not mocked - proceed with real request
-      return originalFetch.call(this, input, init);
+      // Not mocked - proceed with real request and capture response
+      const response = await originalFetch.call(this, input, init);
+
+      // Capture response body for logging (clone so original can still be used)
+      try {
+        const clonedResponse = response.clone();
+        const contentType = clonedResponse.headers.get('content-type') || '';
+
+        // Only capture text-based responses (JSON, HTML, etc.)
+        if (contentType.includes('json') || contentType.includes('text') || contentType.includes('xml')) {
+          clonedResponse
+            .text()
+            .then((body) => {
+              // Limit body size to prevent memory issues
+              const truncatedBody = body.length > 100000 ? body.substring(0, 100000) + '...[truncated]' : body;
+
+              window.postMessage(
+                {
+                  type: 'MOCKAPI_RESPONSE_CAPTURED',
+                  url,
+                  method,
+                  statusCode: response.status,
+                  contentType: contentType.split(';')[0].trim(),
+                  responseBody: truncatedBody,
+                },
+                '*'
+              );
+            })
+            .catch(() => {
+              // Failed to read body - ignore
+            });
+        }
+      } catch (e) {
+        // Failed to clone/read response - ignore
+      }
+
+      return response;
     };
   }
 
@@ -265,12 +280,6 @@ class RequestInterceptor {
       if (event.source !== window) return;
       if (event.data.type === 'MOCKAPI_UPDATE_RULES') {
         this.rules = event.data.rules;
-        // eslint-disable-next-line no-console
-        console.log('[MockAPI] 📥 Rules received and updated:', this.rules.length, 'rules');
-        this.rules.forEach((rule) => {
-          // eslint-disable-next-line no-console
-          console.log(`  - ${rule.enabled ? '✅' : '❌'} ${rule.method || 'ANY'} ${rule.matchType} ${rule.urlPattern}`);
-        });
       }
     });
   }
@@ -324,8 +333,6 @@ declare global {
 
 if (!window.__MOCKAPI_INTERCEPTOR__) {
   window.__MOCKAPI_INTERCEPTOR__ = new RequestInterceptor();
-  // eslint-disable-next-line no-console
-  console.log('[MockAPI] Interceptor initialized');
 }
 
 export {};

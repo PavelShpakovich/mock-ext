@@ -1,41 +1,7 @@
+import { v4 as uuidv4 } from 'uuid';
 import { Storage } from './storage';
-import { MockRule, Settings, MessageAction, MessageResponse, MatchType } from './types';
-import { escapeRegExp } from './utils';
-
-// URL matching helper functions (used for logging to check if request would be mocked)
-function matchURL(url: string, pattern: string, type: MatchType): boolean {
-  switch (type) {
-    case 'exact':
-      return url === pattern;
-    case 'wildcard': {
-      const regexPattern = pattern
-        .split('*')
-        .map((part) => escapeRegExp(part))
-        .join('.*');
-      try {
-        return new RegExp('^' + regexPattern + '$').test(url);
-      } catch {
-        return false;
-      }
-    }
-    case 'regex':
-      try {
-        return new RegExp(pattern).test(url);
-      } catch {
-        console.error('Invalid regex pattern:', pattern);
-        return false;
-      }
-    default:
-      return false;
-  }
-}
-
-function findMatchingRule(url: string, method: string, rules: MockRule[]): MockRule | undefined {
-  return rules.find(
-    (rule) =>
-      rule.enabled && matchURL(url, rule.urlPattern, rule.matchType) && (rule.method === '' || rule.method === method)
-  );
-}
+import { MockRule, Settings, MessageAction, MessageResponse } from './types';
+import { findMatchingRule } from './helpers/urlMatching';
 
 let mockRules: MockRule[] = [];
 let settings: Settings = {
@@ -97,12 +63,8 @@ function updateBadge(enabled: boolean, count?: number): void {
 
 // Handle messages from popup
 chrome.runtime.onMessage.addListener(
-  (
-    message: MessageAction,
-    _sender: chrome.runtime.MessageSender,
-    sendResponse: (response: MessageResponse) => void
-  ) => {
-    handleMessage(message)
+  (message: MessageAction, sender: chrome.runtime.MessageSender, sendResponse: (response: MessageResponse) => void) => {
+    handleMessage(message, sender)
       .then((response) => sendResponse(response))
       .catch((error) => {
         console.error('[MockAPI] Message handler error:', error);
@@ -114,7 +76,7 @@ chrome.runtime.onMessage.addListener(
   }
 );
 
-async function handleMessage(message: MessageAction): Promise<MessageResponse> {
+async function handleMessage(message: MessageAction, sender?: chrome.runtime.MessageSender): Promise<MessageResponse> {
   switch (message.action) {
     case 'updateRules':
       if (message.rules) {
@@ -128,6 +90,12 @@ async function handleMessage(message: MessageAction): Promise<MessageResponse> {
     case 'toggleMocking':
       if (message.enabled !== undefined) {
         settings.enabled = message.enabled;
+
+        // If disabling extension, clear recording tab ID
+        if (!message.enabled) {
+          recordingTabId = null;
+        }
+
         await Storage.saveSettings(settings);
         await updateRulesInAllTabs();
         return { success: true };
@@ -159,6 +127,28 @@ async function handleMessage(message: MessageAction): Promise<MessageResponse> {
     case 'getRecordingStatus':
       return { success: true, data: { tabId: recordingTabId } };
 
+    case 'logCapturedResponse':
+      // Log captured response from interceptor (only if from recording tab)
+      if (message.url && message.method && recordingTabId !== null && sender?.tab?.id === recordingTabId) {
+        const matchedRule = findMatchingRule(message.url, message.method, mockRules);
+
+        // Don't log if it's a mocked request and extension is enabled
+        if (!(matchedRule && settings.enabled)) {
+          await Storage.addToRequestLog({
+            id: uuidv4(),
+            url: message.url,
+            method: message.method,
+            timestamp: Date.now(),
+            matched: !!matchedRule,
+            ruleId: matchedRule?.id,
+            statusCode: message.statusCode || 200,
+            contentType: message.contentType || '',
+            responseBody: message.responseBody || '',
+          });
+        }
+      }
+      return { success: true };
+
     case 'logMockedRequest':
       // Log intercepted requests from content script
       if (message.data) {
@@ -166,7 +156,7 @@ async function handleMessage(message: MessageAction): Promise<MessageResponse> {
         const matchedRule = mockRules.find((r) => r.id === ruleId);
 
         await Storage.addToRequestLog({
-          id: `${timestamp}-${Math.random().toString(36).substr(2, 9)}`,
+          id: uuidv4(),
           url,
           method,
           timestamp,
@@ -184,74 +174,6 @@ async function handleMessage(message: MessageAction): Promise<MessageResponse> {
       return { success: false, error: 'Unknown action' };
   }
 }
-
-// Map to track recent requests and avoid duplicates (URL+method as key)
-const recentRequests = new Map<string, number>();
-
-// Listen for web requests
-chrome.webRequest.onCompleted.addListener(
-  async (details) => {
-    if (recordingTabId === null || details.tabId !== recordingTabId) {
-      return;
-    }
-
-    if (details.tabId < 0 || details.url.startsWith('chrome-extension://') || details.url.startsWith('data:')) {
-      return;
-    }
-
-    const requestKey = `${details.url}:${details.method}`;
-    const now = Date.now();
-
-    // Simple deduplication (within 500ms)
-    const lastSeen = recentRequests.get(requestKey);
-    if (lastSeen && now - lastSeen < 500) {
-      return;
-    }
-
-    // Get content-type from response headers
-    let contentType = '';
-    if (details.responseHeaders) {
-      const contentTypeHeader = details.responseHeaders.find((h) => h.name.toLowerCase() === 'content-type');
-      if (contentTypeHeader && contentTypeHeader.value) {
-        contentType = contentTypeHeader.value.split(';')[0].trim();
-      }
-    }
-
-    const matchedRule = findMatchingRule(details.url, details.method, mockRules);
-
-    // Don't log mocked requests - they're being intercepted at the client-side level
-    // The interceptor will send 'logMockedRequest' messages instead
-    if (matchedRule && settings.enabled) {
-      return;
-    }
-
-    await Storage.addToRequestLog({
-      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      url: details.url,
-      method: details.method,
-      timestamp: now,
-      matched: !!matchedRule,
-      ruleId: matchedRule?.id,
-      statusCode: details.statusCode,
-      contentType,
-    });
-
-    // Track this request
-    recentRequests.set(requestKey, now);
-
-    // Clean up old entries (older than 2 seconds)
-    for (const [key, timestamp] of recentRequests.entries()) {
-      if (now - timestamp > 2000) {
-        recentRequests.delete(key);
-      }
-    }
-  },
-  {
-    urls: ['<all_urls>'],
-    types: ['xmlhttprequest'], // Only capture fetch/XHR requests
-  },
-  ['responseHeaders']
-);
 
 // Clear recording tab if it's closed
 chrome.tabs.onRemoved.addListener((tabId) => {

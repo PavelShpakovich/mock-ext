@@ -5,6 +5,7 @@ import { Button } from './ui/Button';
 import { Card } from './ui/Card';
 import { Clock, Network } from 'lucide-react';
 import { useI18n } from '../contexts/I18nContext';
+import { formatTime } from '../helpers/formatting';
 
 interface RequestItemProps {
   request: RequestLog;
@@ -13,10 +14,6 @@ interface RequestItemProps {
 
 const RequestItem: React.FC<RequestItemProps> = ({ request, onMock }) => {
   const { t } = useI18n();
-  const formatTime = (timestamp: number) => {
-    const date = new Date(timestamp);
-    return date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-  };
 
   return (
     <Card hoverEffect={true}>

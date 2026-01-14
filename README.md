@@ -439,6 +439,35 @@ Previously attempted to capture response bodies using content scripts running in
 - If you experience slowness, try disabling other extensions
 - Check browser console for unrelated errors
 
+## Testing
+
+MockAPI has comprehensive test coverage for critical business logic:
+
+### Test Suites
+
+- **78 unit tests** covering URL matching, storage, utilities, context handling, and translations
+- **Coverage highlights**:
+  - URL matching logic: 100%
+  - Context handler: 100%
+  - Utils: 100%
+  - Storage: 85%
+
+### Running Tests
+
+```bash
+npm test                 # Run all tests
+npm run test:watch      # Watch mode
+npm run test:coverage   # Coverage report
+```
+
+### Test Structure
+
+- `src/__tests__/utils.test.ts` - Utility functions
+- `src/__tests__/storage.test.ts` - Storage operations
+- `src/__tests__/contextHandler.test.ts` - Extension context handling
+- `src/__tests__/urlMatching.test.ts` - URL pattern matching (exact, wildcard, regex)
+- `src/__tests__/i18n.test.ts` - Translation validation
+
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.

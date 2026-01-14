@@ -1,20 +1,8 @@
-import { generateUUID, isValidJSON, isValidURL, escapeRegExp, debounce, formatDate } from '../utils';
+import { isValidJSON } from '../helpers/validation';
+import { escapeRegExp } from '../helpers/string';
+import { formatDate } from '../helpers/formatting';
 
 describe('utils', () => {
-  describe('generateUUID', () => {
-    it('should generate a valid UUID v4 format', () => {
-      const uuid = generateUUID();
-      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-      expect(uuid).toMatch(uuidRegex);
-    });
-
-    it('should generate unique UUIDs', () => {
-      const uuid1 = generateUUID();
-      const uuid2 = generateUUID();
-      expect(uuid1).not.toBe(uuid2);
-    });
-  });
-
   describe('isValidJSON', () => {
     it('should return true for valid JSON strings', () => {
       expect(isValidJSON('{}')).toBe(true);
@@ -38,20 +26,6 @@ describe('utils', () => {
     });
   });
 
-  describe('isValidURL', () => {
-    it('should return true for valid URLs', () => {
-      expect(isValidURL('https://example.com')).toBe(true);
-      expect(isValidURL('http://example.com/path')).toBe(true);
-      expect(isValidURL('https://example.com:8080/path?query=value')).toBe(true);
-    });
-
-    it('should return false for invalid URLs', () => {
-      expect(isValidURL('not a url')).toBe(false);
-      expect(isValidURL('example.com')).toBe(false);
-      expect(isValidURL('')).toBe(false);
-    });
-  });
-
   describe('escapeRegExp', () => {
     it('should escape special regex characters', () => {
       expect(escapeRegExp('hello.world')).toBe('hello\\.world');
@@ -69,43 +43,6 @@ describe('utils', () => {
 
     it('should handle empty strings', () => {
       expect(escapeRegExp('')).toBe('');
-    });
-  });
-
-  describe('debounce', () => {
-    jest.useFakeTimers();
-
-    it('should delay function execution', () => {
-      const mockFn = jest.fn();
-      const debouncedFn = debounce(mockFn, 500);
-
-      debouncedFn();
-      expect(mockFn).not.toHaveBeenCalled();
-
-      jest.advanceTimersByTime(500);
-      expect(mockFn).toHaveBeenCalledTimes(1);
-    });
-
-    it('should cancel previous calls', () => {
-      const mockFn = jest.fn();
-      const debouncedFn = debounce(mockFn, 500);
-
-      debouncedFn();
-      debouncedFn();
-      debouncedFn();
-
-      jest.advanceTimersByTime(500);
-      expect(mockFn).toHaveBeenCalledTimes(1);
-    });
-
-    it('should pass arguments correctly', () => {
-      const mockFn = jest.fn();
-      const debouncedFn = debounce(mockFn, 500);
-
-      debouncedFn('arg1', 'arg2');
-      jest.advanceTimersByTime(500);
-
-      expect(mockFn).toHaveBeenCalledWith('arg1', 'arg2');
     });
   });
 

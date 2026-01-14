@@ -79,6 +79,7 @@ const Header: React.FC<HeaderProps> = ({
               variant={logRequests ? 'danger' : 'secondary'}
               size='sm'
               className='flex items-center gap-1.5'
+              disabled={!enabled}
             >
               {logRequests ? (
                 <>

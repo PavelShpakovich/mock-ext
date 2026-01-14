@@ -57,12 +57,19 @@ export interface MessageAction {
     | 'setRecordingState'
     | 'updateRulesInPage'
     | 'logMockedRequest'
+    | 'logCapturedResponse'
     | 'openDevTools';
   rules?: MockRule[];
   enabled?: boolean;
   tabId?: number;
   data?: any;
   isRecording?: boolean;
+  url?: string;
+  method?: string;
+  statusCode?: number;
+  contentType?: string;
+  responseBody?: string;
+  ruleId?: string;
   language?: 'en' | 'ru';
 }
 

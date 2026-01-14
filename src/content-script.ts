@@ -59,6 +59,22 @@ class ContentScriptBridge {
             // Extension context might be invalidated
           });
       }
+
+      if (event.data.type === 'MOCKAPI_RESPONSE_CAPTURED') {
+        // Forward captured response to background
+        chrome.runtime
+          .sendMessage({
+            action: 'logCapturedResponse',
+            url: event.data.url,
+            method: event.data.method,
+            statusCode: event.data.statusCode,
+            contentType: event.data.contentType,
+            responseBody: event.data.responseBody,
+          })
+          .catch(() => {
+            // Extension context might be invalidated
+          });
+      }
     });
   }
 
@@ -72,14 +88,12 @@ class ContentScriptBridge {
         script.onload = () => {
           script.remove();
           this.hasInjectedInterceptor = true;
-          // eslint-disable-next-line no-console
-          console.log('[MockAPI] ✅ Interceptor script injected and loaded');
           // Wait a bit for the interceptor to initialize
           setTimeout(() => resolve(), 100);
         };
         script.onerror = () => {
           // eslint-disable-next-line no-console
-          console.error('[MockAPI] ❌ Failed to inject interceptor script');
+          console.error('[MockAPI] Failed to inject interceptor script');
           script.remove();
           reject(new Error('Failed to inject interceptor'));
         };
@@ -93,12 +107,6 @@ class ContentScriptBridge {
   }
 
   private updatePageRules(rules: MockRule[]) {
-    // eslint-disable-next-line no-console
-    console.log('[MockAPI] 📤 Sending rules to page:', rules.length, 'rules');
-    rules.forEach((rule) => {
-      // eslint-disable-next-line no-console
-      console.log(`  - ${rule.enabled ? '✅' : '❌'} ${rule.method || 'ANY'} ${rule.urlPattern}`);
-    });
     window.postMessage(
       {
         type: 'MOCKAPI_UPDATE_RULES',

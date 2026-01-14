@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { RequestLog } from '../types';
 import RequestItem from './RequestItem';
+import { matchesStatusCodeFilter } from '../helpers/filtering';
 import { Input } from './ui/Input';
 import { Button } from './ui/Button';
 import { Card } from './ui/Card';
@@ -31,15 +32,6 @@ const RequestsTab: React.FC<RequestsTabProps> = ({
     methods: [],
   });
   const [isFilterExpanded, setIsFilterExpanded] = useState(false);
-
-  const matchesStatusCodeFilter = (statusCode: number | undefined, filterCodes: number[]): boolean => {
-    if (filterCodes.length === 0) return true;
-    if (!statusCode) return false;
-    return filterCodes.some((filterCode) => {
-      const statusRange = Math.floor(statusCode / 100) * 100;
-      return statusRange === filterCode;
-    });
-  };
 
   const filteredRequests = requests.filter((req) => {
     // Text search filter

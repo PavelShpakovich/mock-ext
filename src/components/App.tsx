@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { v4 as uuidv4 } from 'uuid';
 import { Storage } from '../storage';
 import { MockRule, Settings, RequestLog } from '../types';
 import { useI18n } from '../contexts/I18nContext';
@@ -76,6 +77,13 @@ const App: React.FC = () => {
   const handleGlobalToggle = useCallback(
     async (enabled: boolean) => {
       const newSettings = { ...settings, enabled };
+
+      // If disabling extension, also stop recording
+      if (!enabled && settings.logRequests) {
+        newSettings.logRequests = false;
+        setActiveTabTitle('');
+      }
+
       setSettings(newSettings);
       await Storage.saveSettings(newSettings);
       await withContextCheck(() => chrome.runtime.sendMessage({ action: 'toggleMocking', enabled })).catch(() => {
@@ -87,6 +95,11 @@ const App: React.FC = () => {
 
   const handleRecordingToggle = useCallback(
     async (logRequests: boolean) => {
+      // Don't allow recording when extension is disabled
+      if (logRequests && !settings.enabled) {
+        return;
+      }
+
       try {
         if (logRequests) {
           const tabs = await chrome.tabs.query({ active: true });
@@ -196,7 +209,7 @@ const App: React.FC = () => {
       const now = Date.now();
       const duplicatedRule: MockRule = {
         ...ruleToDuplicate,
-        id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        id: uuidv4(),
         name: `${ruleToDuplicate.name} (Copy)`,
         created: now,
         modified: now,

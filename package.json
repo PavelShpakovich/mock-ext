@@ -1,6 +1,6 @@
 {
   "name": "mockapi-extension",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Chrome extension for mocking API requests with full control over status codes, delays, and responses",
   "scripts": {
     "build": "webpack --mode production",
@@ -42,6 +42,7 @@
     "@types/jest": "^29.5.14",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
+    "@types/uuid": "^10.0.0",
     "@typescript-eslint/eslint-plugin": "^6.21.0",
     "@typescript-eslint/parser": "^6.21.0",
     "autoprefixer": "^10.4.23",
@@ -71,6 +72,7 @@
     "clsx": "^2.1.1",
     "lucide-react": "^0.562.0",
     "react": "^19.2.3",
-    "react-dom": "^19.2.3"
+    "react-dom": "^19.2.3",
+    "uuid": "^13.0.0"
   }
 }

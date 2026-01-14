@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { v4 as uuidv4 } from 'uuid';
 import { MockRule, HttpMethod, MatchType, RequestLog } from '../types';
-import { generateUUID, isValidJSON } from '../utils';
+import { isValidJSON } from '../helpers/validation';
 import { Input } from './ui/Input';
 import { Select } from './ui/Select';
 import { TextArea } from './ui/TextArea';
@@ -62,7 +63,7 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, mockRequest, onSave, onCa
         urlPattern: mockRequest.url,
         matchType: 'exact',
         method: mockRequest.method as HttpMethod,
-        statusCode: 200,
+        statusCode: mockRequest.statusCode || 200,
         contentType: mockRequest.contentType || 'application/json',
         responseBody,
         delay: 0,
@@ -138,11 +139,12 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, mockRequest, onSave, onCa
     }
 
     if (formData.contentType === 'application/json' && formData.responseBody.trim()) {
-      // Use real-time validation state if available, otherwise fall back to isValidJSON
+      // Check real-time validation state - validation message is already displayed dynamically
       if (jsonValidation && !jsonValidation.isValid) {
-        newErrors.responseBody = jsonValidation.message;
-      } else if (!jsonValidation && !isValidJSON(formData.responseBody)) {
-        newErrors.responseBody = t('editor.validationError', { error: 'Invalid JSON' });
+        return false;
+      }
+      if (!jsonValidation && !isValidJSON(formData.responseBody)) {
+        return false;
       }
     }
 
@@ -166,7 +168,7 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, mockRequest, onSave, onCa
 
     const now = Date.now();
     const savedRule: MockRule = {
-      id: rule?.id || generateUUID(),
+      id: rule?.id || uuidv4(),
       name: formData.name,
       enabled: rule?.enabled ?? true,
       urlPattern: formData.urlPattern,
@@ -329,7 +331,6 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, mockRequest, onSave, onCa
                 {jsonValidation.message}
               </p>
             )}
-            {errors.responseBody && <p className='text-red-400 text-sm mt-1'>{errors.responseBody}</p>}
           </div>
         </div>
 
@@ -371,11 +372,6 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, mockRequest, onSave, onCa
                   >
                     {jsonValidation.message}
                   </p>
-                </div>
-              )}
-              {errors.responseBody && (
-                <div className='px-6 pb-4 shrink-0'>
-                  <p className='text-red-400 text-sm'>{errors.responseBody}</p>
                 </div>
               )}
             </div>
