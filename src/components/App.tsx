@@ -242,6 +242,22 @@ const App: React.FC = () => {
     [rules]
   );
 
+  const handleResetRuleHits = useCallback(
+    async (id: string) => {
+      const updatedRules = rules.map((r) =>
+        r.id === id
+          ? {
+              ...r,
+              matchCount: 0,
+              lastMatched: undefined,
+            }
+          : r
+      );
+      await updateRulesEverywhere(updatedRules);
+    },
+    [rules]
+  );
+
   const handleClearLog = useCallback(async () => {
     await Storage.clearRequestLog();
     setRequestLog([]);
@@ -351,6 +367,7 @@ const App: React.FC = () => {
           onDeleteRule={handleDeleteRule}
           onToggleRule={handleToggleRule}
           onDuplicateRule={handleDuplicateRule}
+          onResetRuleHits={handleResetRuleHits}
           onCancelEdit={() => setEditingRuleId(null)}
           onExportRules={handleExportRules}
           onImportRules={handleImportRules}

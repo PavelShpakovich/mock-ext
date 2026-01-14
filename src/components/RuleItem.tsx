@@ -5,7 +5,7 @@ import { Card } from './ui/Card';
 import { Badge, MethodBadge, StatusCodeBadge } from './ui/Badge';
 import { Toggle } from './ui/Toggle';
 import { IconButton } from './ui/IconButton';
-import { Clock, Copy, TrendingUp } from 'lucide-react';
+import { Clock, Copy, TrendingUp, RotateCcw } from 'lucide-react';
 import { useI18n } from '../contexts/I18nContext';
 import { formatRelativeTime } from '../helpers/time';
 
@@ -15,9 +15,10 @@ interface RuleItemProps {
   onDelete: () => void;
   onToggle: () => void;
   onDuplicate: () => void;
+  onResetHits: () => void;
 }
 
-const RuleItem: React.FC<RuleItemProps> = ({ rule, onEdit, onDelete, onToggle, onDuplicate }) => {
+const RuleItem: React.FC<RuleItemProps> = ({ rule, onEdit, onDelete, onToggle, onDuplicate, onResetHits }) => {
   const { t } = useI18n();
 
   return (
@@ -50,14 +51,27 @@ const RuleItem: React.FC<RuleItemProps> = ({ rule, onEdit, onDelete, onToggle, o
             </div>
           )}
           {rule.lastMatched && (
-            <div className='text-xs text-blue-400/80 mt-2 font-medium flex items-center gap-1'>
-              <TrendingUp className='w-3 h-3' />
-              {t('rules.lastMatched')}: {formatRelativeTime(rule.lastMatched, t)}
+            <div className='text-xs text-blue-400/80 mt-2 font-medium flex items-center gap-2'>
+              <div className='flex items-center gap-1'>
+                <TrendingUp className='w-3 h-3' />
+                {t('rules.lastMatched')}: {formatRelativeTime(rule.lastMatched, t)}
+              </div>
+              <IconButton
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onResetHits();
+                }}
+                title={t('rules.resetHits')}
+                className='text-blue-400/60 hover:text-blue-400 -my-1'
+                variant='ghost'
+              >
+                <RotateCcw className='w-3 h-3' />
+              </IconButton>
             </div>
           )}
         </div>
 
-        <div className='flex items-center gap-2 ml-4 flex-shrink-0'>
+        <div className='flex items-center gap-2 ml-4 shrink-0'>
           <Toggle checked={rule.enabled} onChange={onToggle} />
 
           <IconButton onClick={onDuplicate} title={t('rules.duplicate')}>

@@ -18,6 +18,7 @@ interface RulesTabProps {
   onDeleteRule: (id: string) => void;
   onToggleRule: (id: string) => void;
   onDuplicateRule: (id: string) => void;
+  onResetRuleHits: (id: string) => void;
   onCancelEdit: () => void;
   onExportRules: () => void;
   onImportRules: (file: File) => void;
@@ -33,6 +34,7 @@ const RulesTab: React.FC<RulesTabProps> = ({
   onDeleteRule,
   onToggleRule,
   onDuplicateRule,
+  onResetRuleHits,
   onCancelEdit,
   onExportRules,
   onImportRules,
@@ -139,6 +141,7 @@ const RulesTab: React.FC<RulesTabProps> = ({
                   onDelete={() => onDeleteRule(rule.id)}
                   onToggle={() => onToggleRule(rule.id)}
                   onDuplicate={() => onDuplicateRule(rule.id)}
+                  onResetHits={() => onResetRuleHits(rule.id)}
                 />
               ))}
             </div>

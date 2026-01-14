@@ -28,7 +28,8 @@
     "importError": "Ошибка импорта",
     "method": "Метод",
     "status": "Статус",
-    "lastMatched": "Последнее совпадение",
+    "lastMatched": "Последнее срабатывание",
+    "resetHits": "Сбросить",
     "delay": "Задержка",
     "contentType": "Тип контента"
   },

@@ -29,6 +29,7 @@
     "method": "Method",
     "status": "Status",
     "lastMatched": "Last matched",
+    "resetHits": "Reset",
     "delay": "Delay",
     "contentType": "Content Type"
   },
