@@ -71,6 +71,11 @@
     "responseBody": "Response Body",
     "responseBodyPlaceholder": "Enter response data (JSON or text)",
     "beautify": "Beautify",
+    "customHeaders": "Response Headers",
+    "optional": "optional",
+    "headerName": "Header name (e.g., Authorization)",
+    "headerValue": "Header value",
+    "addHeader": "Add Header",
     "validationError": "{{error}}",
     "variables": "Available variables: {{timestamp}}, {{uuid}}, {{random_number}}"
   },

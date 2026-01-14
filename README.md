@@ -20,6 +20,10 @@ A powerful Chrome DevTools extension for mocking API requests during development
 - **Custom Responses**: Define JSON or text responses
 - **✨ Status Code Control**: Set any HTTP status code (200, 404, 500, etc.) - **Now fully functional!**
 - **✨ Response Delay**: Simulate network latency for testing loading states - **Now fully functional!**
+- **✨ Custom Response Headers**: Add custom HTTP headers to mock responses (NEW in v2.1)
+  - Define multiple key-value header pairs
+  - Auto-populates from captured real responses
+  - Perfect for testing CORS, authentication, caching behaviors
 - **Client-Side Interception**: Intercepts fetch() and XMLHttpRequest before they reach the network
 
 ### 🔄 Dynamic Variables
@@ -49,8 +53,10 @@ Example:
   - Status code filters: 2xx Success, 3xx Redirect, 4xx Client Error, 5xx Server Error
 - **Search & Filter**: Quickly find requests with text search and multiple filters
 - **Request Details**: View URL, method, status code, content type, and timestamp
+- **Response Headers Capture**: All response headers captured and stored with logged requests (NEW in v2.1)
 - **Up to 1000 Requests**: Automatic log rotation keeps recent requests
 - **Quick Mocking**: Create mock rules directly from logged requests with "Mock This" button
+  - Auto-populates all fields including captured response headers
 
 ### 🛠️ Rule Management
 

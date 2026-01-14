@@ -3,8 +3,16 @@ import { MockRule, Settings, StorageData, RequestLog } from './types';
 // Batch buffer for log entries
 let logBuffer: RequestLog[] = [];
 let flushTimeout: ReturnType<typeof setTimeout> | null = null;
+
+// Constants
 const BATCH_INTERVAL_MS = 500;
 const MAX_LOG_ENTRIES = 1000;
+
+const DEFAULT_SETTINGS: Settings = {
+  enabled: true,
+  logRequests: true,
+  showNotifications: false,
+};
 
 export class Storage {
   private static readonly RULES_KEY = 'mockRules';
@@ -12,6 +20,7 @@ export class Storage {
   private static readonly LOG_KEY = 'requestLog';
   private static readonly DRAFT_KEY = 'ruleDraft';
 
+  // Rules operations
   static async getRules(): Promise<MockRule[]> {
     const result = await chrome.storage.local.get(this.RULES_KEY);
     return result[this.RULES_KEY] || [];
@@ -21,24 +30,18 @@ export class Storage {
     await chrome.storage.local.set({ [this.RULES_KEY]: rules });
   }
 
+  // Settings operations
   static async getSettings(): Promise<Settings> {
     const result = await chrome.storage.local.get(this.SETTINGS_KEY);
-    return (
-      result[this.SETTINGS_KEY] || {
-        enabled: true,
-        logRequests: true,
-        showNotifications: false,
-        theme: 'light',
-      }
-    );
+    return result[this.SETTINGS_KEY] || DEFAULT_SETTINGS;
   }
 
   static async saveSettings(settings: Settings): Promise<void> {
     await chrome.storage.local.set({ [this.SETTINGS_KEY]: settings });
   }
 
+  // Request log operations
   static async getRequestLog(): Promise<RequestLog[]> {
-    // Include any pending buffered entries
     const result = await chrome.storage.session.get(this.LOG_KEY);
     const storedLog = result[this.LOG_KEY] || [];
     // Prepend buffered entries (they are the most recent)
@@ -50,12 +53,27 @@ export class Storage {
   }
 
   static async addToRequestLog(entry: RequestLog): Promise<void> {
-    // Add to buffer instead of immediately writing to storage
     logBuffer.unshift(entry);
+    this.scheduleLogFlush();
+  }
 
-    // Schedule a flush if not already scheduled
+  static async clearRequestLog(): Promise<void> {
+    this.cancelLogFlush();
+    logBuffer = [];
+    await chrome.storage.session.remove(this.LOG_KEY);
+  }
+
+  // Buffer management
+  private static scheduleLogFlush(): void {
     if (!flushTimeout) {
       flushTimeout = setTimeout(() => this.flushLogBuffer(), BATCH_INTERVAL_MS);
+    }
+  }
+
+  private static cancelLogFlush(): void {
+    if (flushTimeout) {
+      clearTimeout(flushTimeout);
+      flushTimeout = null;
     }
   }
 
@@ -66,12 +84,8 @@ export class Storage {
     }
 
     try {
-      const result = await chrome.storage.session.get(this.LOG_KEY);
-      const existingLog: RequestLog[] = result[this.LOG_KEY] || [];
-
-      // Prepend buffered entries and limit total size
-      const combinedLog = [...logBuffer, ...existingLog].slice(0, MAX_LOG_ENTRIES);
-
+      const existingLog = await this.getStoredLog();
+      const combinedLog = this.combineAndLimitLog(logBuffer, existingLog);
       await chrome.storage.session.set({ [this.LOG_KEY]: combinedLog });
     } catch (error) {
       console.error('[MockAPI] Error flushing log buffer:', error);
@@ -81,15 +95,16 @@ export class Storage {
     }
   }
 
-  static async clearRequestLog(): Promise<void> {
-    logBuffer = [];
-    if (flushTimeout) {
-      clearTimeout(flushTimeout);
-      flushTimeout = null;
-    }
-    await chrome.storage.session.remove(this.LOG_KEY);
+  private static async getStoredLog(): Promise<RequestLog[]> {
+    const result = await chrome.storage.session.get(this.LOG_KEY);
+    return result[this.LOG_KEY] || [];
   }
 
+  private static combineAndLimitLog(buffer: RequestLog[], existing: RequestLog[]): RequestLog[] {
+    return [...buffer, ...existing].slice(0, MAX_LOG_ENTRIES);
+  }
+
+  // Import/Export operations
   static async exportAll(): Promise<StorageData> {
     const [rules, settings, log] = await Promise.all([this.getRules(), this.getSettings(), this.getRequestLog()]);
 
@@ -102,6 +117,7 @@ export class Storage {
     await this.saveRules(mergedRules);
   }
 
+  // Draft operations
   static async saveDraft(draft: any): Promise<void> {
     await chrome.storage.local.set({ [this.DRAFT_KEY]: draft });
   }

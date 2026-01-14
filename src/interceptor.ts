@@ -11,6 +11,7 @@ interface MockRule {
   response: string | object;
   contentType: string;
   delay: number;
+  headers?: Record<string, string>;
 }
 
 class RequestInterceptor {
@@ -42,35 +43,46 @@ class RequestInterceptor {
   // If you modify this, also update src/helpers/urlMatching.ts
   private matchesPattern(url: string, pattern: string, type: string): boolean {
     switch (type) {
-      case 'exact': {
-        // For exact match, ignore query parameters
-        const urlWithoutQuery = url.split('?')[0];
-        const patternWithoutQuery = pattern.split('?')[0];
-        return urlWithoutQuery === patternWithoutQuery;
-      }
-      case 'wildcard': {
-        // For wildcard, ignore query parameters unless pattern includes them
-        const urlToMatch = pattern.includes('?') ? url : url.split('?')[0];
-
-        const regexPattern = pattern
-          .split('*')
-          .map((part) => this.escapeRegExp(part))
-          .join('.*');
-        try {
-          return new RegExp('^' + regexPattern + '$').test(urlToMatch);
-        } catch {
-          return false;
-        }
-      }
+      case 'exact':
+        return this.matchesExact(url, pattern);
+      case 'wildcard':
+        return this.matchesWildcard(url, pattern);
       case 'regex':
-        try {
-          return new RegExp(pattern).test(url);
-        } catch {
-          console.error('[MockAPI] Invalid regex pattern:', pattern);
-          return false;
-        }
+        return this.matchesRegex(url, pattern);
       default:
         return false;
+    }
+  }
+
+  private matchesExact(url: string, pattern: string): boolean {
+    // For exact match, ignore query parameters
+    const urlWithoutQuery = url.split('?')[0];
+    const patternWithoutQuery = pattern.split('?')[0];
+    return urlWithoutQuery === patternWithoutQuery;
+  }
+
+  private matchesWildcard(url: string, pattern: string): boolean {
+    // For wildcard, ignore query parameters unless pattern includes them
+    const urlToMatch = pattern.includes('?') ? url : url.split('?')[0];
+
+    const regexPattern = pattern
+      .split('*')
+      .map((part) => this.escapeRegExp(part))
+      .join('.*');
+
+    try {
+      return new RegExp('^' + regexPattern + '$').test(urlToMatch);
+    } catch {
+      return false;
+    }
+  }
+
+  private matchesRegex(url: string, pattern: string): boolean {
+    try {
+      return new RegExp(pattern).test(url);
+    } catch {
+      console.error('[MockAPI] Invalid regex pattern:', pattern);
+      return false;
     }
   }
 
@@ -82,100 +94,253 @@ class RequestInterceptor {
 
   private async createMockResponse(rule: MockRule): Promise<Response> {
     // Apply delay if specified
-    const delay = typeof rule.delay === 'number' && !isNaN(rule.delay) ? rule.delay : 0;
-    if (delay > 0) {
-      await new Promise((resolve) => setTimeout(resolve, delay));
-    }
+    await this.applyDelay(rule.delay);
 
-    // Prepare response body
-    let body = typeof rule.response === 'string' ? rule.response : JSON.stringify(rule.response);
+    // Prepare response body with dynamic variables
+    const body = this.prepareResponseBody(rule.response);
 
-    // Apply dynamic variables
-    body = this.applyDynamicVariables(body);
+    // Create Response object with proper status and headers
+    const statusCode = this.getValidStatusCode(rule.statusCode);
+    const headers = this.buildResponseHeaders(rule);
 
-    // Create Response object with proper status
-    const statusCode = typeof rule.statusCode === 'number' && !isNaN(rule.statusCode) ? rule.statusCode : 200;
     return new Response(body, {
       status: statusCode,
       statusText: this.getStatusText(statusCode),
-      headers: {
-        'Content-Type': rule.contentType || 'application/json',
-        'X-MockAPI': 'true', // Marker for our extension
-      },
+      headers,
     });
+  }
+
+  private async applyDelay(delay: number): Promise<void> {
+    const validDelay = typeof delay === 'number' && !isNaN(delay) ? delay : 0;
+    if (validDelay > 0) {
+      await new Promise((resolve) => setTimeout(resolve, validDelay));
+    }
+  }
+
+  private prepareResponseBody(response: string | object): string {
+    const body = typeof response === 'string' ? response : JSON.stringify(response);
+    return this.applyDynamicVariables(body);
+  }
+
+  private getValidStatusCode(statusCode: number): number {
+    return typeof statusCode === 'number' && !isNaN(statusCode) ? statusCode : 200;
+  }
+
+  private buildResponseHeaders(rule: MockRule): Record<string, string> {
+    return {
+      'Content-Type': rule.contentType || 'application/json',
+      'X-MockAPI': 'true',
+      ...(rule.headers || {}),
+    };
+  }
+
+  private notifyInterception(url: string, method: string, ruleId: string, statusCode: number): void {
+    window.postMessage(
+      {
+        type: 'MOCKAPI_INTERCEPTED',
+        url,
+        method,
+        ruleId,
+        statusCode,
+      },
+      '*'
+    );
+  }
+
+  private captureResponseHeaders(response: Response): Record<string, string> {
+    const headers: Record<string, string> = {};
+    response.headers.forEach((value, key) => {
+      headers[key] = value;
+    });
+    return headers;
+  }
+
+  private notifyResponseCaptured(
+    url: string,
+    method: string,
+    statusCode: number,
+    contentType: string,
+    body: string,
+    headers: Record<string, string>
+  ): void {
+    const truncatedBody = body.length > 100000 ? body.substring(0, 100000) + '...[truncated]' : body;
+
+    window.postMessage(
+      {
+        type: 'MOCKAPI_RESPONSE_CAPTURED',
+        url,
+        method,
+        statusCode,
+        contentType: contentType.split(';')[0].trim(),
+        responseBody: truncatedBody,
+        responseHeaders: headers,
+      },
+      '*'
+    );
+  }
+
+  private async captureResponse(response: Response, url: string, method: string): Promise<void> {
+    try {
+      const clonedResponse = response.clone();
+      const contentType = clonedResponse.headers.get('content-type') || '';
+      const headers = this.captureResponseHeaders(response);
+
+      // Only capture text-based responses
+      const isTextBased = contentType.includes('json') || contentType.includes('text') || contentType.includes('xml');
+
+      if (isTextBased) {
+        clonedResponse
+          .text()
+          .then((body) => {
+            this.notifyResponseCaptured(url, method, response.status, contentType, body, headers);
+          })
+          .catch(() => {
+            // Failed to read body - ignore silently
+          });
+      }
+    } catch (e) {
+      // Failed to clone/read response - ignore silently
+    }
   }
 
   private interceptFetch() {
     const originalFetch = this.originalFetch;
     const matchesRule = this.matchesRule.bind(this);
     const createMockResponse = this.createMockResponse.bind(this);
+    const captureResponse = this.captureResponse.bind(this);
+    const notifyInterception = this.notifyInterception.bind(this);
 
     window.fetch = async function (input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
       const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
       const method = init?.method || 'GET';
-
       const rule = matchesRule(url, method.toUpperCase());
 
       if (rule) {
-        // Notify content script about interception
-        window.postMessage(
-          {
-            type: 'MOCKAPI_INTERCEPTED',
-            url,
-            method,
-            ruleId: rule.id,
-            statusCode: rule.statusCode,
-          },
-          '*'
-        );
-
+        notifyInterception(url, method, rule.id, rule.statusCode);
         return createMockResponse(rule);
       }
 
-      // Not mocked - proceed with real request and capture response
+      // Not mocked - proceed with real request and capture response for logging
       const response = await originalFetch.call(this, input, init);
-
-      // Capture response body for logging (clone so original can still be used)
-      try {
-        const clonedResponse = response.clone();
-        const contentType = clonedResponse.headers.get('content-type') || '';
-
-        // Only capture text-based responses (JSON, HTML, etc.)
-        if (contentType.includes('json') || contentType.includes('text') || contentType.includes('xml')) {
-          clonedResponse
-            .text()
-            .then((body) => {
-              // Limit body size to prevent memory issues
-              const truncatedBody = body.length > 100000 ? body.substring(0, 100000) + '...[truncated]' : body;
-
-              window.postMessage(
-                {
-                  type: 'MOCKAPI_RESPONSE_CAPTURED',
-                  url,
-                  method,
-                  statusCode: response.status,
-                  contentType: contentType.split(';')[0].trim(),
-                  responseBody: truncatedBody,
-                },
-                '*'
-              );
-            })
-            .catch(() => {
-              // Failed to read body - ignore
-            });
-        }
-      } catch (e) {
-        // Failed to clone/read response - ignore
-      }
-
+      await captureResponse(response, url, method);
       return response;
     };
+  }
+
+  private createXHRResponseHeaders(rule: MockRule): {
+    getHeader: (name: string) => string | null;
+    getAllHeaders: () => string;
+  } {
+    return {
+      getHeader: (name: string) => {
+        const lowerName = name.toLowerCase();
+
+        // Check custom headers first
+        if (rule.headers) {
+          const headerKey = Object.keys(rule.headers).find((k) => k.toLowerCase() === lowerName);
+          if (headerKey) return rule.headers[headerKey];
+        }
+
+        // Check default headers
+        if (lowerName === 'content-type') {
+          return rule.contentType || 'application/json';
+        }
+        if (lowerName === 'x-mockapi') {
+          return 'true';
+        }
+
+        return null;
+      },
+
+      getAllHeaders: () => {
+        let headers = `content-type: ${rule.contentType || 'application/json'}\r\nx-mockapi: true\r\n`;
+
+        if (rule.headers) {
+          for (const [key, value] of Object.entries(rule.headers)) {
+            headers += `${key.toLowerCase()}: ${value}\r\n`;
+          }
+        }
+
+        return headers;
+      },
+    };
+  }
+
+  private setupXHRResponse(
+    xhr: XMLHttpRequest,
+    rule: MockRule,
+    responseBody: string,
+    getStatusText: (code: number) => string
+  ): void {
+    const statusCode = typeof rule.statusCode === 'number' && !isNaN(rule.statusCode) ? rule.statusCode : 200;
+
+    // Set response properties
+    Object.defineProperty(xhr, 'readyState', { value: 4, writable: false, configurable: true });
+    Object.defineProperty(xhr, 'status', { value: statusCode, writable: false, configurable: true });
+    Object.defineProperty(xhr, 'statusText', {
+      value: getStatusText(statusCode),
+      writable: false,
+      configurable: true,
+    });
+    Object.defineProperty(xhr, 'responseText', { value: responseBody, writable: false, configurable: true });
+    Object.defineProperty(xhr, 'response', { value: responseBody, writable: false, configurable: true });
+    Object.defineProperty(xhr, 'responseType', { value: '', writable: false, configurable: true });
+
+    // Set header methods
+    const headerHandlers = this.createXHRResponseHeaders(rule);
+    xhr.getResponseHeader = headerHandlers.getHeader;
+    xhr.getAllResponseHeaders = headerHandlers.getAllHeaders;
+  }
+
+  private triggerXHREvents(xhr: XMLHttpRequest, responseBody: string): void {
+    const readyStateEvent = new Event('readystatechange');
+    const bodyLength = new Blob([responseBody]).size;
+    const loadEvent = new ProgressEvent('load', { loaded: bodyLength, total: bodyLength });
+    const loadEndEvent = new ProgressEvent('loadend', { loaded: bodyLength, total: bodyLength });
+
+    xhr.dispatchEvent(readyStateEvent);
+    xhr.dispatchEvent(loadEvent);
+    xhr.dispatchEvent(loadEndEvent);
+
+    // Trigger event handlers if set
+    if (xhr.onreadystatechange) xhr.onreadystatechange(readyStateEvent);
+    if (xhr.onload) xhr.onload(loadEvent);
+    if (xhr.onloadend) xhr.onloadend(loadEndEvent);
+  }
+
+  private async handleXHRMock(
+    xhr: XMLHttpRequest,
+    rule: MockRule,
+    url: string,
+    method: string,
+    applyDynamicVariables: (text: string) => string,
+    getStatusText: (code: number) => string
+  ): Promise<void> {
+    // Notify about interception
+    this.notifyInterception(url, method, rule.id, rule.statusCode);
+
+    // Apply delay if specified
+    const delay = typeof rule.delay === 'number' && !isNaN(rule.delay) ? rule.delay : 0;
+    if (delay > 0) {
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
+
+    // Prepare response body
+    let responseBody = typeof rule.response === 'string' ? rule.response : JSON.stringify(rule.response);
+    responseBody = applyDynamicVariables(responseBody);
+
+    // Setup XHR response
+    this.setupXHRResponse(xhr, rule, responseBody, getStatusText);
+
+    // Trigger events
+    this.triggerXHREvents(xhr, responseBody);
   }
 
   private interceptXHR() {
     const matchesRule = this.matchesRule.bind(this);
     const applyDynamicVariables = this.applyDynamicVariables.bind(this);
     const getStatusText = this.getStatusText.bind(this);
+    const handleXHRMock = this.handleXHRMock.bind(this);
     const OriginalXHR = this.originalXHR;
 
     window.XMLHttpRequest = function () {
@@ -186,91 +351,22 @@ class RequestInterceptor {
       let url: string;
       let method: string;
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // Intercept open() to capture URL and method
       xhr.open = function (...args: any[]) {
         method = args[0].toUpperCase();
         url = args[1];
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any, prefer-rest-params
         return originalOpen.apply(this, args as any);
       };
 
+      // Intercept send() to check for mock rules
       xhr.send = function (_body?: Document | XMLHttpRequestBodyInit | null) {
         const rule = matchesRule(url, method);
 
         if (rule) {
-          // eslint-disable-next-line no-console
-          console.log('[MockAPI] Intercepted XHR:', url);
-
-          // Notify content script about interception
-          window.postMessage(
-            {
-              type: 'MOCKAPI_INTERCEPTED',
-              url,
-              method,
-              ruleId: rule.id,
-              statusCode: rule.statusCode,
-            },
-            '*'
-          );
-
-          // Simulate async behavior
-          setTimeout(async () => {
-            // Apply delay
-            const delay = typeof rule.delay === 'number' && !isNaN(rule.delay) ? rule.delay : 0;
-            if (delay > 0) {
-              await new Promise((resolve) => setTimeout(resolve, delay));
-            }
-
-            let responseBody = typeof rule.response === 'string' ? rule.response : JSON.stringify(rule.response);
-
-            responseBody = applyDynamicVariables(responseBody);
-
-            // Manually trigger XHR events with proper properties
-            const statusCode = typeof rule.statusCode === 'number' && !isNaN(rule.statusCode) ? rule.statusCode : 200;
-            Object.defineProperty(xhr, 'readyState', { value: 4, writable: false, configurable: true });
-            Object.defineProperty(xhr, 'status', { value: statusCode, writable: false, configurable: true });
-            Object.defineProperty(xhr, 'statusText', {
-              value: getStatusText(statusCode),
-              writable: false,
-              configurable: true,
-            });
-            Object.defineProperty(xhr, 'responseText', { value: responseBody, writable: false, configurable: true });
-            Object.defineProperty(xhr, 'response', { value: responseBody, writable: false, configurable: true });
-            Object.defineProperty(xhr, 'responseType', { value: '', writable: false, configurable: true });
-
-            // Override response header methods
-            xhr.getResponseHeader = function (name: string) {
-              if (name.toLowerCase() === 'content-type') {
-                return rule.contentType || 'application/json';
-              }
-              if (name.toLowerCase() === 'x-mockapi') {
-                return 'true';
-              }
-              return null;
-            };
-
-            xhr.getAllResponseHeaders = function () {
-              return `content-type: ${rule.contentType || 'application/json'}\r\nx-mockapi: true\r\n`;
-            };
-
-            // Trigger events in correct order
-            const readyStateEvent = new Event('readystatechange');
-            const bodyLength = new Blob([responseBody]).size;
-            const loadEvent = new ProgressEvent('load', { loaded: bodyLength, total: bodyLength });
-            const loadEndEvent = new ProgressEvent('loadend', {
-              loaded: bodyLength,
-              total: bodyLength,
-            });
-
-            xhr.dispatchEvent(readyStateEvent);
-            xhr.dispatchEvent(loadEvent);
-            xhr.dispatchEvent(loadEndEvent);
-
-            if (xhr.onreadystatechange) xhr.onreadystatechange(readyStateEvent);
-            if (xhr.onload) xhr.onload(loadEvent);
-            if (xhr.onloadend) xhr.onloadend(loadEndEvent);
+          // Mock the request asynchronously
+          setTimeout(() => {
+            handleXHRMock(xhr, rule, url, method, applyDynamicVariables, getStatusText);
           }, 0);
-
           return;
         }
 
@@ -281,7 +377,7 @@ class RequestInterceptor {
       return xhr;
     } as unknown as typeof XMLHttpRequest;
 
-    // Copy prototype and static properties
+    // Preserve prototype and static properties
     window.XMLHttpRequest.prototype = OriginalXHR.prototype;
     Object.setPrototypeOf(window.XMLHttpRequest, OriginalXHR);
   }

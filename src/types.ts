@@ -13,6 +13,7 @@ export interface MockRule {
   response: string | object;
   contentType: string;
   delay: number;
+  headers?: Record<string, string>;
   created: number;
   modified: number;
 }
@@ -35,6 +36,7 @@ export interface RequestLog {
   responseBody?: string;
   requestBody?: string;
   contentType?: string;
+  responseHeaders?: Record<string, string>;
 }
 
 export interface StorageData {
@@ -69,6 +71,7 @@ export interface MessageAction {
   statusCode?: number;
   contentType?: string;
   responseBody?: string;
+  responseHeaders?: Record<string, string>;
   ruleId?: string;
   language?: 'en' | 'ru';
 }

@@ -71,6 +71,11 @@
     "responseBody": "Тело ответа",
     "responseBodyPlaceholder": "Введите данные ответа (JSON или текст)",
     "beautify": "Форматировать",
+    "customHeaders": "Заголовки ответа",
+    "optional": "необязательно",
+    "headerName": "Имя заголовка (например, Authorization)",
+    "headerValue": "Значение заголовка",
+    "addHeader": "Добавить заголовок",
     "validationError": "{{error}}",
     "variables": "Доступные переменные: {{timestamp}}, {{uuid}}, {{random_number}}"
   },

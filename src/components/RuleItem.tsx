@@ -4,7 +4,7 @@ import { MockRule } from '../types';
 import { Card } from './ui/Card';
 import { MethodBadge, StatusCodeBadge } from './ui/Badge';
 import { Toggle } from './ui/Toggle';
-import { Button } from './ui/Button';
+import { IconButton } from './ui/IconButton';
 import { Clock, Copy } from 'lucide-react';
 import { useI18n } from '../contexts/I18nContext';
 
@@ -47,11 +47,11 @@ const RuleItem: React.FC<RuleItemProps> = ({ rule, onEdit, onDelete, onToggle, o
         <div className='flex items-center gap-2 ml-4 flex-shrink-0'>
           <Toggle checked={rule.enabled} onChange={onToggle} />
 
-          <Button variant='ghost' size='icon' onClick={onDuplicate} title={t('rules.duplicate')}>
+          <IconButton onClick={onDuplicate} title={t('rules.duplicate')}>
             <Copy className='w-5 h-5' />
-          </Button>
+          </IconButton>
 
-          <Button variant='ghost' size='icon' onClick={onEdit} title={t('common.edit')}>
+          <IconButton onClick={onEdit} title={t('common.edit')}>
             <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
               <path
                 strokeLinecap='round'
@@ -60,15 +60,9 @@ const RuleItem: React.FC<RuleItemProps> = ({ rule, onEdit, onDelete, onToggle, o
                 d='M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z'
               />
             </svg>
-          </Button>
+          </IconButton>
 
-          <Button
-            variant='ghost'
-            size='icon'
-            onClick={onDelete}
-            title={t('common.delete')}
-            className='hover:bg-red-900/50 hover:text-red-400 hover:border-red-900'
-          >
+          <IconButton variant='danger' onClick={onDelete} title={t('common.delete')}>
             <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
               <path
                 strokeLinecap='round'
@@ -77,7 +71,7 @@ const RuleItem: React.FC<RuleItemProps> = ({ rule, onEdit, onDelete, onToggle, o
                 d='M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16'
               />
             </svg>
-          </Button>
+          </IconButton>
         </div>
       </div>
     </Card>

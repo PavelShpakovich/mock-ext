@@ -6,8 +6,9 @@ import { Input } from './ui/Input';
 import { Select } from './ui/Select';
 import { TextArea } from './ui/TextArea';
 import { Button } from './ui/Button';
+import { IconButton } from './ui/IconButton';
 import { Card } from './ui/Card';
-import { Maximize2, X } from 'lucide-react';
+import { Maximize2, X, Plus, Trash2 } from 'lucide-react';
 import clsx from 'clsx';
 import { useI18n } from '../contexts/I18nContext';
 
@@ -18,9 +19,71 @@ interface RuleEditorProps {
   onCancel: () => void;
 }
 
-const RuleEditor: React.FC<RuleEditorProps> = ({ rule, mockRequest, onSave, onCancel }) => {
-  const { t } = useI18n();
-  const [formData, setFormData] = useState({
+// ============================================================================
+// Header Utilities
+// ============================================================================
+
+function convertHeadersToArray(headers?: Record<string, string>): Array<{ key: string; value: string }> {
+  if (!headers) return [];
+  return Object.entries(headers).map(([key, value]) => ({ key, value }));
+}
+
+function convertArrayToHeaders(headers: Array<{ key: string; value: string }>): Record<string, string> | undefined {
+  const filtered = headers.filter((h) => h.key.trim() && h.value.trim());
+  if (filtered.length === 0) return undefined;
+
+  return filtered.reduce(
+    (acc, { key, value }) => {
+      acc[key.trim()] = value.trim();
+      return acc;
+    },
+    {} as Record<string, string>
+  );
+}
+
+function extractCapturedHeaders(mockRequest?: RequestLog | null): Array<{ key: string; value: string }> {
+  if (!mockRequest?.responseHeaders) return [];
+
+  const excludeHeaders = ['content-type', 'x-mockapi'];
+  return Object.entries(mockRequest.responseHeaders)
+    .filter(([key]) => !excludeHeaders.includes(key.toLowerCase()))
+    .map(([key, value]) => ({ key, value }));
+}
+
+// ============================================================================
+// Form Data Helpers
+// ============================================================================
+
+function getInitialFormData(rule: MockRule | null, mockRequest: RequestLog | null | undefined) {
+  if (rule) {
+    return {
+      name: rule.name,
+      urlPattern: rule.urlPattern,
+      matchType: rule.matchType,
+      method: rule.method,
+      statusCode: rule.statusCode,
+      contentType: rule.contentType,
+      responseBody: typeof rule.response === 'string' ? rule.response : JSON.stringify(rule.response, null, 2),
+      delay: rule.delay,
+      headers: convertHeadersToArray(rule.headers),
+    };
+  }
+
+  if (mockRequest) {
+    return {
+      name: `Mock for ${new URL(mockRequest.url).pathname}`,
+      urlPattern: mockRequest.url,
+      matchType: 'exact' as MatchType,
+      method: mockRequest.method as HttpMethod,
+      statusCode: mockRequest.statusCode || 200,
+      contentType: mockRequest.contentType || 'application/json',
+      responseBody: mockRequest.responseBody || '{}',
+      delay: 0,
+      headers: extractCapturedHeaders(mockRequest),
+    };
+  }
+
+  return {
     name: '',
     urlPattern: '',
     matchType: 'wildcard' as MatchType,
@@ -29,8 +92,89 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, mockRequest, onSave, onCa
     contentType: 'application/json',
     responseBody: '',
     delay: 0,
-  });
+    headers: [] as Array<{ key: string; value: string }>,
+  };
+}
 
+// ============================================================================
+// Validation Helpers
+// ============================================================================
+
+function validateRegexPattern(pattern: string): boolean {
+  try {
+    new RegExp(pattern);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function validateFormData(
+  formData: any,
+  jsonValidation: any,
+  t: (key: string, params?: any) => string
+): Record<string, string> {
+  const errors: Record<string, string> = {};
+
+  if (!formData.name.trim()) {
+    errors.name = t('editor.validationError', { error: 'Name is required' });
+  }
+
+  if (!formData.urlPattern.trim()) {
+    errors.urlPattern = t('editor.validationError', { error: 'URL pattern is required' });
+  }
+
+  if (formData.matchType === 'regex' && !validateRegexPattern(formData.urlPattern)) {
+    errors.urlPattern = t('editor.validationError', { error: 'Invalid regex pattern' });
+  }
+
+  if (formData.contentType === 'application/json' && formData.responseBody.trim()) {
+    if (jsonValidation && !jsonValidation.isValid) {
+      return errors;
+    }
+    if (!jsonValidation && !isValidJSON(formData.responseBody)) {
+      return errors;
+    }
+  }
+
+  return errors;
+}
+
+function buildMockRule(formData: any, rule: MockRule | null): MockRule {
+  let response: string | object = formData.responseBody;
+  if (formData.contentType === 'application/json' && formData.responseBody.trim()) {
+    try {
+      response = JSON.parse(formData.responseBody);
+    } catch {
+      response = formData.responseBody;
+    }
+  }
+
+  const now = Date.now();
+  return {
+    id: rule?.id || uuidv4(),
+    name: formData.name,
+    enabled: rule?.enabled ?? true,
+    urlPattern: formData.urlPattern,
+    matchType: formData.matchType,
+    method: formData.method,
+    statusCode: formData.statusCode,
+    response,
+    contentType: formData.contentType,
+    delay: formData.delay,
+    headers: convertArrayToHeaders(formData.headers),
+    created: rule?.created || now,
+    modified: now,
+  };
+}
+
+// ============================================================================
+// Component
+// ============================================================================
+
+const RuleEditor: React.FC<RuleEditorProps> = ({ rule, mockRequest, onSave, onCancel }) => {
+  const { t } = useI18n();
+  const [formData, setFormData] = useState(() => getInitialFormData(rule, mockRequest));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isExpanded, setIsExpanded] = useState(false);
   const [jsonValidation, setJsonValidation] = useState<{
@@ -40,38 +184,13 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, mockRequest, onSave, onCa
   const validationTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
-    if (rule) {
-      const responseBody = typeof rule.response === 'string' ? rule.response : JSON.stringify(rule.response, null, 2);
-      setFormData({
-        name: rule.name,
-        urlPattern: rule.urlPattern,
-        matchType: rule.matchType,
-        method: rule.method,
-        statusCode: rule.statusCode,
-        contentType: rule.contentType,
-        responseBody,
-        delay: rule.delay,
-      });
-      // Validate JSON on load
-      if (rule.contentType === 'application/json') {
-        validateJSON(responseBody);
-      }
-    } else if (mockRequest) {
-      const responseBody = mockRequest.responseBody || '{}';
-      setFormData({
-        name: `Mock for ${new URL(mockRequest.url).pathname}`,
-        urlPattern: mockRequest.url,
-        matchType: 'exact',
-        method: mockRequest.method as HttpMethod,
-        statusCode: mockRequest.statusCode || 200,
-        contentType: mockRequest.contentType || 'application/json',
-        responseBody,
-        delay: 0,
-      });
-      // Validate JSON on load
-      if ((mockRequest.contentType || 'application/json') === 'application/json') {
-        validateJSON(responseBody);
-      }
+    const newFormData = getInitialFormData(rule, mockRequest);
+    setFormData(newFormData);
+
+    // Validate JSON on load if applicable
+    const contentType = rule?.contentType || mockRequest?.contentType;
+    if (contentType === 'application/json') {
+      validateJSON(newFormData.responseBody);
     }
   }, [rule, mockRequest]);
 
@@ -120,68 +239,16 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, mockRequest, onSave, onCa
   };
 
   const validate = (): boolean => {
-    const newErrors: Record<string, string> = {};
-
-    if (!formData.name.trim()) {
-      newErrors.name = t('editor.validationError', { error: 'Name is required' });
-    }
-
-    if (!formData.urlPattern.trim()) {
-      newErrors.urlPattern = t('editor.validationError', { error: 'URL pattern is required' });
-    }
-
-    if (formData.matchType === 'regex') {
-      try {
-        new RegExp(formData.urlPattern);
-      } catch (e) {
-        newErrors.urlPattern = t('editor.validationError', { error: 'Invalid regex pattern' });
-      }
-    }
-
-    if (formData.contentType === 'application/json' && formData.responseBody.trim()) {
-      // Check real-time validation state - validation message is already displayed dynamically
-      if (jsonValidation && !jsonValidation.isValid) {
-        return false;
-      }
-      if (!jsonValidation && !isValidJSON(formData.responseBody)) {
-        return false;
-      }
-    }
-
+    const newErrors = validateFormData(formData, jsonValidation, t);
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!validate()) return;
 
-    let response: string | object = formData.responseBody;
-    if (formData.contentType === 'application/json' && formData.responseBody.trim()) {
-      try {
-        response = JSON.parse(formData.responseBody);
-      } catch (e) {
-        response = formData.responseBody;
-      }
-    }
-
-    const now = Date.now();
-    const savedRule: MockRule = {
-      id: rule?.id || uuidv4(),
-      name: formData.name,
-      enabled: rule?.enabled ?? true,
-      urlPattern: formData.urlPattern,
-      matchType: formData.matchType,
-      method: formData.method,
-      statusCode: formData.statusCode,
-      response,
-      contentType: formData.contentType,
-      delay: formData.delay,
-      created: rule?.created || now,
-      modified: now,
-    };
-
+    const savedRule = buildMockRule(formData, rule);
     onSave(savedRule);
   };
 
@@ -299,6 +366,63 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, mockRequest, onSave, onCa
           />
 
           <div>
+            <label className='block text-sm font-bold text-gray-300 mb-2'>
+              {t('editor.customHeaders')}{' '}
+              <span className='text-gray-500 text-xs font-normal'>({t('editor.optional')})</span>
+            </label>
+            <div className='space-y-2'>
+              {formData.headers.map((header, index) => (
+                <div key={index} className='flex gap-2 items-center'>
+                  <Input
+                    value={header.key}
+                    onChange={(e) => {
+                      const newHeaders = [...formData.headers];
+                      newHeaders[index] = { ...newHeaders[index], key: e.target.value };
+                      handleChange('headers', newHeaders);
+                    }}
+                    placeholder={t('editor.headerName')}
+                    className='flex-1'
+                  />
+                  <Input
+                    value={header.value}
+                    onChange={(e) => {
+                      const newHeaders = [...formData.headers];
+                      newHeaders[index].value = e.target.value;
+                      handleChange('headers', newHeaders);
+                    }}
+                    placeholder={t('editor.headerValue')}
+                    className='flex-1'
+                  />
+                  <IconButton
+                    type='button'
+                    variant='danger'
+                    onClick={() => {
+                      const newHeaders = formData.headers.filter((_, i) => i !== index);
+                      handleChange('headers', newHeaders);
+                    }}
+                    title='Remove header'
+                  >
+                    <Trash2 className='w-4 h-4' />
+                  </IconButton>
+                </div>
+              ))}
+
+              <Button
+                type='button'
+                variant='secondary'
+                size='sm'
+                className='flex items-center'
+                onClick={() => {
+                  handleChange('headers', [...formData.headers, { key: '', value: '' }]);
+                }}
+              >
+                <Plus className='w-4 h-4 mr-2' />
+                {t('editor.addHeader')}
+              </Button>
+            </div>
+          </div>
+
+          <div>
             <TextArea
               label={t('editor.responseBody')}
               value={formData.responseBody}
@@ -309,22 +433,13 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, mockRequest, onSave, onCa
               action={
                 <div className='flex items-center gap-3'>
                   {formData.contentType === 'application/json' && (
-                    <button
-                      type='button'
-                      onClick={formatJSON}
-                      className='px-2 py-1 text-xs bg-green-600 hover:bg-green-500 text-white rounded font-medium cursor-pointer transition-colors'
-                    >
+                    <Button type='button' onClick={formatJSON} size='sm' variant='primary'>
                       {t('editor.beautify')}
-                    </button>
+                    </Button>
                   )}
-                  <button
-                    type='button'
-                    onClick={() => setIsExpanded(true)}
-                    className='text-sm text-gray-400 hover:text-white flex items-center gap-1 cursor-pointer'
-                    title={t('common.expandEditor')}
-                  >
+                  <IconButton type='button' onClick={() => setIsExpanded(true)} title={t('common.expandEditor')}>
                     <Maximize2 className='w-4 h-4' />
-                  </button>
+                  </IconButton>
                 </div>
               }
             />
@@ -352,13 +467,9 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, mockRequest, onSave, onCa
                       {t('editor.beautify')}
                     </Button>
                   )}
-                  <button
-                    type='button'
-                    onClick={() => setIsExpanded(false)}
-                    className='text-gray-400 hover:text-white p-2 cursor-pointer'
-                  >
+                  <IconButton type='button' onClick={() => setIsExpanded(false)}>
                     <X className='w-5 h-5' />
-                  </button>
+                  </IconButton>
                 </div>
               </div>
               <div className='flex-1 p-6 overflow-hidden'>

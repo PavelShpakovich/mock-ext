@@ -29,6 +29,56 @@ const App: React.FC = () => {
     setRequestLog(loadedRequestLog);
   }, []);
 
+  // Helper: Check if tab is valid for recording
+  const isValidRecordingTab = (tab: chrome.tabs.Tab): boolean => {
+    return (
+      tab.id !== undefined &&
+      !!tab.url &&
+      !tab.url.startsWith('chrome-extension://') &&
+      !tab.url.startsWith('chrome://') &&
+      !tab.url.startsWith('about:') &&
+      tab.windowId !== chrome.windows.WINDOW_ID_NONE
+    );
+  };
+
+  // Helper: Find valid web tab
+  const findValidWebTab = async (): Promise<chrome.tabs.Tab | undefined> => {
+    const tabs = await chrome.tabs.query({ active: true });
+    return tabs.find(isValidRecordingTab);
+  };
+
+  // Helper: Start recording in tab
+  const startRecording = async (tab: chrome.tabs.Tab): Promise<boolean> => {
+    const response = await withContextCheck(
+      () =>
+        chrome.runtime.sendMessage({
+          action: 'startRecording',
+          tabId: tab.id,
+        }),
+      { success: false }
+    );
+
+    if (response?.success) {
+      const newSettings = { ...settings, logRequests: true };
+      setSettings(newSettings);
+      await Storage.saveSettings(newSettings);
+      setActiveTabTitle(tab.title || 'Unknown Tab');
+      setActiveTab('requests');
+      return true;
+    }
+
+    return false;
+  };
+
+  // Helper: Stop recording
+  const stopRecording = async (): Promise<void> => {
+    await withContextCheck(() => chrome.runtime.sendMessage({ action: 'stopRecording' })).catch(() => {});
+    const newSettings = { ...settings, logRequests: false };
+    setSettings(newSettings);
+    await Storage.saveSettings(newSettings);
+    setActiveTabTitle('');
+  };
+
   useEffect(() => {
     loadData();
   }, []);
@@ -102,45 +152,12 @@ const App: React.FC = () => {
 
       try {
         if (logRequests) {
-          const tabs = await chrome.tabs.query({ active: true });
-          const webTab = tabs.find(
-            (tab) =>
-              tab.id !== undefined &&
-              tab.url &&
-              !tab.url.startsWith('chrome-extension://') &&
-              !tab.url.startsWith('chrome://') &&
-              !tab.url.startsWith('about:') &&
-              tab.windowId !== chrome.windows.WINDOW_ID_NONE
-          );
-
-          if (!webTab?.id) {
-            return;
-          }
-
-          const response = await withContextCheck(
-            () =>
-              chrome.runtime.sendMessage({
-                action: 'startRecording',
-                tabId: webTab.id,
-              }),
-            { success: false }
-          );
-
-          if (response?.success) {
-            const newSettings = { ...settings, logRequests: true };
-            setSettings(newSettings);
-            await Storage.saveSettings(newSettings);
-            setActiveTabTitle(webTab.title || 'Unknown Tab');
-            setActiveTab('requests');
+          const webTab = await findValidWebTab();
+          if (webTab?.id) {
+            await startRecording(webTab);
           }
         } else {
-          await withContextCheck(() => chrome.runtime.sendMessage({ action: 'stopRecording' })).catch(() => {
-            // Silent fail - context invalidated
-          });
-          const newSettings = { ...settings, logRequests: false };
-          setSettings(newSettings);
-          await Storage.saveSettings(newSettings);
-          setActiveTabTitle('');
+          await stopRecording();
         }
       } catch (error) {
         console.error('Recording toggle error:', error);
@@ -148,6 +165,15 @@ const App: React.FC = () => {
     },
     [settings]
   );
+
+  // Helper: Update rules in storage and background
+  const updateRulesEverywhere = async (updatedRules: MockRule[]): Promise<void> => {
+    setRules(updatedRules);
+    await Storage.saveRules(updatedRules);
+    await withContextCheck(() => chrome.runtime.sendMessage({ action: 'updateRules', rules: updatedRules })).catch(
+      () => {}
+    );
+  };
 
   const handleSaveRule = useCallback(
     async (rule: MockRule) => {
@@ -158,13 +184,7 @@ const App: React.FC = () => {
         updatedRules = [...rules, rule];
       }
 
-      setRules(updatedRules);
-      await Storage.saveRules(updatedRules);
-      await withContextCheck(() => chrome.runtime.sendMessage({ action: 'updateRules', rules: updatedRules })).catch(
-        () => {
-          // Silent fail - context invalidated
-        }
-      );
+      await updateRulesEverywhere(updatedRules);
       setEditingRuleId(null);
     },
     [editingRuleId, rules]
@@ -173,13 +193,7 @@ const App: React.FC = () => {
   const handleDeleteRule = useCallback(
     async (id: string) => {
       const updatedRules = rules.filter((r) => r.id !== id);
-      setRules(updatedRules);
-      await Storage.saveRules(updatedRules);
-      await withContextCheck(() => chrome.runtime.sendMessage({ action: 'updateRules', rules: updatedRules })).catch(
-        () => {
-          // Silent fail - context invalidated
-        }
-      );
+      await updateRulesEverywhere(updatedRules);
       if (editingRuleId === id) {
         setEditingRuleId(null);
       }
@@ -190,13 +204,7 @@ const App: React.FC = () => {
   const handleToggleRule = useCallback(
     async (id: string) => {
       const updatedRules = rules.map((r) => (r.id === id ? { ...r, enabled: !r.enabled } : r));
-      setRules(updatedRules);
-      await Storage.saveRules(updatedRules);
-      await withContextCheck(() => chrome.runtime.sendMessage({ action: 'updateRules', rules: updatedRules })).catch(
-        () => {
-          // Silent fail - context invalidated
-        }
-      );
+      await updateRulesEverywhere(updatedRules);
     },
     [rules]
   );
@@ -216,13 +224,7 @@ const App: React.FC = () => {
       };
 
       const updatedRules = [...rules, duplicatedRule];
-      setRules(updatedRules);
-      await Storage.saveRules(updatedRules);
-      await withContextCheck(() => chrome.runtime.sendMessage({ action: 'updateRules', rules: updatedRules })).catch(
-        () => {
-          // Silent fail - context invalidated
-        }
-      );
+      await updateRulesEverywhere(updatedRules);
     },
     [rules]
   );
@@ -238,18 +240,48 @@ const App: React.FC = () => {
     sessionStorage.setItem('mockRequest', JSON.stringify(request));
   }, []);
 
-  const handleExportRules = useCallback(() => {
-    const dataStr = JSON.stringify(rules, null, 2);
-    const blob = new Blob([dataStr], { type: 'application/json' });
+  // Helper: Download file
+  const downloadFile = (content: string, filename: string, mimeType: string): void => {
+    const blob = new Blob([content], { type: mimeType });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `mockapi-rules-${new Date().toISOString().split('T')[0]}.json`;
+    link.download = filename;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+  };
+
+  const handleExportRules = useCallback(() => {
+    const dataStr = JSON.stringify(rules, null, 2);
+    const filename = `mockapi-rules-${new Date().toISOString().split('T')[0]}.json`;
+    downloadFile(dataStr, filename, 'application/json');
   }, [rules]);
+
+  // Helper: Validate imported rules structure
+  const validateImportedRules = (data: any): { valid: boolean; error?: string } => {
+    if (!Array.isArray(data)) {
+      return { valid: false, error: 'Invalid format - expected array' };
+    }
+
+    const hasRequiredFields = data.every(
+      (rule) => rule.id && rule.name && rule.urlPattern && rule.method && rule.statusCode !== undefined
+    );
+
+    if (!hasRequiredFields) {
+      return { valid: false, error: 'Missing required fields' };
+    }
+
+    return { valid: true };
+  };
+
+  // Helper: Merge imported rules with existing
+  const mergeImportedRules = (importedRules: MockRule[]): MockRule[] => {
+    const existingIds = new Set(rules.map((r) => r.id));
+    const newRules = importedRules.filter((rule) => !existingIds.has(rule.id));
+    return [...rules, ...newRules];
+  };
 
   const handleImportRules = useCallback(
     async (file: File) => {
@@ -257,36 +289,17 @@ const App: React.FC = () => {
         const text = await file.text();
         const importedRules = JSON.parse(text);
 
-        // Validate structure
-        if (!Array.isArray(importedRules)) {
-          alert(t('rules.importError') + ': Invalid format - expected array');
+        const validation = validateImportedRules(importedRules);
+        if (!validation.valid) {
+          alert(t('rules.importError') + ': ' + validation.error);
           return;
         }
 
-        // Validate each rule has required fields
-        const isValid = importedRules.every(
-          (rule) => rule.id && rule.name && rule.urlPattern && rule.method && rule.statusCode !== undefined
-        );
+        const updatedRules = mergeImportedRules(importedRules);
+        const newRulesCount = updatedRules.length - rules.length;
 
-        if (!isValid) {
-          alert(t('rules.importError') + ': Missing required fields');
-          return;
-        }
-
-        // Merge with existing rules (avoid duplicates by ID)
-        const existingIds = new Set(rules.map((r) => r.id));
-        const newRules = importedRules.filter((rule: MockRule) => !existingIds.has(rule.id));
-        const updatedRules = [...rules, ...newRules];
-
-        setRules(updatedRules);
-        await Storage.saveRules(updatedRules);
-        await withContextCheck(() => chrome.runtime.sendMessage({ action: 'updateRules', rules: updatedRules })).catch(
-          () => {
-            // Silent fail - context invalidated
-          }
-        );
-
-        alert(t('rules.importSuccess').replace('{count}', newRules.length.toString()));
+        await updateRulesEverywhere(updatedRules);
+        alert(t('rules.importSuccess').replace('{count}', newRulesCount.toString()));
       } catch (error) {
         console.error('Import error:', error);
         alert(t('rules.importError') + ': ' + (error as Error).message);

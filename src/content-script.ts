@@ -10,25 +10,49 @@ class ContentScriptBridge {
     // Interceptor is now injected declaratively via manifest.json
     // No need for dynamic injection
 
-    // Listen for rule updates from background
-    chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-      if (message.action === 'updateRulesInPage') {
-        this.updatePageRules(message.rules);
-        sendResponse({ success: true });
-        return true;
-      }
+    // Listen for messages from background
+    chrome.runtime.onMessage.addListener(this.handleRuntimeMessage.bind(this));
 
-      if (message.action === 'openDevTools') {
-        this.showDevToolsPrompt(message.language || 'en');
-        sendResponse({ success: true });
-        return true;
-      }
-
-      // Return false for unhandled messages
-      return false;
-    });
+    // Listen for messages from page
+    window.addEventListener('message', this.handlePageMessage.bind(this));
 
     // Send initial rules to page
+    await this.loadAndSendInitialRules();
+  }
+
+  private handleRuntimeMessage(
+    message: any,
+    _sender: chrome.runtime.MessageSender,
+    sendResponse: (response: any) => void
+  ): boolean {
+    if (message.action === 'updateRulesInPage') {
+      this.updatePageRules(message.rules);
+      sendResponse({ success: true });
+      return true;
+    }
+
+    if (message.action === 'openDevTools') {
+      this.showDevToolsPrompt(message.language || 'en');
+      sendResponse({ success: true });
+      return true;
+    }
+
+    return false;
+  }
+
+  private handlePageMessage(event: MessageEvent): void {
+    if (event.source !== window) return;
+
+    if (event.data.type === 'MOCKAPI_INTERCEPTED') {
+      this.forwardMockedRequest(event.data);
+    }
+
+    if (event.data.type === 'MOCKAPI_RESPONSE_CAPTURED') {
+      this.forwardCapturedResponse(event.data);
+    }
+  }
+
+  private async loadAndSendInitialRules(): Promise<void> {
     try {
       const rules = await withContextCheck(() => Storage.getRules(), []);
       const settings = await withContextCheck(() => Storage.getSettings(), {
@@ -43,46 +67,40 @@ class ContentScriptBridge {
     } catch (error) {
       // Context invalidated, silently ignore
     }
+  }
 
-    // Listen for interception notifications from page
-    window.addEventListener('message', (event) => {
-      if (event.source !== window) return;
+  private forwardMockedRequest(data: any): void {
+    if (!chrome.runtime?.id) return;
 
-      if (event.data.type === 'MOCKAPI_INTERCEPTED') {
-        // Log to background that a request was mocked
-        if (chrome.runtime?.id) {
-          chrome.runtime
-            .sendMessage({
-              action: 'logMockedRequest',
-              url: event.data.url,
-              method: event.data.method,
-              ruleId: event.data.ruleId,
-              statusCode: event.data.statusCode,
-            })
-            .catch(() => {
-              // Extension context might be invalidated, ignore silently
-            });
-        }
-      }
+    chrome.runtime
+      .sendMessage({
+        action: 'logMockedRequest',
+        url: data.url,
+        method: data.method,
+        ruleId: data.ruleId,
+        statusCode: data.statusCode,
+      })
+      .catch(() => {
+        // Extension context might be invalidated, ignore silently
+      });
+  }
 
-      if (event.data.type === 'MOCKAPI_RESPONSE_CAPTURED') {
-        // Forward captured response to background
-        if (chrome.runtime?.id) {
-          chrome.runtime
-            .sendMessage({
-              action: 'logCapturedResponse',
-              url: event.data.url,
-              method: event.data.method,
-              statusCode: event.data.statusCode,
-              contentType: event.data.contentType,
-              responseBody: event.data.responseBody,
-            })
-            .catch(() => {
-              // Extension context might be invalidated, ignore silently
-            });
-        }
-      }
-    });
+  private forwardCapturedResponse(data: any): void {
+    if (!chrome.runtime?.id) return;
+
+    chrome.runtime
+      .sendMessage({
+        action: 'logCapturedResponse',
+        url: data.url,
+        method: data.method,
+        statusCode: data.statusCode,
+        contentType: data.contentType,
+        responseBody: data.responseBody,
+        responseHeaders: data.responseHeaders,
+      })
+      .catch(() => {
+        // Extension context might be invalidated, ignore silently
+      });
   }
 
   private updatePageRules(rules: MockRule[]) {
@@ -95,7 +113,7 @@ class ContentScriptBridge {
     );
   }
 
-  private showDevToolsPrompt(language: string = 'en') {
+  private getTranslations(language: string) {
     const translations = {
       en: {
         title: 'Open DevTools',
@@ -109,18 +127,11 @@ class ContentScriptBridge {
       },
     };
 
-    const t = translations[language as keyof typeof translations] || translations.en;
+    return translations[language as keyof typeof translations] || translations.en;
+  }
 
-    // Remove any existing prompt
-    const existing = document.getElementById('mockapi-devtools-prompt');
-    if (existing) {
-      existing.remove();
-    }
-
-    // Create prompt overlay
-    const overlay = document.createElement('div');
-    overlay.id = 'mockapi-devtools-prompt';
-    overlay.style.cssText = `
+  private getPromptStyles(): string {
+    return `
       position: fixed;
       top: 20px;
       right: 20px;
@@ -137,8 +148,10 @@ class ContentScriptBridge {
       backdrop-filter: blur(10px);
       animation: slideIn 0.3s ease-out;
     `;
+  }
 
-    overlay.innerHTML = `
+  private getPromptHTML(t: { title: string; message: string; gotIt: string }): string {
+    return `
       <style>
         @keyframes slideIn {
           from {
@@ -184,9 +197,9 @@ class ContentScriptBridge {
         </div>
       </div>
     `;
+  }
 
-    document.body.appendChild(overlay);
-
+  private setupPromptDismissal(overlay: HTMLElement): void {
     // Auto-dismiss after 10 seconds
     const timeout = setTimeout(() => {
       overlay.remove();
@@ -200,6 +213,25 @@ class ContentScriptBridge {
         overlay.remove();
       });
     }
+  }
+
+  private showDevToolsPrompt(language: string = 'en') {
+    const t = this.getTranslations(language);
+
+    // Remove any existing prompt
+    const existing = document.getElementById('mockapi-devtools-prompt');
+    if (existing) {
+      existing.remove();
+    }
+
+    // Create prompt overlay
+    const overlay = document.createElement('div');
+    overlay.id = 'mockapi-devtools-prompt';
+    overlay.style.cssText = this.getPromptStyles();
+    overlay.innerHTML = this.getPromptHTML(t);
+
+    document.body.appendChild(overlay);
+    this.setupPromptDismissal(overlay);
   }
 }
 

@@ -101,6 +101,34 @@ describe('Storage', () => {
       const rules = await Storage.getRules();
       expect(rules).toEqual([]);
     });
+
+    it('should return rules with custom headers', async () => {
+      const mockRules: MockRule[] = [
+        {
+          id: '1',
+          name: 'Rule with Headers',
+          enabled: true,
+          urlPattern: 'https://api.example.com',
+          matchType: 'exact',
+          method: 'GET',
+          statusCode: 200,
+          response: {},
+          contentType: 'application/json',
+          delay: 0,
+          headers: {
+            Authorization: 'Bearer token',
+          },
+          created: Date.now(),
+          modified: Date.now(),
+        },
+      ];
+
+      mockLocalStorage.mockRules = mockRules;
+      const rules = await Storage.getRules();
+
+      expect(rules).toHaveLength(1);
+      expect(rules[0].headers).toEqual({ Authorization: 'Bearer token' });
+    });
   });
 
   describe('saveRules', () => {
@@ -124,6 +152,36 @@ describe('Storage', () => {
 
       await Storage.saveRules(mockRules);
       expect(mockLocalStorage.mockRules).toEqual(mockRules);
+    });
+
+    it('should save rules with custom headers', async () => {
+      const mockRules: MockRule[] = [
+        {
+          id: '1',
+          name: 'Test Rule with Headers',
+          enabled: true,
+          urlPattern: 'https://api.example.com/*',
+          matchType: 'wildcard',
+          method: 'GET',
+          statusCode: 200,
+          response: {},
+          contentType: 'application/json',
+          delay: 0,
+          headers: {
+            'Access-Control-Allow-Origin': '*',
+            Authorization: 'Bearer token123',
+          },
+          created: Date.now(),
+          modified: Date.now(),
+        },
+      ];
+
+      await Storage.saveRules(mockRules);
+      expect(mockLocalStorage.mockRules).toEqual(mockRules);
+      expect(mockLocalStorage.mockRules[0].headers).toEqual({
+        'Access-Control-Allow-Origin': '*',
+        Authorization: 'Bearer token123',
+      });
     });
   });
 
@@ -182,6 +240,35 @@ describe('Storage', () => {
     it('should return empty array if no log exists', async () => {
       const log = await Storage.getRequestLog();
       expect(log).toEqual([]);
+    });
+
+    it('should return log entries with response headers', async () => {
+      const mockLog: RequestLog[] = [
+        {
+          id: '1',
+          url: 'https://api.example.com/test',
+          method: 'GET',
+          timestamp: Date.now(),
+          matched: false,
+          statusCode: 200,
+          contentType: 'application/json',
+          responseBody: '{"data": "test"}',
+          responseHeaders: {
+            'cache-control': 'no-cache',
+            'access-control-allow-origin': '*',
+            'x-custom-header': 'custom-value',
+          },
+        },
+      ];
+      mockSessionStorage.requestLog = mockLog;
+
+      const log = await Storage.getRequestLog();
+      expect(log).toHaveLength(1);
+      expect(log[0].responseHeaders).toEqual({
+        'cache-control': 'no-cache',
+        'access-control-allow-origin': '*',
+        'x-custom-header': 'custom-value',
+      });
     });
   });
 
@@ -244,6 +331,32 @@ describe('Storage', () => {
       expect(mockSessionStorage.requestLog).toHaveLength(1);
       expect(mockSessionStorage.requestLog[0]).toEqual(entry);
     });
+
+    it('should add entry with response headers to log', async () => {
+      const entry: RequestLog = {
+        id: '1',
+        url: 'https://api.example.com/test',
+        method: 'GET',
+        timestamp: Date.now(),
+        matched: false,
+        statusCode: 200,
+        contentType: 'application/json',
+        responseBody: '{"success": true}',
+        responseHeaders: {
+          authorization: 'Bearer token',
+          'cache-control': 'max-age=3600',
+        },
+      };
+
+      await Storage.addToRequestLog(entry);
+      const log = await Storage.getRequestLog();
+
+      expect(log).toHaveLength(1);
+      expect(log[0].responseHeaders).toEqual({
+        authorization: 'Bearer token',
+        'cache-control': 'max-age=3600',
+      });
+    });
   });
 
   describe('clearRequestLog', () => {
@@ -285,8 +398,91 @@ describe('Storage', () => {
 
       const exported = await Storage.exportAll();
       expect(exported.mockRules).toEqual(mockRules);
-      expect(exported.settings).toMatchObject(mockSettings);
-      expect(exported.requestLog).toEqual(mockLog);
+      expect(exported.settings).toEqual(mockSettings);
+    });
+
+    it('should export rules with custom headers', async () => {
+      const mockRules: MockRule[] = [
+        {
+          id: '1',
+          name: 'Test with Headers',
+          enabled: true,
+          urlPattern: 'https://example.com',
+          matchType: 'exact',
+          method: 'GET',
+          statusCode: 200,
+          response: {},
+          contentType: 'application/json',
+          delay: 0,
+          headers: {
+            'X-Custom-Header': 'custom-value',
+            Authorization: 'Bearer xyz',
+          },
+          created: Date.now(),
+          modified: Date.now(),
+        },
+      ];
+
+      mockLocalStorage.mockRules = mockRules;
+
+      const exported = await Storage.exportAll();
+      expect(exported.mockRules).toEqual(mockRules);
+      expect(exported.mockRules?.[0].headers).toEqual({
+        'X-Custom-Header': 'custom-value',
+        Authorization: 'Bearer xyz',
+      });
+    });
+  });
+
+  describe('importRules', () => {
+    it('should import rules with custom headers', async () => {
+      const existingRules: MockRule[] = [
+        {
+          id: '1',
+          name: 'Existing Rule',
+          enabled: true,
+          urlPattern: 'https://existing.com',
+          matchType: 'exact',
+          method: 'GET',
+          statusCode: 200,
+          response: {},
+          contentType: 'application/json',
+          delay: 0,
+          created: Date.now(),
+          modified: Date.now(),
+        },
+      ];
+
+      const newRules: MockRule[] = [
+        {
+          id: '2',
+          name: 'Imported with Headers',
+          enabled: true,
+          urlPattern: 'https://api.test.com',
+          matchType: 'exact',
+          method: 'GET',
+          statusCode: 200,
+          response: { success: true },
+          contentType: 'application/json',
+          delay: 0,
+          headers: {
+            'Cache-Control': 'no-cache',
+            'X-API-Key': 'test-key',
+          },
+          created: Date.now(),
+          modified: Date.now(),
+        },
+      ];
+
+      mockLocalStorage.mockRules = existingRules;
+      await Storage.importRules(newRules);
+      const rules = await Storage.getRules();
+
+      expect(rules).toHaveLength(2);
+      expect(rules[1].headers).toEqual({
+        'Cache-Control': 'no-cache',
+        'X-API-Key': 'test-key',
+      });
     });
   });
 

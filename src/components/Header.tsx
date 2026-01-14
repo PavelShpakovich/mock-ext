@@ -1,6 +1,7 @@
 import React from 'react';
 import clsx from 'clsx';
 import { Button } from './ui/Button';
+import { IconButton } from './ui/IconButton';
 import { Toggle } from './ui/Toggle';
 import { Network, Circle, Square } from 'lucide-react';
 import { useI18n } from '../contexts/I18nContext';
@@ -49,14 +50,14 @@ const Header: React.FC<HeaderProps> = ({
 
         <div className='flex items-center gap-4 flex-wrap'>
           <div className='flex items-center gap-2'>
-            <button
+            <IconButton
               onClick={toggleLanguage}
-              className='flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors cursor-pointer border border-gray-700 hover:border-gray-600'
+              className='flex items-center gap-1.5 px-3 py-2 bg-gray-800 border border-gray-700'
               title={language === 'en' ? 'Switch to Russian' : 'Переключить на английский'}
             >
               <span className='text-lg leading-none'>{language === 'en' ? '🇬🇧' : '🇷🇺'}</span>
               <span className='text-xs font-medium text-gray-300'>{language === 'en' ? 'EN' : 'RU'}</span>
-            </button>
+            </IconButton>
 
             <div className='w-px h-6 bg-gray-700 mx-1'></div>
 

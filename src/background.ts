@@ -23,41 +23,58 @@ async function initialize(): Promise<void> {
   }
 }
 
+// Helper: Check if tab can receive content script messages
+function isValidTab(tab: chrome.tabs.Tab): boolean {
+  return !!tab.id && !!tab.url && !tab.url.startsWith('chrome://') && !tab.url.startsWith('chrome-extension://');
+}
+
+// Helper: Send rules to a single tab
+async function sendRulesToTab(tabId: number, rules: MockRule[]): Promise<void> {
+  try {
+    await chrome.tabs.sendMessage(tabId, {
+      action: 'updateRulesInPage',
+      rules,
+    });
+  } catch {
+    // Silent fail - content script may not be injected yet
+  }
+}
+
+// Helper: Get enabled rules
+function getEnabledRules(): MockRule[] {
+  return settings.enabled ? mockRules.filter((rule) => rule.enabled) : [];
+}
+
 // Update rules in all tabs via content script
 async function updateRulesInAllTabs(): Promise<void> {
-  const enabledRules = settings.enabled ? mockRules.filter((rule) => rule.enabled) : [];
-
-  // Query all tabs
+  const enabledRules = getEnabledRules();
   const tabs = await chrome.tabs.query({});
 
-  // Send rules to each tab's content script
-  for (const tab of tabs) {
-    if (tab.id && tab.url && !tab.url.startsWith('chrome://') && !tab.url.startsWith('chrome-extension://')) {
-      chrome.tabs
-        .sendMessage(tab.id, {
-          action: 'updateRulesInPage',
-          rules: enabledRules,
-        })
-        .catch(() => {
-          // Silent fail - content script may not be injected yet
-        });
-    }
-  }
+  // Send rules to each valid tab
+  const sendPromises = tabs.filter(isValidTab).map((tab) => sendRulesToTab(tab.id!, enabledRules));
+
+  await Promise.allSettled(sendPromises);
 
   // Update badge
   updateBadge(settings.enabled && enabledRules.length > 0, enabledRules.length);
 }
 
+// Helper: Set badge appearance
+function setBadge(text: string, color?: string): void {
+  chrome.action.setBadgeText({ text });
+  if (color) {
+    chrome.action.setBadgeBackgroundColor({ color });
+  }
+}
+
 // Update extension badge
 function updateBadge(enabled: boolean, count?: number): void {
-  if (enabled && count !== undefined && count > 0) {
-    chrome.action.setBadgeText({ text: count.toString() });
-    chrome.action.setBadgeBackgroundColor({ color: '#4CAF50' });
-  } else if (enabled) {
-    chrome.action.setBadgeText({ text: '✓' });
-    chrome.action.setBadgeBackgroundColor({ color: '#4CAF50' });
+  if (!enabled) {
+    setBadge('');
+  } else if (count && count > 0) {
+    setBadge(count.toString(), '#4CAF50');
   } else {
-    chrome.action.setBadgeText({ text: '' });
+    setBadge('✓', '#4CAF50');
   }
 }
 
@@ -128,50 +145,82 @@ async function handleMessage(message: MessageAction, sender?: chrome.runtime.Mes
       return { success: true, data: { tabId: recordingTabId } };
 
     case 'logCapturedResponse':
-      // Log captured response from interceptor (only if from recording tab)
-      if (message.url && message.method && recordingTabId !== null && sender?.tab?.id === recordingTabId) {
-        const matchedRule = findMatchingRule(message.url, message.method, mockRules);
-
-        // Don't log if it's a mocked request and extension is enabled
-        if (!(matchedRule && settings.enabled)) {
-          await Storage.addToRequestLog({
-            id: uuidv4(),
-            url: message.url,
-            method: message.method,
-            timestamp: Date.now(),
-            matched: !!matchedRule,
-            ruleId: matchedRule?.id,
-            statusCode: message.statusCode || 200,
-            contentType: message.contentType || '',
-            responseBody: message.responseBody || '',
-          });
-        }
-      }
+      await handleCapturedResponse(message, sender);
       return { success: true };
 
     case 'logMockedRequest':
-      // Log intercepted requests from content script
       if (message.data) {
-        const { url, method, statusCode, ruleId, timestamp } = message.data;
-        const matchedRule = mockRules.find((r) => r.id === ruleId);
-
-        await Storage.addToRequestLog({
-          id: uuidv4(),
-          url,
-          method,
-          timestamp,
-          matched: true,
-          ruleId,
-          statusCode,
-          contentType: matchedRule?.contentType || '',
-        });
-
+        await handleMockedRequest(message.data);
         return { success: true };
       }
       return { success: false, error: 'No request data provided' };
 
     default:
       return { success: false, error: 'Unknown action' };
+  }
+}
+
+// Helper: Handle captured response logging
+async function handleCapturedResponse(message: MessageAction, sender?: chrome.runtime.MessageSender): Promise<void> {
+  const { url, method, statusCode, contentType, responseBody, responseHeaders } = message;
+
+  // Only log if from recording tab
+  if (!url || !method || recordingTabId === null || sender?.tab?.id !== recordingTabId) {
+    return;
+  }
+
+  const matchedRule = findMatchingRule(url, method, mockRules);
+
+  // Don't log if it's a mocked request and extension is enabled
+  if (matchedRule && settings.enabled) {
+    return;
+  }
+
+  await Storage.addToRequestLog({
+    id: uuidv4(),
+    url,
+    method,
+    timestamp: Date.now(),
+    matched: !!matchedRule,
+    ruleId: matchedRule?.id,
+    statusCode: statusCode || 200,
+    contentType: contentType || '',
+    responseBody: responseBody || '',
+    responseHeaders,
+  });
+}
+
+// Helper: Handle mocked request logging
+async function handleMockedRequest(data: any): Promise<void> {
+  const { url, method, statusCode, ruleId, timestamp } = data;
+  const matchedRule = mockRules.find((r) => r.id === ruleId);
+
+  await Storage.addToRequestLog({
+    id: uuidv4(),
+    url,
+    method,
+    timestamp,
+    matched: true,
+    ruleId,
+    statusCode,
+    contentType: matchedRule?.contentType || '',
+  });
+}
+
+// Helper: Show DevTools prompt in active tab
+async function showDevToolsPromptInActiveTab(): Promise<void> {
+  const settings = await Storage.getSettings();
+  const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+
+  if (tabs[0]?.id) {
+    try {
+      await chrome.tabs.sendMessage(tabs[0].id, {
+        action: 'openDevTools',
+        language: settings.language || 'en',
+      });
+    } catch {
+      // Silent fail - content script may not be loaded yet
+    }
   }
 }
 
@@ -185,68 +234,55 @@ chrome.tabs.onRemoved.addListener((tabId) => {
 // Install/update handler
 chrome.runtime.onInstalled.addListener(async (details) => {
   if (details.reason === 'install') {
-    const exampleRule: MockRule = {
-      id: '1',
-      name: 'Example API Mock',
-      enabled: false,
-      urlPattern: 'https://jsonplaceholder.typicode.com/users/*',
-      matchType: 'wildcard',
-      method: 'GET',
-      statusCode: 200,
-      response: {
-        id: 1,
-        name: 'Mocked User',
-        email: 'mock@example.com',
-      },
-      contentType: 'application/json',
-      delay: 0,
-      created: Date.now(),
-      modified: Date.now(),
-    };
-
-    await Storage.saveRules([exampleRule]);
+    await createExampleRule();
   }
 
+  await createContextMenu();
+  await initialize();
+});
+
+// Helper: Create example rule on first install
+async function createExampleRule(): Promise<void> {
+  const exampleRule: MockRule = {
+    id: '1',
+    name: 'Example API Mock',
+    enabled: false,
+    urlPattern: 'https://jsonplaceholder.typicode.com/users/*',
+    matchType: 'wildcard',
+    method: 'GET',
+    statusCode: 200,
+    response: {
+      id: 1,
+      name: 'Mocked User',
+      email: 'mock@example.com',
+    },
+    contentType: 'application/json',
+    delay: 0,
+    created: Date.now(),
+    modified: Date.now(),
+  };
+
+  await Storage.saveRules([exampleRule]);
+}
+
+// Helper: Create context menu
+async function createContextMenu(): Promise<void> {
   chrome.contextMenus.create({
     id: 'openFloatingWindow',
     title: 'Open MockAPI',
     contexts: ['action'],
   });
-
-  await initialize();
-});
+}
 
 // Service worker startup
 initialize();
 
 // Handle extension icon click to show DevTools prompt
-chrome.action.onClicked.addListener(async () => {
-  const settings = await Storage.getSettings();
-  // Send message to show DevTools prompt
-  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-    if (tabs[0]?.id) {
-      chrome.tabs.sendMessage(tabs[0].id, { action: 'openDevTools', language: settings.language || 'en' }).catch(() => {
-        // Silent fail - content script may not be loaded yet
-      });
-    }
-  });
-});
+chrome.action.onClicked.addListener(showDevToolsPromptInActiveTab);
 
 // Context menu handler
 chrome.contextMenus.onClicked.addListener(async (info) => {
   if (info.menuItemId === 'openFloatingWindow') {
-    const settings = await Storage.getSettings();
-    // Show DevTools prompt
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      if (tabs[0]?.id) {
-        chrome.tabs
-          .sendMessage(tabs[0].id, { action: 'openDevTools', language: settings.language || 'en' })
-          .catch(() => {
-            // Silent fail
-          });
-      }
-    });
+    await showDevToolsPromptInActiveTab();
   }
 });
-
-initialize();
