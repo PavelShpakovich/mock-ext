@@ -3,13 +3,12 @@
 
 import { Storage } from './storage';
 import { MockRule } from './types';
+import { withContextCheck } from './contextHandler';
 
 class ContentScriptBridge {
-  private hasInjectedInterceptor = false;
-
   async initialize() {
-    // Inject interceptor into MAIN world
-    await this.injectInterceptor();
+    // Interceptor is now injected declaratively via manifest.json
+    // No need for dynamic injection
 
     // Listen for rule updates from background
     chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
@@ -31,14 +30,18 @@ class ContentScriptBridge {
 
     // Send initial rules to page
     try {
-      const rules = await Storage.getRules();
-      const settings = await Storage.getSettings();
+      const rules = await withContextCheck(() => Storage.getRules(), []);
+      const settings = await withContextCheck(() => Storage.getSettings(), {
+        enabled: false,
+        logRequests: false,
+        showNotifications: false,
+      });
 
       if (settings.enabled) {
         this.updatePageRules(rules.filter((r) => r.enabled));
       }
     } catch (error) {
-      console.error('[MockAPI] Failed to load initial rules:', error);
+      // Context invalidated, silently ignore
     }
 
     // Listen for interception notifications from page
@@ -47,61 +50,37 @@ class ContentScriptBridge {
 
       if (event.data.type === 'MOCKAPI_INTERCEPTED') {
         // Log to background that a request was mocked
-        chrome.runtime
-          .sendMessage({
-            action: 'logMockedRequest',
-            url: event.data.url,
-            method: event.data.method,
-            ruleId: event.data.ruleId,
-            statusCode: event.data.statusCode,
-          })
-          .catch(() => {
-            // Extension context might be invalidated
-          });
+        if (chrome.runtime?.id) {
+          chrome.runtime
+            .sendMessage({
+              action: 'logMockedRequest',
+              url: event.data.url,
+              method: event.data.method,
+              ruleId: event.data.ruleId,
+              statusCode: event.data.statusCode,
+            })
+            .catch(() => {
+              // Extension context might be invalidated, ignore silently
+            });
+        }
       }
 
       if (event.data.type === 'MOCKAPI_RESPONSE_CAPTURED') {
         // Forward captured response to background
-        chrome.runtime
-          .sendMessage({
-            action: 'logCapturedResponse',
-            url: event.data.url,
-            method: event.data.method,
-            statusCode: event.data.statusCode,
-            contentType: event.data.contentType,
-            responseBody: event.data.responseBody,
-          })
-          .catch(() => {
-            // Extension context might be invalidated
-          });
-      }
-    });
-  }
-
-  private async injectInterceptor(): Promise<void> {
-    if (this.hasInjectedInterceptor) return;
-
-    return new Promise((resolve, reject) => {
-      try {
-        const script = document.createElement('script');
-        script.src = chrome.runtime.getURL('interceptor.js');
-        script.onload = () => {
-          script.remove();
-          this.hasInjectedInterceptor = true;
-          // Wait a bit for the interceptor to initialize
-          setTimeout(() => resolve(), 100);
-        };
-        script.onerror = () => {
-          // eslint-disable-next-line no-console
-          console.error('[MockAPI] Failed to inject interceptor script');
-          script.remove();
-          reject(new Error('Failed to inject interceptor'));
-        };
-
-        (document.head || document.documentElement).appendChild(script);
-      } catch (error) {
-        console.error('[MockAPI] Error injecting interceptor:', error);
-        reject(error);
+        if (chrome.runtime?.id) {
+          chrome.runtime
+            .sendMessage({
+              action: 'logCapturedResponse',
+              url: event.data.url,
+              method: event.data.method,
+              statusCode: event.data.statusCode,
+              contentType: event.data.contentType,
+              responseBody: event.data.responseBody,
+            })
+            .catch(() => {
+              // Extension context might be invalidated, ignore silently
+            });
+        }
       }
     });
   }

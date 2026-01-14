@@ -5,6 +5,37 @@ All notable changes to MockAPI Extension will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.3] - 2026-01-14
+
+### Fixed
+- **Query Parameter Matching**: URL matching now ignores query parameters for exact and wildcard matches
+  - Exact match: Strips query params from both URL and pattern before comparing
+  - Wildcard match: Strips query params unless pattern explicitly includes them
+  - Fixes issue where requests with query params (e.g., `?includeCertificates=true`) wouldn't match rules
+- **Extension Context Errors**: Eliminated "Extension context invalidated" errors during reload
+  - Added context validation in `withContextCheck` before attempting chrome API calls
+  - Removed problematic retry logic that caused additional errors
+  - Content script now uses `withContextCheck` for all Storage operations
+
+### Added
+- **Match Type Descriptions**: Added helpful descriptions for each match type in the rule editor
+  - Wildcard: "Use * for any characters. Example: https://api.example.com/users/*"
+  - Exact Match: "Match exact URL path (ignores query parameters)"
+  - Regex: "Use regular expressions. Example: https://api\\.example\\.com/users/\\d+"
+  - Descriptions dynamically update based on selected match type
+
+### Changed
+- **CSP Compatibility**: Migrated to declarative MAIN world content script injection
+  - Interceptor now injected via `manifest.json` content_scripts with `"world": "MAIN"`
+  - Removed dynamic script injection code from content-script.ts
+  - Extension now works on all websites including those with strict CSP (GitHub, Google, banking sites)
+  - Removed `web_accessible_resources` (no longer needed with declarative injection)
+
+### Technical Details
+- Chrome Manifest V3's declarative MAIN world scripts are exempt from CSP restrictions
+- Added sync warnings to duplicated code (interceptor.ts and helpers/) to prevent future mismatches
+- URL matching logic is duplicated between interceptor.ts (MAIN world) and helpers/urlMatching.ts (extension context)
+
 ## [2.0.2] - 2026-01-14
 
 ### Fixed

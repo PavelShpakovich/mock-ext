@@ -3,18 +3,27 @@ import { escapeRegExp } from './string';
 
 /**
  * Matches a URL against a pattern using the specified match type
+ * ⚠️ IMPORTANT: This logic is duplicated in src/interceptor.ts
+ * If you modify this, also update interceptor.ts matchesPattern()
  */
 export function matchURL(url: string, pattern: string, type: MatchType): boolean {
   switch (type) {
-    case 'exact':
-      return url === pattern;
+    case 'exact': {
+      // For exact match, ignore query parameters
+      const urlWithoutQuery = url.split('?')[0];
+      const patternWithoutQuery = pattern.split('?')[0];
+      return urlWithoutQuery === patternWithoutQuery;
+    }
     case 'wildcard': {
+      // For wildcard, ignore query parameters unless pattern includes them
+      const urlToMatch = pattern.includes('?') ? url : url.split('?')[0];
+
       const regexPattern = pattern
         .split('*')
         .map((part) => escapeRegExp(part))
         .join('.*');
       try {
-        return new RegExp('^' + regexPattern + '$').test(url);
+        return new RegExp('^' + regexPattern + '$').test(urlToMatch);
       } catch {
         return false;
       }

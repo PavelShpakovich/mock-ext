@@ -4,6 +4,14 @@
  */
 
 export async function withContextCheck<T>(fn: () => Promise<T>, fallback?: T): Promise<T> {
+  // Check if extension context is valid before attempting operation
+  if (!chrome.runtime?.id) {
+    if (fallback !== undefined) {
+      return fallback;
+    }
+    throw new Error('Extension context invalidated');
+  }
+
   try {
     return await fn();
   } catch (error) {
@@ -14,18 +22,7 @@ export async function withContextCheck<T>(fn: () => Promise<T>, fallback?: T): P
       errorMessage.includes('Extension context invalidated') ||
       errorMessage.includes('The message port closed before a response was received')
     ) {
-      console.warn('[MockAPI] Extension context invalidated. Attempting to reload...');
-
-      // Try to reload the extension by sending a message to trigger re-initialization
-      try {
-        await chrome.runtime.sendMessage({ action: 'ping' }).catch(() => {
-          // This will fail, which is expected
-        });
-      } catch {
-        // Silent fail - context is truly invalid
-      }
-
-      // Return fallback if provided
+      // Return fallback if provided, otherwise silently fail
       if (fallback !== undefined) {
         return fallback;
       }

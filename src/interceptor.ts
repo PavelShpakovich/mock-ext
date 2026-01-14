@@ -37,17 +37,27 @@ class RequestInterceptor {
     return null;
   }
 
+  // ⚠️ IMPORTANT: This method is duplicated from helpers/urlMatching.ts
+  // The interceptor runs in MAIN world and cannot use ES6 imports
+  // If you modify this, also update src/helpers/urlMatching.ts
   private matchesPattern(url: string, pattern: string, type: string): boolean {
     switch (type) {
-      case 'exact':
-        return url === pattern;
+      case 'exact': {
+        // For exact match, ignore query parameters
+        const urlWithoutQuery = url.split('?')[0];
+        const patternWithoutQuery = pattern.split('?')[0];
+        return urlWithoutQuery === patternWithoutQuery;
+      }
       case 'wildcard': {
+        // For wildcard, ignore query parameters unless pattern includes them
+        const urlToMatch = pattern.includes('?') ? url : url.split('?')[0];
+
         const regexPattern = pattern
           .split('*')
           .map((part) => this.escapeRegExp(part))
           .join('.*');
         try {
-          return new RegExp('^' + regexPattern + '$').test(url);
+          return new RegExp('^' + regexPattern + '$').test(urlToMatch);
         } catch {
           return false;
         }
@@ -64,6 +74,8 @@ class RequestInterceptor {
     }
   }
 
+  // ⚠️ IMPORTANT: This method is duplicated from helpers/string.ts
+  // Must be kept in sync manually
   private escapeRegExp(string: string): string {
     return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   }
@@ -325,14 +337,11 @@ class RequestInterceptor {
 }
 
 // Initialize interceptor (singleton pattern)
-declare global {
-  interface Window {
-    __MOCKAPI_INTERCEPTOR__?: RequestInterceptor;
-  }
+// TypeScript type augmentation for Window
+interface Window {
+  __MOCKAPI_INTERCEPTOR__?: RequestInterceptor;
 }
 
 if (!window.__MOCKAPI_INTERCEPTOR__) {
   window.__MOCKAPI_INTERCEPTOR__ = new RequestInterceptor();
 }
-
-export {};

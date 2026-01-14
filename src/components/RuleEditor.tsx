@@ -228,6 +228,13 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, mockRequest, onSave, onCa
               label={t('editor.matchType')}
               value={formData.matchType}
               onChange={(e) => handleChange('matchType', e.target.value)}
+              description={
+                formData.matchType === 'wildcard'
+                  ? t('editor.wildcardDesc')
+                  : formData.matchType === 'exact'
+                    ? t('editor.exactDesc')
+                    : t('editor.regexDesc')
+              }
             >
               <option value='wildcard'>{t('editor.wildcard')}</option>
               <option value='exact'>{t('editor.exact')}</option>

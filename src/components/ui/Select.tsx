@@ -4,12 +4,14 @@ import clsx from 'clsx';
 interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   label?: string;
   error?: string;
+  description?: string;
   fullWidth?: boolean;
 }
 
 export const Select: React.FC<SelectProps> = ({
   label,
   error,
+  description,
   fullWidth = true,
   children,
   className = '',
@@ -45,6 +47,7 @@ export const Select: React.FC<SelectProps> = ({
           </svg>
         </div>
       </div>
+      {description && <p className='text-gray-400 text-xs mt-1'>{description}</p>}
       {error && <p className='text-red-400 text-sm mt-1'>{error}</p>}
     </div>
   );

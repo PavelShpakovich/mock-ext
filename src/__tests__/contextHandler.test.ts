@@ -1,7 +1,23 @@
 import { withContextCheck } from '../contextHandler';
 
+// Mock chrome global
+declare const global: any;
+
 describe('contextHandler', () => {
   describe('withContextCheck', () => {
+    beforeEach(() => {
+      // Mock chrome.runtime.id to simulate valid extension context
+      global.chrome = {
+        runtime: {
+          id: 'test-extension-id',
+        },
+      } as any;
+    });
+
+    afterEach(() => {
+      jest.clearAllMocks();
+    });
+
     it('should return the result when function succeeds', async () => {
       const mockFn = jest.fn().mockResolvedValue('success');
       const result = await withContextCheck(mockFn);
@@ -56,6 +72,29 @@ describe('contextHandler', () => {
 
       // When fallback is undefined and context is invalidated, it should throw
       await expect(withContextCheck(mockFn)).rejects.toThrow('Extension context invalidated');
+    });
+
+    it('should return fallback when chrome.runtime.id is not available', async () => {
+      // Simulate invalidated context
+      delete (global.chrome as any).runtime.id;
+
+      const mockFn = jest.fn().mockResolvedValue('should not be called');
+      const fallback = 'fallback-value';
+
+      const result = await withContextCheck(mockFn, fallback);
+
+      expect(result).toBe(fallback);
+      expect(mockFn).not.toHaveBeenCalled();
+    });
+
+    it('should throw when chrome.runtime.id is not available and no fallback', async () => {
+      // Simulate invalidated context
+      delete (global.chrome as any).runtime.id;
+
+      const mockFn = jest.fn().mockResolvedValue('should not be called');
+
+      await expect(withContextCheck(mockFn)).rejects.toThrow('Extension context invalidated');
+      expect(mockFn).not.toHaveBeenCalled();
     });
   });
 });

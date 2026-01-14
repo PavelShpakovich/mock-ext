@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "MockAPI",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "description": "Mock API requests for testing and development. Intercept and modify network requests with custom responses, status codes and delays.",
   "privacy_policy": "https://github.com/PavelShpakovich/mock-ext/blob/main/PRIVACY.md",
   "permissions": ["storage", "activeTab", "tabs", "contextMenus"],
@@ -20,12 +20,13 @@
       "run_at": "document_start",
       "all_frames": true,
       "world": "ISOLATED"
-    }
-  ],
-  "web_accessible_resources": [
+    },
     {
-      "resources": ["interceptor.js"],
-      "matches": ["<all_urls>"]
+      "matches": ["<all_urls>"],
+      "js": ["interceptor.js"],
+      "run_at": "document_start",
+      "all_frames": true,
+      "world": "MAIN"
     }
   ],
   "background": {
