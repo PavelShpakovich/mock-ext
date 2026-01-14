@@ -7,7 +7,7 @@
     "dev": "webpack --mode development --watch",
     "clean": "rm -rf dist",
     "analyze": "webpack --mode production --analyze",
-    "package": "npm run build && cd dist && zip -r ../mockapi-extension.zip . && cd .. && ls -lh mockapi-extension.zip",
+    "package": "node scripts/package.js",
     "lint": "eslint 'src/**/*.{ts,tsx}'",
     "lint:fix": "eslint 'src/**/*.{ts,tsx}' --fix",
     "format": "prettier --write 'src/**/*.{ts,tsx,css,json}'",
