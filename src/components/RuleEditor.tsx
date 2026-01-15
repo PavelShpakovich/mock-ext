@@ -11,6 +11,7 @@ import { Card } from './ui/Card';
 import { Maximize2, X, Plus, Trash2 } from 'lucide-react';
 import clsx from 'clsx';
 import { useI18n } from '../contexts/I18nContext';
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 
 interface RuleEditorProps {
   rule: MockRule | null;
@@ -184,6 +185,9 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, mockRequest, onSave, onCa
     message: string;
   } | null>(null);
   const validationTimeoutRef = useRef<number | null>(null);
+
+  // Prevent background scroll when expanded
+  useBodyScrollLock(isExpanded);
 
   useEffect(() => {
     const newFormData = getInitialFormData(rule, mockRequest);
@@ -459,42 +463,40 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, mockRequest, onSave, onCa
         </div>
 
         {isExpanded && (
-          <div className='fixed inset-0 z-50 bg-black/95 flex flex-col' onClick={() => setIsExpanded(false)}>
-            <div className='w-full h-full flex flex-col bg-gray-900' onClick={(e) => e.stopPropagation()}>
-              <div className='flex items-center justify-between p-4 border-b border-gray-700 shrink-0'>
-                <h3 className='text-lg font-bold text-white'>{t('editor.responseBody')}</h3>
-                <div className='flex items-center gap-3'>
-                  {formData.contentType === 'application/json' && (
-                    <Button type='button' onClick={formatJSON} size='sm' variant='primary'>
-                      {t('editor.beautify')}
-                    </Button>
-                  )}
-                  <IconButton type='button' onClick={() => setIsExpanded(false)}>
-                    <X className='w-5 h-5' />
-                  </IconButton>
-                </div>
+          <div className='fixed inset-0 z-50 bg-black/95 flex flex-col m-0'>
+            <div className='flex items-center justify-between p-4 border-b border-gray-700 shrink-0'>
+              <h3 className='text-lg font-bold text-white'>{t('editor.responseBody')}</h3>
+              <div className='flex items-center gap-3'>
+                {formData.contentType === 'application/json' && (
+                  <Button type='button' onClick={formatJSON} size='sm' variant='primary'>
+                    {t('editor.beautify')}
+                  </Button>
+                )}
+                <IconButton type='button' onClick={() => setIsExpanded(false)}>
+                  <X className='w-5 h-5' />
+                </IconButton>
               </div>
-              <div className='flex-1 p-6 overflow-hidden'>
-                <textarea
-                  value={formData.responseBody}
-                  onChange={(e) => handleChange('responseBody', e.target.value)}
-                  placeholder={t('editor.responseBodyPlaceholder')}
-                  className='w-full h-full bg-gray-950 text-white border border-gray-700 rounded px-4 py-3 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-green-500 resize-none custom-scrollbar'
-                />
-              </div>
-              {formData.contentType === 'application/json' && jsonValidation && (
-                <div className='px-6 pb-2 shrink-0'>
-                  <p
-                    className={clsx('text-xs italic', {
-                      'text-gray-400': jsonValidation.isValid,
-                      'text-red-400 font-medium': !jsonValidation.isValid,
-                    })}
-                  >
-                    {jsonValidation.message}
-                  </p>
-                </div>
-              )}
             </div>
+            <div className='flex-1 p-6 overflow-hidden'>
+              <textarea
+                value={formData.responseBody}
+                onChange={(e) => handleChange('responseBody', e.target.value)}
+                placeholder={t('editor.responseBodyPlaceholder')}
+                className='w-full h-full bg-gray-950 text-white border border-gray-700 rounded px-4 py-3 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-green-500 resize-none custom-scrollbar'
+              />
+            </div>
+            {formData.contentType === 'application/json' && jsonValidation && (
+              <div className='px-6 pb-2 shrink-0'>
+                <p
+                  className={clsx('text-xs italic', {
+                    'text-gray-400': jsonValidation.isValid,
+                    'text-red-400 font-medium': !jsonValidation.isValid,
+                  })}
+                >
+                  {jsonValidation.message}
+                </p>
+              </div>
+            )}
           </div>
         )}
 

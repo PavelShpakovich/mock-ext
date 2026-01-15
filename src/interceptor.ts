@@ -16,8 +16,22 @@ interface MockRule {
   lastMatched?: number;
 }
 
+interface Settings {
+  enabled: boolean;
+  logRequests: boolean;
+  showNotifications: boolean;
+  corsAutoFix: boolean;
+  language?: 'en' | 'ru';
+}
+
 class RequestInterceptor {
   private rules: MockRule[] = [];
+  private settings: Settings = {
+    enabled: true,
+    logRequests: true,
+    showNotifications: false,
+    corsAutoFix: false,
+  };
   private originalFetch: typeof fetch;
   private originalXHR: typeof XMLHttpRequest;
 
@@ -129,11 +143,21 @@ class RequestInterceptor {
   }
 
   private buildResponseHeaders(rule: MockRule): Record<string, string> {
-    return {
+    const headers: Record<string, string> = {
       'Content-Type': rule.contentType || 'application/json',
       'X-MockAPI': 'true',
-      ...(rule.headers || {}),
     };
+
+    // Inject CORS headers if enabled
+    if (this.settings.corsAutoFix) {
+      headers['Access-Control-Allow-Origin'] = '*';
+      headers['Access-Control-Allow-Methods'] = '*';
+      headers['Access-Control-Allow-Headers'] = '*';
+      headers['Access-Control-Allow-Credentials'] = 'true';
+    }
+
+    // Apply custom headers (can override CORS headers if needed)
+    return { ...headers, ...(rule.headers || {}) };
   }
 
   private notifyInterception(url: string, method: string, ruleId: string, statusCode: number): void {
@@ -252,6 +276,14 @@ class RequestInterceptor {
           if (headerKey) return rule.headers[headerKey];
         }
 
+        // Check CORS headers if enabled
+        if (this.settings.corsAutoFix) {
+          if (lowerName === 'access-control-allow-origin') return '*';
+          if (lowerName === 'access-control-allow-methods') return '*';
+          if (lowerName === 'access-control-allow-headers') return '*';
+          if (lowerName === 'access-control-allow-credentials') return 'true';
+        }
+
         // Check default headers
         if (lowerName === 'content-type') {
           return rule.contentType || 'application/json';
@@ -266,6 +298,15 @@ class RequestInterceptor {
       getAllHeaders: () => {
         let headers = `content-type: ${rule.contentType || 'application/json'}\r\nx-mockapi: true\r\n`;
 
+        // Add CORS headers if enabled
+        if (this.settings.corsAutoFix) {
+          headers += 'access-control-allow-origin: *\r\n';
+          headers += 'access-control-allow-methods: *\r\n';
+          headers += 'access-control-allow-headers: *\r\n';
+          headers += 'access-control-allow-credentials: true\r\n';
+        }
+
+        // Add custom headers
         if (rule.headers) {
           for (const [key, value] of Object.entries(rule.headers)) {
             headers += `${key.toLowerCase()}: ${value}\r\n`;
@@ -394,11 +435,14 @@ class RequestInterceptor {
   }
 
   private listenForRuleUpdates() {
-    // Listen for rule updates from content script
+    // Listen for rule and settings updates from content script
     window.addEventListener('message', (event) => {
       if (event.source !== window) return;
       if (event.data.type === 'MOCKAPI_UPDATE_RULES') {
         this.rules = event.data.rules;
+        if (event.data.settings) {
+          this.settings = event.data.settings;
+        }
       }
     });
   }

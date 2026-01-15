@@ -2,9 +2,29 @@
 // Bridges between MAIN world (page) and extension background
 
 import { Storage } from './storage';
-import { MockRule } from './types';
+import { MockRule, Settings } from './types';
 import { withContextCheck } from './contextHandler';
+interface RuntimeMessage {
+  action: 'updateRulesInPage' | 'openDevTools';
+  rules?: MockRule[];
+  settings?: Settings;
+  language?: string;
+}
 
+interface MessageResponse {
+  success: boolean;
+}
+
+interface PageMessageData {
+  type: 'MOCKAPI_INTERCEPTED' | 'MOCKAPI_RESPONSE_CAPTURED' | 'MOCKAPI_INCREMENT_COUNTER';
+  url?: string;
+  method?: string;
+  ruleId?: string;
+  statusCode?: number;
+  contentType?: string;
+  responseBody?: string;
+  responseHeaders?: Record<string, string>;
+}
 class ContentScriptBridge {
   async initialize() {
     // Interceptor is now injected declaratively via manifest.json
@@ -21,12 +41,12 @@ class ContentScriptBridge {
   }
 
   private handleRuntimeMessage(
-    message: any,
+    message: RuntimeMessage,
     _sender: chrome.runtime.MessageSender,
-    sendResponse: (response: any) => void
+    sendResponse: (response: MessageResponse) => void
   ): boolean {
     if (message.action === 'updateRulesInPage') {
-      this.updatePageRules(message.rules);
+      this.updatePageRules(message.rules ?? [], message.settings);
       sendResponse({ success: true });
       return true;
     }
@@ -63,17 +83,21 @@ class ContentScriptBridge {
         enabled: false,
         logRequests: false,
         showNotifications: false,
+        corsAutoFix: false,
       });
 
       if (settings.enabled) {
-        this.updatePageRules(rules.filter((r) => r.enabled));
+        this.updatePageRules(
+          rules.filter((r) => r.enabled),
+          settings
+        );
       }
     } catch (error) {
       // Context invalidated, silently ignore
     }
   }
 
-  private forwardMockedRequest(data: any): void {
+  private forwardMockedRequest(data: PageMessageData): void {
     if (!chrome.runtime?.id) return;
 
     chrome.runtime
@@ -89,7 +113,7 @@ class ContentScriptBridge {
       });
   }
 
-  private forwardCapturedResponse(data: any): void {
+  private forwardCapturedResponse(data: PageMessageData): void {
     if (!chrome.runtime?.id) return;
 
     chrome.runtime
@@ -120,11 +144,12 @@ class ContentScriptBridge {
       });
   }
 
-  private updatePageRules(rules: MockRule[]) {
+  private updatePageRules(rules: MockRule[], settings?: Settings) {
     window.postMessage(
       {
         type: 'MOCKAPI_UPDATE_RULES',
         rules: rules,
+        settings: settings,
       },
       '*'
     );

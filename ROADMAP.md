@@ -76,22 +76,25 @@ This document outlines potential features and improvements for future releases.
   - Update UI with folder tree view
   - Add folder management (create, rename, delete)
 
-### 5. CORS Auto-Fix
+### 5. CORS Auto-Fix ✅
 
 **Estimated effort:** 1 hour  
 **Value:** Medium  
-**Status:** Ready to implement
+**Status:** ✅ **COMPLETED in v2.2.0**
 
 - Automatically inject CORS headers when needed
 - **Features:**
-  - Global toggle: "Enable CORS bypass for mocked responses"
-  - Auto-inject headers:
+  - ✅ Global toggle: "Enable CORS bypass for mocked responses"
+  - ✅ Auto-inject headers:
     - `Access-Control-Allow-Origin: *`
     - `Access-Control-Allow-Methods: *`
     - `Access-Control-Allow-Headers: *`
+    - `Access-Control-Allow-Credentials: true`
 - **Implementation:**
-  - Add setting in Settings interface
-  - Inject headers in interceptor when enabled
+  - ✅ Add setting in Settings interface
+  - ✅ Inject headers in interceptor when enabled
+  - ✅ UI toggle in header with tooltip
+  - ✅ Settings propagated to all tabs
 
 ### 6. Dark/Light Theme
 
@@ -118,16 +121,15 @@ This document outlines potential features and improvements for future releases.
 
 ## Recommended Implementation Order
 
-### Sprint 1 (Current Week) ✅ In Progress
+### Sprint 1 (Current Week) ✅ Completed
 
 1. ✅ Custom Response Headers (30 min) - **COMPLETED v2.1.0**
-2. 🚧 Rule Hit Counter (1 hour) - **NEXT**
+2. ✅ Rule Hit Counter (1 hour) - **COMPLETED v2.1.1**
+3. ✅ CORS Auto-Fix (1 hour) - **COMPLETED v2.2.0**
 
 ### Sprint 2 (Next Week)
 
-3. CORS Auto-Fix (1 hour)
-4. Rule Validation & Warnings (2 hours)
-5. Dark/Light Theme (2 hours)
+Rule Validation & Warnings (2 hours) - **NEXT** 4. Rule Validation & Warnings (2 hours) 5. Dark/Light Theme (2 hours)
 
 ### Sprint 3 (Week 3-4)
 
@@ -238,8 +240,8 @@ Suggestions for new features? Open an issue on GitHub with:
 ---
 
 **Last Updated:** January 15, 2026  
-**Current Version:** 2.1.0  
-**Next Milestone:** 2.2.0 (Rule Hit Counter + CORS Auto-Fix + Rule Validation)
+**Current Version:** 2.2.0  
+**Next Milestone:** 2.3.0 (Rule Validation & Warnings + Dark/Light Theme)
 
 ### 1. Custom Response Headers
 

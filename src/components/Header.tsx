@@ -9,16 +9,20 @@ import { useI18n } from '../contexts/I18nContext';
 interface HeaderProps {
   enabled: boolean;
   logRequests: boolean;
+  corsAutoFix: boolean;
   onToggleEnabled: (enabled: boolean) => void;
   onToggleRecording: (logRequests: boolean) => void;
+  onToggleCors: (corsAutoFix: boolean) => void;
   activeTabTitle?: string;
 }
 
 const Header: React.FC<HeaderProps> = ({
   enabled,
   logRequests,
+  corsAutoFix,
   onToggleEnabled,
   onToggleRecording,
+  onToggleCors,
   activeTabTitle,
 }) => {
   const { t, language, setLanguage } = useI18n();
@@ -55,7 +59,6 @@ const Header: React.FC<HeaderProps> = ({
               className='flex items-center gap-1.5 px-3 py-2 bg-gray-800 border border-gray-700'
               title={language === 'en' ? 'Switch to Russian' : 'Переключить на английский'}
             >
-              <span className='text-lg leading-none'>{language === 'en' ? '🇬🇧' : '🇷🇺'}</span>
               <span className='text-xs font-medium text-gray-300'>{language === 'en' ? 'EN' : 'RU'}</span>
             </IconButton>
 
@@ -72,6 +75,20 @@ const Header: React.FC<HeaderProps> = ({
                 {enabled ? t('header.enabled') : t('header.disabled')}
               </span>
             </div>
+
+            <div className='flex items-center gap-2' title={t('header.corsAutoFixTooltip')}>
+              <Toggle checked={corsAutoFix} onChange={() => onToggleCors(!corsAutoFix)} disabled={!enabled} />
+              <span
+                className={clsx('text-xs font-medium', {
+                  'text-green-400': corsAutoFix && enabled,
+                  'text-gray-500': !corsAutoFix || !enabled,
+                })}
+              >
+                {t('header.corsAutoFix')}
+              </span>
+            </div>
+
+            <div className='w-px h-6 bg-gray-700 mx-1'></div>
 
             <div className='w-px h-6 bg-gray-700 mx-1'></div>
 

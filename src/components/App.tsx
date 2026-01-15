@@ -17,6 +17,7 @@ const App: React.FC = () => {
     enabled: true,
     logRequests: false,
     showNotifications: true,
+    corsAutoFix: false,
   });
   const [requestLog, setRequestLog] = useState<RequestLog[]>([]);
   const [editingRuleId, setEditingRuleId] = useState<string | null>(null);
@@ -114,6 +115,7 @@ const App: React.FC = () => {
         enabled: true,
         logRequests: false,
         showNotifications: false,
+        corsAutoFix: false,
       }),
       withContextCheck(() => Storage.getRequestLog(), []),
     ]);
@@ -141,10 +143,15 @@ const App: React.FC = () => {
     async (enabled: boolean) => {
       const newSettings = { ...settings, enabled };
 
-      // If disabling extension, also stop recording
-      if (!enabled && settings.logRequests) {
-        newSettings.logRequests = false;
-        setActiveTabTitle('');
+      // If disabling extension, also stop recording and disable CORS
+      if (!enabled) {
+        if (settings.logRequests) {
+          newSettings.logRequests = false;
+          setActiveTabTitle('');
+        }
+        if (settings.corsAutoFix) {
+          newSettings.corsAutoFix = false;
+        }
       }
 
       setSettings(newSettings);
@@ -175,6 +182,19 @@ const App: React.FC = () => {
       } catch (error) {
         console.error('Recording toggle error:', error);
       }
+    },
+    [settings]
+  );
+
+  const handleCorsToggle = useCallback(
+    async (corsAutoFix: boolean) => {
+      const newSettings = { ...settings, corsAutoFix };
+      setSettings(newSettings);
+      await Storage.saveSettings(newSettings);
+      // Notify background to update settings in all tabs
+      await withContextCheck(() =>
+        chrome.runtime.sendMessage({ action: 'updateSettings', settings: newSettings })
+      ).catch(() => {});
     },
     [settings]
   );
@@ -342,8 +362,10 @@ const App: React.FC = () => {
       <Header
         enabled={settings.enabled}
         logRequests={settings.logRequests}
+        corsAutoFix={settings.corsAutoFix}
         onToggleEnabled={handleGlobalToggle}
         onToggleRecording={handleRecordingToggle}
+        onToggleCors={handleCorsToggle}
         activeTabTitle={activeTabTitle}
       />
 

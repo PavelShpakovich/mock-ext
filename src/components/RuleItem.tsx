@@ -5,7 +5,7 @@ import { Card } from './ui/Card';
 import { Badge, MethodBadge, StatusCodeBadge } from './ui/Badge';
 import { Toggle } from './ui/Toggle';
 import { IconButton } from './ui/IconButton';
-import { Clock, Copy, TrendingUp, RotateCcw } from 'lucide-react';
+import { Clock, Copy, RotateCcw, Edit, Trash } from 'lucide-react';
 import { useI18n } from '../contexts/I18nContext';
 import { formatRelativeTime } from '../helpers/time';
 
@@ -36,7 +36,6 @@ const RuleItem: React.FC<RuleItemProps> = ({ rule, onEdit, onDelete, onToggle, o
             <StatusCodeBadge code={rule.statusCode} />
             {(rule.matchCount ?? 0) > 0 && (
               <Badge variant='info' className='flex items-center gap-1'>
-                <TrendingUp className='w-3 h-3' />
                 {rule.matchCount}
               </Badge>
             )}
@@ -47,15 +46,12 @@ const RuleItem: React.FC<RuleItemProps> = ({ rule, onEdit, onDelete, onToggle, o
           {rule.delay > 0 && (
             <div className='text-xs text-yellow-500/80 mt-2 font-medium flex items-center gap-1'>
               <Clock className='w-3 h-3' />
-              Delay: {rule.delay}ms
+              {t('rules.delayMs', { delay: rule.delay })}
             </div>
           )}
           {rule.lastMatched && (
             <div className='text-xs text-blue-400/80 mt-2 font-medium flex items-center gap-2'>
-              <div className='flex items-center gap-1'>
-                <TrendingUp className='w-3 h-3' />
-                {t('rules.lastMatched')}: {formatRelativeTime(rule.lastMatched, t)}
-              </div>
+              {t('rules.lastMatched')}: {formatRelativeTime(rule.lastMatched, t)}
               <IconButton
                 onClick={(e) => {
                   e.stopPropagation();
@@ -79,25 +75,11 @@ const RuleItem: React.FC<RuleItemProps> = ({ rule, onEdit, onDelete, onToggle, o
           </IconButton>
 
           <IconButton onClick={onEdit} title={t('common.edit')}>
-            <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-              <path
-                strokeLinecap='round'
-                strokeLinejoin='round'
-                strokeWidth={2}
-                d='M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z'
-              />
-            </svg>
+            <Edit className='w-5 h-5' />
           </IconButton>
 
           <IconButton variant='danger' onClick={onDelete} title={t('common.delete')}>
-            <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-              <path
-                strokeLinecap='round'
-                strokeLinejoin='round'
-                strokeWidth={2}
-                d='M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16'
-              />
-            </svg>
+            <Trash className='w-5 h-5' />
           </IconButton>
         </div>
       </div>

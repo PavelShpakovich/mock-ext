@@ -12,6 +12,7 @@ const DEFAULT_SETTINGS: Settings = {
   enabled: true,
   logRequests: true,
   showNotifications: false,
+  corsAutoFix: false,
 };
 
 export class Storage {

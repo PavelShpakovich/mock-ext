@@ -191,6 +191,7 @@ describe('Storage', () => {
         enabled: true,
         logRequests: true,
         showNotifications: false,
+        corsAutoFix: false,
         language: 'en',
       };
       mockLocalStorage.settings = mockSettings;
@@ -212,6 +213,7 @@ describe('Storage', () => {
         enabled: false,
         logRequests: false,
         showNotifications: true,
+        corsAutoFix: true,
         language: 'ru',
       };
 
@@ -387,7 +389,12 @@ describe('Storage', () => {
           modified: Date.now(),
         },
       ];
-      const mockSettings: Settings = { enabled: true, logRequests: false, showNotifications: false };
+      const mockSettings: Settings = {
+        enabled: true,
+        logRequests: false,
+        showNotifications: false,
+        corsAutoFix: false,
+      };
       const mockLog: RequestLog[] = [
         { id: '1', url: 'https://example.com', method: 'GET', timestamp: Date.now(), matched: false },
       ];

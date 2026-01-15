@@ -7,7 +7,9 @@
     "enabled": "Включено",
     "disabled": "Отключено",
     "record": "Запись",
-    "stop": "Стоп"
+    "stop": "Стоп",
+    "corsAutoFix": "CORS",
+    "corsAutoFixTooltip": "Автоматически добавлять CORS заголовки для обхода ограничений"
   },
   "tabs": {
     "rules": "Правила",
@@ -31,6 +33,7 @@
     "lastMatched": "Последнее срабатывание",
     "resetHits": "Сбросить",
     "delay": "Задержка",
+    "delayMs": "Задержка: {{delay}}мс",
     "contentType": "Тип контента"
   },
   "requests": {

@@ -7,7 +7,9 @@
     "enabled": "Enabled",
     "disabled": "Disabled",
     "record": "Record",
-    "stop": "Stop"
+    "stop": "Stop",
+    "corsAutoFix": "CORS",
+    "corsAutoFixTooltip": "Auto-inject CORS headers to bypass cross-origin restrictions"
   },
   "tabs": {
     "rules": "Rules",
@@ -31,6 +33,7 @@
     "lastMatched": "Last matched",
     "resetHits": "Reset",
     "delay": "Delay",
+    "delayMs": "Delay: {{delay}}ms",
     "contentType": "Content Type"
   },
   "requests": {

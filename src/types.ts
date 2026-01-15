@@ -24,6 +24,7 @@ export interface Settings {
   enabled: boolean;
   logRequests: boolean;
   showNotifications: boolean;
+  corsAutoFix: boolean;
   language?: 'en' | 'ru';
 }
 
@@ -50,6 +51,7 @@ export interface StorageData {
 export interface MessageAction {
   action:
     | 'updateRules'
+    | 'updateSettings'
     | 'toggleMocking'
     | 'getRules'
     | 'getSettings'
@@ -66,6 +68,7 @@ export interface MessageAction {
     | 'rulesUpdated'
     | 'openDevTools';
   rules?: MockRule[];
+  settings?: Settings;
   enabled?: boolean;
   tabId?: number;
   data?: any;

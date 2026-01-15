@@ -8,6 +8,7 @@ let settings: Settings = {
   enabled: true,
   logRequests: false,
   showNotifications: false,
+  corsAutoFix: false,
   language: undefined,
 };
 let recordingTabId: number | null = null;
@@ -34,6 +35,7 @@ async function sendRulesToTab(tabId: number, rules: MockRule[]): Promise<void> {
     await chrome.tabs.sendMessage(tabId, {
       action: 'updateRulesInPage',
       rules,
+      settings,
     });
   } catch {
     // Silent fail - content script may not be injected yet
@@ -127,6 +129,15 @@ async function handleMessage(message: MessageAction, sender?: chrome.runtime.Mes
         return { success: true };
       }
       return { success: false, error: 'No rules provided' };
+
+    case 'updateSettings':
+      if (message.settings) {
+        settings = message.settings;
+        await Storage.saveSettings(settings);
+        await updateRulesInAllTabs();
+        return { success: true };
+      }
+      return { success: false, error: 'No settings provided' };
 
     case 'toggleMocking':
       if (message.enabled !== undefined) {

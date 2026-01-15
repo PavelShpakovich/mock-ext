@@ -5,6 +5,48 @@ All notable changes to MockAPI Extension will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2026-01-15
+
+### Added
+- **CORS Auto-Fix**: Global toggle to automatically inject CORS headers for all mocked responses
+  - One-click toggle in header with visual indicator (green when active)
+  - Auto-injects required CORS headers:
+    - `Access-Control-Allow-Origin: *`
+    - `Access-Control-Allow-Methods: *`
+    - `Access-Control-Allow-Headers: *`
+    - `Access-Control-Allow-Credentials: true`
+  - Works with both `fetch()` and `XMLHttpRequest`
+  - Settings propagate instantly to all tabs
+  - Automatically disabled when extension is turned off
+  - Custom headers can still override auto-injected CORS headers if needed
+  - Tooltip explains functionality: "Auto-inject CORS headers to bypass cross-origin restrictions"
+  - Full internationalization support (English/Russian)
+- **useBodyScrollLock Hook**: Reusable React hook for locking body scroll in modals
+  - Prevents background page scroll when modals/overlays are open
+  - Properly cleans up on unmount
+  - Used in RuleEditor expanded view
+
+### Changed
+- **Improved Type Safety**: Removed all `any` types from content-script.ts
+  - Added `RuntimeMessage` interface for background messages
+  - Added `MessageResponse` interface for response structure
+  - Added `PageMessageData` interface for page messages
+  - Proper type checking for all message handlers
+- **CORS Toggle Behavior**: Automatically turns off CORS when extension is disabled
+  - Maintains clean state management
+  - Prevents confusion about active features
+- **Settings Propagation**: New `updateSettings` action for instant settings updates
+  - Settings changes now propagate immediately to all tabs
+  - No page refresh required for CORS toggle to take effect
+  - Background script properly syncs settings state
+
+### Fixed
+- Delay text in rule items now uses translations instead of hardcoded "Delay: Xms"
+  - English: "Delay: 500ms"
+  - Russian: "Задержка: 500мс"
+- CORS toggle color changed from blue to green for consistency with enabled state
+- Background page scroll now properly locked when rule editor is in expanded mode
+
 ## [2.1.1] - 2026-01-15
 
 ### Added
