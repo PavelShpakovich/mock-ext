@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { MockRule } from '../types';
+import { ValidationWarning } from '../helpers';
 import RuleItem from './RuleItem';
 import RuleEditor from './RuleEditor';
 import { Input } from './ui/Input';
@@ -10,6 +11,7 @@ import { useI18n } from '../contexts/I18nContext';
 
 interface RulesTabProps {
   rules: MockRule[];
+  ruleWarnings: Map<string, ValidationWarning[]>;
   searchTerm: string;
   onSearchChange: (term: string) => void;
   editingRuleId: string | null;
@@ -26,6 +28,7 @@ interface RulesTabProps {
 
 const RulesTab: React.FC<RulesTabProps> = ({
   rules,
+  ruleWarnings,
   searchTerm,
   onSearchChange,
   editingRuleId,
@@ -137,6 +140,7 @@ const RulesTab: React.FC<RulesTabProps> = ({
                 <RuleItem
                   key={rule.id}
                   rule={rule}
+                  warnings={ruleWarnings.get(rule.id) || []}
                   onEdit={() => onEditRule(rule.id)}
                   onDelete={() => onDeleteRule(rule.id)}
                   onToggle={() => onToggleRule(rule.id)}

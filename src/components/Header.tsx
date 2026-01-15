@@ -90,8 +90,6 @@ const Header: React.FC<HeaderProps> = ({
 
             <div className='w-px h-6 bg-gray-700 mx-1'></div>
 
-            <div className='w-px h-6 bg-gray-700 mx-1'></div>
-
             <Button
               onClick={handleRecordingClick}
               variant={logRequests ? 'danger' : 'secondary'}

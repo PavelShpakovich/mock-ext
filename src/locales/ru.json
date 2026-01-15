@@ -36,6 +36,12 @@
     "delayMs": "Задержка: {{delay}}мс",
     "contentType": "Тип контента"
   },
+  "warnings": {
+    "overlappingRules": "Пересекается с {{count}} {{count, plural, one {правилом} few {правилами} other {правилами}}}",
+    "invalidRegex": "Некорректное регулярное выражение: {{error}}",
+    "invalidJson": "Некорректный JSON в теле ответа",
+    "unusedRule": "Не использовалось последние 30 дней"
+  },
   "requests": {
     "title": "Журнал запросов",
     "clear": "Очистить журнал",

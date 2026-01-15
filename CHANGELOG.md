@@ -5,6 +5,29 @@ All notable changes to MockAPI Extension will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.0] - 2026-01-15
+
+### Added
+- **Rule Validation & Warnings**: Intelligent validation system that detects and displays potential issues with mock rules
+  - **Invalid Regex Detection**: Shows error when regex pattern is malformed with specific error message
+  - **Invalid JSON Detection**: Highlights JSON syntax errors in response body
+  - **Overlapping Rules Detection**: Warns when multiple enabled rules could match the same URL (shows count and related rule IDs)
+  - **Unused Rule Detection**: Flags rules that haven't been matched in 30+ days (info level)
+  - **Visual Indicators**: Color-coded warning badges in rule cards
+    - Red: Errors (invalid regex, invalid JSON) - requires immediate attention
+    - Yellow: Warnings (overlapping rules) - suggests review
+    - Blue: Info (unused rules) - informational only
+  - **Smart Icons**: Context-appropriate icons (AlertCircle, AlertTriangle, Info)
+  - **Auto-Validation**: Runs automatically on:
+    - Extension load
+    - Rule creation/update
+    - Rule deletion
+    - Rule enable/disable toggle
+  - **Method-Aware Overlap Detection**: Rules with different HTTP methods don't trigger overlap warnings
+  - **Disabled Rule Filtering**: Only enabled rules are checked for overlaps
+  - **Full i18n Support**: All warnings translated in English and Russian with plural forms
+  - **Comprehensive Testing**: 20 new tests covering all validation scenarios
+
 ## [2.2.0] - 2026-01-15
 
 ### Added

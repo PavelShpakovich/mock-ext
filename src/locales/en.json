@@ -36,6 +36,12 @@
     "delayMs": "Delay: {{delay}}ms",
     "contentType": "Content Type"
   },
+  "warnings": {
+    "overlappingRules": "Overlaps with {{count}} other rule{{count, plural, one {} other {s}}}",
+    "invalidRegex": "Invalid regex pattern: {{error}}",
+    "invalidJson": "Invalid JSON in response body",
+    "unusedRule": "Not used in the last 30 days"
+  },
   "requests": {
     "title": "Request Log",
     "clear": "Clear Log",

@@ -4,6 +4,7 @@ import { Storage } from '../storage';
 import { MockRule, Settings, RequestLog } from '../types';
 import { useI18n } from '../contexts/I18nContext';
 import { withContextCheck } from '../contextHandler';
+import { validateAllRules, ValidationWarning } from '../helpers';
 import Header from './Header';
 import RulesTab from './RulesTab';
 import RequestsTab from './RequestsTab';
@@ -24,6 +25,7 @@ const App: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [requestsSearchTerm, setRequestsSearchTerm] = useState('');
   const [activeTabTitle, setActiveTabTitle] = useState<string>('');
+  const [ruleWarnings, setRuleWarnings] = useState<Map<string, ValidationWarning[]>>(new Map());
 
   const loadRequestLog = useCallback(async () => {
     const loadedRequestLog = await withContextCheck(() => Storage.getRequestLog(), []);
@@ -124,6 +126,10 @@ const App: React.FC = () => {
     setSettings(loadedSettings);
     setRequestLog(loadedRequestLog);
 
+    // Validate all rules
+    const warnings = validateAllRules(loadedRules);
+    setRuleWarnings(warnings);
+
     if (loadedSettings.logRequests) {
       try {
         const response = await withContextCheck(() => chrome.runtime.sendMessage({ action: 'getRecordingStatus' }), {
@@ -202,6 +208,11 @@ const App: React.FC = () => {
   // Helper: Update rules in storage and background
   const updateRulesEverywhere = async (updatedRules: MockRule[]): Promise<void> => {
     setRules(updatedRules);
+
+    // Validate rules after update
+    const warnings = validateAllRules(updatedRules);
+    setRuleWarnings(warnings);
+
     await Storage.saveRules(updatedRules);
     await withContextCheck(() => chrome.runtime.sendMessage({ action: 'updateRules', rules: updatedRules })).catch(
       () => {}
@@ -381,6 +392,7 @@ const App: React.FC = () => {
       {activeTab === 'rules' ? (
         <RulesTab
           rules={rules}
+          ruleWarnings={ruleWarnings}
           searchTerm={searchTerm}
           onSearchChange={setSearchTerm}
           editingRuleId={editingRuleId}

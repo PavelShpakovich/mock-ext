@@ -1,16 +1,18 @@
 import React from 'react';
 import clsx from 'clsx';
 import { MockRule } from '../types';
+import { ValidationWarning } from '../helpers';
 import { Card } from './ui/Card';
 import { Badge, MethodBadge, StatusCodeBadge } from './ui/Badge';
 import { Toggle } from './ui/Toggle';
 import { IconButton } from './ui/IconButton';
-import { Clock, Copy, RotateCcw, Edit, Trash } from 'lucide-react';
+import { Clock, Copy, RotateCcw, Edit, Trash, AlertCircle, AlertTriangle, Info } from 'lucide-react';
 import { useI18n } from '../contexts/I18nContext';
 import { formatRelativeTime } from '../helpers/time';
 
 interface RuleItemProps {
   rule: MockRule;
+  warnings: ValidationWarning[];
   onEdit: () => void;
   onDelete: () => void;
   onToggle: () => void;
@@ -18,8 +20,42 @@ interface RuleItemProps {
   onResetHits: () => void;
 }
 
-const RuleItem: React.FC<RuleItemProps> = ({ rule, onEdit, onDelete, onToggle, onDuplicate, onResetHits }) => {
+const RuleItem: React.FC<RuleItemProps> = ({
+  rule,
+  warnings,
+  onEdit,
+  onDelete,
+  onToggle,
+  onDuplicate,
+  onResetHits,
+}) => {
   const { t } = useI18n();
+
+  const getWarningIcon = (severity: string) => {
+    switch (severity) {
+      case 'error':
+        return <AlertCircle className='w-4 h-4' />;
+      case 'warning':
+        return <AlertTriangle className='w-4 h-4' />;
+      case 'info':
+        return <Info className='w-4 h-4' />;
+      default:
+        return <Info className='w-4 h-4' />;
+    }
+  };
+
+  const getWarningColor = (severity: string) => {
+    switch (severity) {
+      case 'error':
+        return 'text-red-400 bg-red-500/10 border-red-500/30';
+      case 'warning':
+        return 'text-yellow-400 bg-yellow-500/10 border-yellow-500/30';
+      case 'info':
+        return 'text-blue-400 bg-blue-500/10 border-blue-500/30';
+      default:
+        return 'text-gray-400 bg-gray-500/10 border-gray-500/30';
+    }
+  };
 
   return (
     <Card
@@ -63,6 +99,24 @@ const RuleItem: React.FC<RuleItemProps> = ({ rule, onEdit, onDelete, onToggle, o
               >
                 <RotateCcw className='w-3 h-3' />
               </IconButton>
+            </div>
+          )}
+
+          {/* Validation Warnings */}
+          {warnings.length > 0 && (
+            <div className='mt-3 space-y-2'>
+              {warnings.map((warning, index) => (
+                <div
+                  key={index}
+                  className={clsx(
+                    'text-xs px-2 py-1.5 rounded border flex items-start gap-2',
+                    getWarningColor(warning.severity)
+                  )}
+                >
+                  <span className='shrink-0 mt-0.5'>{getWarningIcon(warning.severity)}</span>
+                  <span className='leading-relaxed'>{t(warning.messageKey, warning.messageParams)}</span>
+                </div>
+              ))}
             </div>
           )}
         </div>
