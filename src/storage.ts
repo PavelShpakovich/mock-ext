@@ -13,6 +13,7 @@ const DEFAULT_SETTINGS: Settings = {
   logRequests: true,
   showNotifications: false,
   corsAutoFix: false,
+  theme: 'system',
 };
 
 export class Storage {

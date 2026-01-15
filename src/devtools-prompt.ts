@@ -1,7 +1,7 @@
 // Listen for messages from background to show DevTools prompt
 chrome.runtime.onMessage.addListener((message) => {
   if (message.action === 'openDevTools') {
-    showDevToolsPrompt(message.language || 'en');
+    showDevToolsPrompt(message.language || 'en', message.theme || 'system');
   }
 });
 
@@ -18,13 +18,30 @@ const translations = {
   },
 };
 
-function showDevToolsPrompt(language: string = 'en') {
+function showDevToolsPrompt(language: string = 'en', theme: string = 'system') {
   const t = translations[language as keyof typeof translations] || translations.en;
   // Remove any existing prompt
   const existing = document.getElementById('mockapi-devtools-prompt');
   if (existing) {
     existing.remove();
   }
+
+  // Resolve theme: if 'system', detect system preference
+  const isDark = theme === 'system' ? window.matchMedia('(prefers-color-scheme: dark)').matches : theme === 'dark';
+
+  // Theme-aware colors
+  const bgGradient = isDark
+    ? 'linear-gradient(135deg, #111827 0%, #1f2937 100%)'
+    : 'linear-gradient(135deg, #ffffff 0%, #f9fafb 100%)';
+  const borderColor = isDark ? '#10b981' : '#10b981';
+  const textColor = isDark ? 'white' : '#111827';
+  const titleColor = isDark ? '#10b981' : '#059669';
+  const boxShadow = isDark
+    ? '0 8px 32px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(16, 185, 129, 0.2)'
+    : '0 8px 32px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(16, 185, 129, 0.3)';
+  const shortcutBg = isDark ? 'rgba(16, 185, 129, 0.15)' : 'rgba(16, 185, 129, 0.1)';
+  const shortcutColor = isDark ? '#10b981' : '#059669';
+  const dismissColor = isDark ? '#9ca3af' : '#6b7280';
 
   // Create prompt overlay
   const overlay = document.createElement('div');
@@ -33,12 +50,12 @@ function showDevToolsPrompt(language: string = 'en') {
     position: fixed;
     top: 20px;
     right: 20px;
-    background: linear-gradient(135deg, #111827 0%, #1f2937 100%);
-    border: 1px solid #10b981;
-    color: white;
+    background: ${bgGradient};
+    border: 1px solid ${borderColor};
+    color: ${textColor};
     padding: 20px 24px;
     border-radius: 12px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(16, 185, 129, 0.2);
+    box-shadow: ${boxShadow};
     z-index: 2147483647;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     font-size: 14px;
@@ -53,13 +70,13 @@ function showDevToolsPrompt(language: string = 'en') {
   overlay.innerHTML = `
     <div style="display: flex; align-items: start; gap: 12px;">
       <div style="flex: 1;">
-        <div style="font-weight: 600; margin-bottom: 8px; font-size: 15px; color: #10b981;">
+        <div style="font-weight: 600; margin-bottom: 8px; font-size: 15px; color: ${titleColor};">
           ${t.title}
         </div>
         <div style="opacity: 0.95; margin-bottom: 12px;">
           <span style="margin-right: 4px;">${
             language === 'ru' ? 'Нажмите' : 'Press'
-          }</span><strong style="background: rgba(16, 185, 129, 0.15); padding: 2px 8px; border-radius: 4px; font-family: monospace; color: #10b981;">${shortcut}</strong><span style="margin-left: 4px;">${
+          }</span><strong style="background: ${shortcutBg}; padding: 2px 8px; border-radius: 4px; font-family: monospace; color: ${shortcutColor};">${shortcut}</strong><span style="margin-left: 4px;">${
             t.message
           }</span>
         </div>
@@ -78,7 +95,7 @@ function showDevToolsPrompt(language: string = 'en') {
       <button id="mockapi-prompt-dismiss" style="
         background: none;
         border: none;
-        color: #9ca3af;
+        color: ${dismissColor};
         cursor: pointer;
         font-size: 20px;
         padding: 0;

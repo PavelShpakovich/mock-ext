@@ -96,15 +96,18 @@ This document outlines potential features and improvements for future releases.
   - ✅ UI toggle in header with tooltip
   - ✅ Settings propagated to all tabs
 
-### 6. Dark/Light Theme
+### 6. Dark/Light Theme ✅
 
 **Estimated effort:** 2 hours  
 **Value:** Low-Medium  
-**Status:** Ready to implement
+**Status:** ✅ **COMPLETED in v2.4.0**
 
-- Theme toggle in settings
-- Respect system preference
-- Currently using dark theme only
+- ✅ Theme toggle in settings (System/Light/Dark)
+- ✅ Respect system preference with auto-detection
+- ✅ Full component coverage across all UI elements
+- ✅ Optimized color scheme for visibility in both themes
+- ✅ Persistent storage with instant switching
+- ✅ Settings menu integration to reduce header clutter
 
 ### 7. Rule Validation & Warnings ✅
 
@@ -123,26 +126,6 @@ This document outlines potential features and improvements for future releases.
 - ✅ Method-aware overlap detection
 - ✅ Full internationalization support
 - ✅ Comprehensive test coverage (20 tests)
-
-## Recommended Implementation Order
-
-### Sprint 1 (Current Week) ✅ Completed
-
-1. ✅ Custom Response Headers (30 min) - **COMPLETED v2.1.0**
-2. ✅ Rule Hit Counter (1 hour) - **COMPLETED v2.1.1**
-3. ✅ CORS Auto-Fix (1 hour) - **COMPLETED v2.2.0**
-4. ✅ Rule Validation & Warnings (2 hours) - **COMPLETED v2.3.0 (Unreleased)**
-
-### Sprint 2 (Next Week)
-
-5. Dark/Light Theme (2 hours) - **NEXT**
-6. Rule Groups/Folders (3-4 hours)
-
-### Sprint 3 (Week 3-4)
-
-7. Import/Export Enhancements (30 min):
-   - Export selected rules
-   - Import mode choice (merge/replace)
 
 ## Deferred Features
 

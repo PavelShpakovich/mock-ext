@@ -87,12 +87,17 @@
     "headerName": "Header name (e.g., Authorization)",
     "headerValue": "Header value",
     "addHeader": "Add Header",
+    "removeHeader": "Remove header",
     "validationError": "{{error}}",
     "variables": "Available variables: {{timestamp}}, {{uuid}}, {{random_number}}"
   },
   "settings": {
+    "settings": "Settings",
     "language": "Language",
     "theme": "Theme",
+    "themeSystem": "System",
+    "themeLight": "Light",
+    "themeDark": "Dark",
     "notifications": "Notifications"
   },
   "devtoolsPrompt": {

@@ -742,6 +742,21 @@ const [state, setState] = useState(() => expensiveComputation());
 ❌ Bad: Dump all helpers without organization
 ✅ Good: Use section comments for large files
 
+### 9. Don't Use Comments in JSX/TSX
+
+❌ Bad: `<!-- This is a comment -->`
+❌ Bad: `{/* This is a comment */}`
+✅ Good: Extract to constants with descriptive names
+
+**Note:** Instead of comments, use descriptive variable names, component names, or helper functions that make the code self-documenting.
+
+### 10. Always Add Cursor Pointer to Interactive Buttons
+
+❌ Bad: `<button className='bg-green-600'>Click</button>`
+✅ Good: `<button className='bg-green-600 cursor-pointer'>Click</button>`
+
+**Note:** All buttons, links, and interactive elements that are NOT disabled must have `cursor-pointer` in their className. This should be included in base button styles.
+
 ## File-Specific Patterns
 
 ### interceptor.ts

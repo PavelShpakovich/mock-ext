@@ -13,22 +13,23 @@ export const Input: React.FC<InputProps> = ({ label, error, fullWidth = true, cl
   return (
     <div className={clsx({ 'w-full': fullWidth }, className)}>
       {label && (
-        <label htmlFor={inputId} className='block text-sm font-bold text-gray-300 mb-2'>
+        <label htmlFor={inputId} className='block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2'>
           {label} {props.required && <span className='text-red-500 font-bold'>*</span>}
         </label>
       )}
       <input
         id={inputId}
         className={clsx(
-          'w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500/50 transition-all text-white placeholder-gray-500 font-semibold',
+          'w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600/50 dark:focus:ring-green-500/50 transition-all text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 font-semibold',
           {
-            'border-red-500 bg-red-900/20 placeholder-red-300': error,
-            'border-gray-600 focus:border-green-500 bg-gray-700': !error,
+            'border-red-500 bg-red-50 dark:bg-red-900/20 placeholder-red-400 dark:placeholder-red-300': error,
+            'border-gray-300 dark:border-gray-600 focus:border-green-600 dark:focus:border-green-500 bg-white dark:bg-gray-700':
+              !error,
           }
         )}
         {...props}
       />
-      {error && <p className='text-red-400 text-sm mt-2 font-semibold'>⚠️ {error}</p>}
+      {error && <p className='text-red-600 dark:text-red-400 text-sm mt-2 font-semibold'>⚠️ {error}</p>}
     </div>
   );
 };

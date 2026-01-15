@@ -125,9 +125,9 @@ const RulesTab: React.FC<RulesTabProps> = ({
           </div>
 
           {filteredRules.length === 0 ? (
-            <Card className='flex items-center flex-col text-center py-16 border-2 border-dashed border-gray-700 shadow-sm'>
-              <FileText className='w-12 h-12 mx-auto mb-4 text-gray-600' />
-              <div className='text-gray-300 font-bold text-lg mb-2'>{t('rules.noRules')}</div>
+            <Card className='flex items-center flex-col text-center py-16 border-2 border-dashed border-gray-300 dark:border-gray-700 shadow-sm'>
+              <FileText className='w-12 h-12 mx-auto mb-4 text-gray-400 dark:text-gray-600' />
+              <div className='text-gray-700 dark:text-gray-300 font-bold text-lg mb-2'>{t('rules.noRules')}</div>
               <div className='text-gray-500 text-sm mb-4'>{t('rules.noRulesDesc')}</div>
               <Button onClick={() => onEditRule('new')} className='flex items-center gap-2'>
                 <Plus className='w-4 h-4' />

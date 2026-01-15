@@ -271,7 +271,7 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, mockRequest, onSave, onCa
 
   return (
     <Card className='p-8 shadow-2xl'>
-      <h2 className='text-2xl font-bold text-white mb-6 pb-3 border-b border-gray-700'>
+      <h2 className='text-2xl font-bold text-gray-900 dark:text-white mb-6 pb-3 border-b border-gray-300 dark:border-gray-700'>
         {rule ? t('editor.updateRule') : t('editor.createRule')}
       </h2>
 
@@ -285,7 +285,7 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, mockRequest, onSave, onCa
           placeholder={t('editor.ruleNamePlaceholder')}
         />
 
-        <div className='border-l-4 border-blue-500 bg-blue-500/5 rounded-r-lg pl-4 pr-4 py-4 space-y-4'>
+        <div className='border-l-4 border-gray-300 dark:border-blue-500 bg-gray-50 dark:bg-blue-500/5 rounded-r-lg pl-4 pr-4 py-4 space-y-4'>
           <Input
             label={t('editor.urlPattern')}
             required
@@ -331,7 +331,7 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, mockRequest, onSave, onCa
           </div>
         </div>
 
-        <div className='border-l-4 border-green-500 bg-green-500/5 rounded-r-lg pl-4 pr-4 py-4 space-y-4'>
+        <div className='border-l-4 border-gray-300 dark:border-green-500 bg-gray-50 dark:bg-green-500/5 rounded-r-lg pl-4 pr-4 py-4 space-y-4'>
           <div className='grid grid-cols-2 gap-4'>
             <Input
               label={t('editor.statusCode')}
@@ -372,9 +372,9 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, mockRequest, onSave, onCa
           />
 
           <div>
-            <label className='block text-sm font-bold text-gray-300 mb-2'>
+            <label className='block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2'>
               {t('editor.customHeaders')}{' '}
-              <span className='text-gray-500 text-xs font-normal'>({t('editor.optional')})</span>
+              <span className='text-gray-500 dark:text-gray-500 text-xs font-normal'>({t('editor.optional')})</span>
             </label>
             <div className='space-y-2'>
               {formData.headers.map((header, index) => (
@@ -406,7 +406,7 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, mockRequest, onSave, onCa
                       const newHeaders = formData.headers.filter((_, i) => i !== index);
                       handleChange('headers', newHeaders);
                     }}
-                    title='Remove header'
+                    title={t('editor.removeHeader')}
                   >
                     <Trash2 className='w-4 h-4' />
                   </IconButton>
@@ -463,9 +463,9 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, mockRequest, onSave, onCa
         </div>
 
         {isExpanded && (
-          <div className='fixed inset-0 z-50 bg-black/95 flex flex-col m-0'>
-            <div className='flex items-center justify-between p-4 border-b border-gray-700 shrink-0'>
-              <h3 className='text-lg font-bold text-white'>{t('editor.responseBody')}</h3>
+          <div className='fixed inset-0 z-50 bg-white/95 dark:bg-black/95 flex flex-col m-0'>
+            <div className='flex items-center justify-between p-4 border-b border-gray-300 dark:border-gray-700 shrink-0'>
+              <h3 className='text-lg font-bold text-gray-900 dark:text-white'>{t('editor.responseBody')}</h3>
               <div className='flex items-center gap-3'>
                 {formData.contentType === 'application/json' && (
                   <Button type='button' onClick={formatJSON} size='sm' variant='primary'>
@@ -482,7 +482,7 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, mockRequest, onSave, onCa
                 value={formData.responseBody}
                 onChange={(e) => handleChange('responseBody', e.target.value)}
                 placeholder={t('editor.responseBodyPlaceholder')}
-                className='w-full h-full bg-gray-950 text-white border border-gray-700 rounded px-4 py-3 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-green-500 resize-none custom-scrollbar'
+                className='w-full h-full bg-white dark:bg-gray-950 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-700 rounded px-4 py-3 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-green-600 dark:focus:ring-green-500 resize-none custom-scrollbar'
               />
             </div>
             {formData.contentType === 'application/json' && jsonValidation && (

@@ -5,6 +5,38 @@ All notable changes to MockAPI Extension will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.0] - 2026-01-15
+
+### Added
+- **Dark/Light Theme Support**: Complete theme system with automatic system preference detection
+  - **Three Theme Options**: System (auto), Light, and Dark modes
+  - **System Preference Detection**: Automatically detects and follows OS theme preference
+  - **Settings Menu**: New gear icon dropdown for theme and language selection
+  - **Optimized Color Scheme**: Enhanced visibility across both themes
+    - Light theme: Darker green shades (green-600+) for better readability
+    - Dark theme: Lighter green shades (green-400-500) for contrast
+  - **Full Component Coverage**: All UI components updated with theme support
+    - Buttons, Cards, Inputs, Selects, TextAreas, Toggles
+    - Rules, Requests, Filters, Badges, Tabs
+    - Headers, Modals, Dropdowns, Menus
+  - **Persistent Storage**: Theme preference saved in chrome.storage.local
+  - **Instant Switching**: Theme changes apply immediately without reload
+  - **Full i18n Support**: All theme-related text translated in EN/RU
+
+### Changed
+- **Header Redesign**: Moved language selector to Settings menu to reduce clutter
+- **Component Architecture**: Created reusable atomic components
+  - MenuOption and MenuSection for dropdown menus
+  - FilterButton and FilterSection for filter panels
+  - useClickOutside hook for outside-click detection
+- **Tailwind CSS 4.x**: Upgraded dark mode configuration using CSS @variant
+
+### Technical
+- Tailwind CSS 4.x dark mode: `@variant dark (&:is(.dark, .dark *))`
+- ThemeContext with system preference listener
+- Atomic component pattern for improved maintainability
+- Consistent cursor-pointer on all interactive elements
+
 ## [2.3.0] - 2026-01-15
 
 ### Added

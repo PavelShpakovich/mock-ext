@@ -26,6 +26,7 @@ export interface Settings {
   showNotifications: boolean;
   corsAutoFix: boolean;
   language?: 'en' | 'ru';
+  theme?: 'system' | 'light' | 'dark';
 }
 
 export interface RequestLog {

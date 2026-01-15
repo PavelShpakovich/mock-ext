@@ -369,7 +369,7 @@ const App: React.FC = () => {
   );
 
   return (
-    <div className='min-h-screen bg-black text-white'>
+    <div className='min-h-screen bg-gray-50 dark:bg-black text-gray-900 dark:text-white'>
       <Header
         enabled={settings.enabled}
         logRequests={settings.logRequests}
@@ -380,7 +380,7 @@ const App: React.FC = () => {
         activeTabTitle={activeTabTitle}
       />
 
-      <div className='flex border-b border-gray-800 bg-gray-950 shadow-sm'>
+      <div className='flex border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 shadow-sm'>
         <TabButton active={activeTab === 'rules'} onClick={() => setActiveTab('rules')}>
           {t('tabs.rules')} ({rules.length})
         </TabButton>

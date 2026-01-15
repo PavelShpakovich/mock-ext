@@ -252,6 +252,7 @@ async function showDevToolsPromptInActiveTab(): Promise<void> {
       await chrome.tabs.sendMessage(tabs[0].id, {
         action: 'openDevTools',
         language: settings.language || 'en',
+        theme: settings.theme || 'system',
       });
     } catch {
       // Silent fail - content script may not be loaded yet

@@ -86,31 +86,33 @@ const RequestsTab: React.FC<RequestsTabProps> = ({
       </div>
 
       {!logRequests && requests.length === 0 && (
-        <Card className='text-center py-16 border-2 border-dashed border-gray-700 shadow-sm mb-4'>
-          <Circle className='w-12 h-12 mx-auto mb-4 text-gray-600' />
-          <div className='text-gray-300 font-bold text-lg mb-2'>{t('requests.noRequests')}</div>
-          <div className='text-gray-500 text-sm'>{t('requests.noRequestsDesc')}</div>
+        <Card className='text-center py-16 border-2 border-dashed border-gray-300 dark:border-gray-700 shadow-sm mb-4'>
+          <Circle className='w-12 h-12 mx-auto mb-4 text-gray-400 dark:text-gray-600' />
+          <div className='text-gray-700 dark:text-gray-300 font-bold text-lg mb-2'>{t('requests.noRequests')}</div>
+          <div className='text-gray-500 dark:text-gray-500 text-sm'>{t('requests.noRequestsDesc')}</div>
         </Card>
       )}
 
       {logRequests && requests.length === 0 && (
-        <Card className='text-center py-16 border-2 border-dashed border-gray-700 shadow-sm animate-pulse'>
+        <Card className='text-center py-16 border-2 border-dashed border-gray-300 dark:border-gray-700 shadow-sm animate-pulse'>
           <Circle className='w-12 h-12 mx-auto mb-4 text-red-500' fill='currentColor' />
-          <div className='text-gray-300 font-bold text-lg mb-2'>{t('header.recording', { tabTitle: '' })}</div>
-          <div className='text-gray-500 text-sm'>{t('requests.noRequestsDesc')}</div>
+          <div className='text-gray-700 dark:text-gray-300 font-bold text-lg mb-2'>
+            {t('header.recording', { tabTitle: '' })}
+          </div>
+          <div className='text-gray-500 dark:text-gray-500 text-sm'>{t('requests.noRequestsDesc')}</div>
         </Card>
       )}
 
       {filteredRequests.length === 0 && requests.length > 0 ? (
-        <Card className='text-center py-16 border-2 border-dashed border-gray-700 shadow-sm'>
-          <Search className='w-12 h-12 mx-auto mb-4 text-gray-600' />
-          <div className='text-gray-300 font-bold text-lg mb-2'>{t('requests.noRequests')}</div>
-          <div className='text-gray-500 text-sm'>{t('requests.search')}</div>
+        <Card className='text-center py-16 border-2 border-dashed border-gray-300 dark:border-gray-700 shadow-sm'>
+          <Search className='w-12 h-12 mx-auto mb-4 text-gray-400 dark:text-gray-600' />
+          <div className='text-gray-700 dark:text-gray-300 font-bold text-lg mb-2'>{t('requests.noRequests')}</div>
+          <div className='text-gray-500 dark:text-gray-500 text-sm'>{t('requests.search')}</div>
         </Card>
       ) : (
         filteredRequests.length > 0 && (
           <div className='space-y-2'>
-            <div className='text-xs text-gray-500 mb-2'>
+            <div className='text-xs text-gray-600 dark:text-gray-500 mb-2'>
               {filteredRequests.length} request{filteredRequests.length !== 1 ? 's' : ''}
               {!logRequests && ' (recording stopped)'}
             </div>

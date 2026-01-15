@@ -23,12 +23,12 @@ const RequestItem: React.FC<RequestItemProps> = ({ request, onMock }) => {
             <MethodBadge method={request.method} />
             {request.matched && <Badge variant='success'>Mocked</Badge>}
             {request.statusCode && <StatusCodeBadge code={request.statusCode} />}
-            <span className='text-xs font-medium text-gray-500 flex items-center gap-1'>
+            <span className='text-xs font-medium text-gray-600 dark:text-gray-500 flex items-center gap-1'>
               <Clock className='w-3 h-3' />
               {formatTime(request.timestamp)}
             </span>
           </div>
-          <div className='text-sm text-white break-all font-mono bg-gray-900 px-2 py-1.5 rounded border border-gray-700'>
+          <div className='text-sm text-gray-900 dark:text-white break-all font-mono bg-gray-100 dark:bg-gray-900 px-2 py-1.5 rounded border border-gray-300 dark:border-gray-700'>
             {request.url}
           </div>
         </div>

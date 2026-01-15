@@ -1,7 +1,10 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { Button } from './Button';
 import { X, Filter } from 'lucide-react';
 import { useI18n } from '../../contexts/I18nContext';
+import { useClickOutside } from '../../hooks/useClickOutside';
+import { FilterSection } from './FilterSection';
+import { FilterButton } from './FilterButton';
 
 export interface FilterState {
   statusCodes: number[];
@@ -27,6 +30,9 @@ const METHOD_OPTIONS = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'];
 
 export const FilterPanel: React.FC<FilterPanelProps> = ({ filters, onFilterChange, onClear, isExpanded, onToggle }) => {
   const { t } = useI18n();
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  useClickOutside(panelRef, onToggle, isExpanded);
 
   const hasActiveFilters = filters.statusCodes.length > 0 || filters.methods.length > 0;
 
@@ -49,7 +55,7 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({ filters, onFilterChang
   };
 
   return (
-    <>
+    <div ref={panelRef} className='relative'>
       <Button onClick={onToggle} variant='secondary' className='flex items-center gap-2 whitespace-nowrap'>
         <Filter className='w-4 h-4' />
         {t('requests.filters')}
@@ -61,47 +67,28 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({ filters, onFilterChang
       </Button>
 
       {isExpanded && (
-        <div className='absolute top-full right-0 mt-2 bg-gray-800 border border-gray-700 rounded-lg p-4 space-y-4 shadow-xl z-10 min-w-[320px]'>
-          <div>
-            <label className='block text-sm font-medium text-gray-300 mb-2'>{t('requests.filterByMethod')}</label>
-            <div className='flex flex-wrap gap-2'>
-              {METHOD_OPTIONS.map((method) => (
-                <button
-                  key={method}
-                  onClick={() => toggleMethod(method)}
-                  className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors cursor-pointer ${
-                    filters.methods.includes(method)
-                      ? 'bg-blue-500 text-white'
-                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                  }`}
-                >
-                  {method}
-                </button>
-              ))}
-            </div>
-          </div>
+        <div className='absolute top-full right-0 mt-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-4 space-y-4 shadow-xl z-10 min-w-[320px]'>
+          <FilterSection title={t('requests.filterByMethod')}>
+            {METHOD_OPTIONS.map((method) => (
+              <FilterButton
+                key={method}
+                label={method}
+                isActive={filters.methods.includes(method)}
+                onClick={() => toggleMethod(method)}
+              />
+            ))}
+          </FilterSection>
 
-          <div>
-            <label className='block text-sm font-medium text-gray-300 mb-2'>{t('requests.filterByStatus')}</label>
-            <div className='flex flex-wrap gap-2'>
-              {STATUS_CODE_OPTIONS.map((option) => {
-                const code = getStatusCodeRange(option.value);
-                return (
-                  <button
-                    key={option.value}
-                    onClick={() => toggleStatusCode(code)}
-                    className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors cursor-pointer ${
-                      filters.statusCodes.includes(code)
-                        ? 'bg-blue-500 text-white'
-                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                    }`}
-                  >
-                    {option.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+          <FilterSection title={t('requests.filterByStatus')}>
+            {STATUS_CODE_OPTIONS.map((option) => (
+              <FilterButton
+                key={option.value}
+                label={option.label}
+                isActive={filters.statusCodes.includes(getStatusCodeRange(option.value))}
+                onClick={() => toggleStatusCode(getStatusCodeRange(option.value))}
+              />
+            ))}
+          </FilterSection>
 
           {hasActiveFilters && (
             <Button
@@ -116,6 +103,6 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({ filters, onFilterChang
           )}
         </div>
       )}
-    </>
+    </div>
   );
 };

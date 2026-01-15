@@ -9,13 +9,17 @@ interface BadgeProps {
 
 export const Badge: React.FC<BadgeProps> = ({ children, variant = 'default', className = '' }) => {
   const variants = {
-    default: 'bg-gray-700 text-gray-300 border border-gray-600',
-    success: 'bg-green-900/30 text-green-400 border border-green-800',
-    warning: 'bg-yellow-900/30 text-yellow-400 border border-yellow-800',
-    error: 'bg-red-900/30 text-red-400 border border-red-800',
-    info: 'bg-blue-900/30 text-blue-400 border border-blue-800',
-    purple: 'bg-purple-900/30 text-purple-400 border border-purple-800',
-    outline: 'bg-transparent border border-gray-600 text-gray-400',
+    default:
+      'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600',
+    success:
+      'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400 border border-green-400 dark:border-green-800',
+    warning:
+      'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 border border-yellow-300 dark:border-yellow-800',
+    error: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border border-red-300 dark:border-red-800',
+    info: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border border-blue-300 dark:border-blue-800',
+    purple:
+      'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 border border-purple-300 dark:border-purple-800',
+    outline: 'bg-transparent border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400',
   };
 
   return (
@@ -48,7 +52,7 @@ export const MethodBadge: React.FC<{ method: string }> = ({ method }) => {
 
 export const StatusCodeBadge: React.FC<{ code: number }> = ({ code }) => {
   const getColorClass = (c: number) => {
-    if (c >= 200 && c < 300) return 'text-green-400';
+    if (c >= 200 && c < 300) return 'text-green-700 dark:text-green-400';
     if (c >= 300 && c < 400) return 'text-blue-400';
     if (c >= 400 && c < 500) return 'text-orange-400';
     if (c >= 500) return 'text-red-400';
@@ -57,7 +61,10 @@ export const StatusCodeBadge: React.FC<{ code: number }> = ({ code }) => {
 
   return (
     <span
-      className={clsx('text-sm font-bold px-2 py-0.5 rounded bg-gray-900 border border-gray-700', getColorClass(code))}
+      className={clsx(
+        'text-sm font-bold px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-700',
+        getColorClass(code)
+      )}
     >
       {code}
     </span>

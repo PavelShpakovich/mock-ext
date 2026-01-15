@@ -87,12 +87,17 @@
     "headerName": "Имя заголовка (например, Authorization)",
     "headerValue": "Значение заголовка",
     "addHeader": "Добавить заголовок",
+    "removeHeader": "Удалить заголовок",
     "validationError": "{{error}}",
     "variables": "Доступные переменные: {{timestamp}}, {{uuid}}, {{random_number}}"
   },
   "settings": {
+    "settings": "Настройки",
     "language": "Язык",
     "theme": "Тема",
+    "themeSystem": "Системная",
+    "themeLight": "Светлая",
+    "themeDark": "Тёмная",
     "notifications": "Уведомления"
   },
   "devtoolsPrompt": {
