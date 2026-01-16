@@ -1,4 +1,5 @@
 import { MockRule, Settings, StorageData, RequestLog } from './types';
+import { Theme } from './enums';
 
 // Batch buffer for log entries
 let logBuffer: RequestLog[] = [];
@@ -13,7 +14,7 @@ const DEFAULT_SETTINGS: Settings = {
   logRequests: true,
   showNotifications: false,
   corsAutoFix: false,
-  theme: 'system',
+  theme: Theme.System,
 };
 
 export class Storage {

@@ -2,17 +2,34 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { Storage } from '../storage';
 import { MockRule, Settings, RequestLog } from '../types';
+import { Tab, ImportMode } from '../enums';
 import { useI18n } from '../contexts/I18nContext';
 import { withContextCheck } from '../contextHandler';
 import { validateAllRules, ValidationWarning } from '../helpers';
+import {
+  findValidWebTab,
+  sendStartRecordingMessage,
+  sendStopRecordingMessage,
+  getRecordingStatus,
+  createDisabledSettings,
+} from '../helpers/recording';
+import {
+  downloadFile,
+  exportRulesToJSON,
+  generateExportFilename,
+  validateImportedRules,
+  mergeRules,
+  parseImportFile,
+} from '../helpers/importExport';
 import Header from './Header';
 import RulesTab from './RulesTab';
 import RequestsTab from './RequestsTab';
 import { TabButton } from './ui/TabButton';
+import { ImportDialog } from './ui/ImportDialog';
 
 const App: React.FC = () => {
   const { t } = useI18n();
-  const [activeTab, setActiveTab] = useState<'rules' | 'requests'>('rules');
+  const [activeTab, setActiveTab] = useState<Tab>(Tab.Rules);
   const [rules, setRules] = useState<MockRule[]>([]);
   const [settings, setSettings] = useState<Settings>({
     enabled: true,
@@ -26,61 +43,38 @@ const App: React.FC = () => {
   const [requestsSearchTerm, setRequestsSearchTerm] = useState('');
   const [activeTabTitle, setActiveTabTitle] = useState<string>('');
   const [ruleWarnings, setRuleWarnings] = useState<Map<string, ValidationWarning[]>>(new Map());
+  const [importDialogData, setImportDialogData] = useState<{ rules: MockRule[] } | null>(null);
 
   const loadRequestLog = useCallback(async () => {
     const loadedRequestLog = await withContextCheck(() => Storage.getRequestLog(), []);
     setRequestLog(loadedRequestLog);
   }, []);
 
-  // Helper: Check if tab is valid for recording
-  const isValidRecordingTab = (tab: chrome.tabs.Tab): boolean => {
-    return (
-      tab.id !== undefined &&
-      !!tab.url &&
-      !tab.url.startsWith('chrome-extension://') &&
-      !tab.url.startsWith('chrome://') &&
-      !tab.url.startsWith('about:') &&
-      tab.windowId !== chrome.windows.WINDOW_ID_NONE
-    );
-  };
+  const startRecording = useCallback(
+    async (tab: chrome.tabs.Tab): Promise<boolean> => {
+      const response = await withContextCheck(() => sendStartRecordingMessage(tab.id!), { success: false });
 
-  // Helper: Find valid web tab
-  const findValidWebTab = async (): Promise<chrome.tabs.Tab | undefined> => {
-    const tabs = await chrome.tabs.query({ active: true });
-    return tabs.find(isValidRecordingTab);
-  };
+      if (response?.success) {
+        const newSettings = { ...settings, logRequests: true };
+        setSettings(newSettings);
+        await Storage.saveSettings(newSettings);
+        setActiveTabTitle(tab.title || 'Unknown Tab');
+        setActiveTab(Tab.Requests);
+        return true;
+      }
 
-  // Helper: Start recording in tab
-  const startRecording = async (tab: chrome.tabs.Tab): Promise<boolean> => {
-    const response = await withContextCheck(
-      () =>
-        chrome.runtime.sendMessage({
-          action: 'startRecording',
-          tabId: tab.id,
-        }),
-      { success: false }
-    );
+      return false;
+    },
+    [settings]
+  );
 
-    if (response?.success) {
-      const newSettings = { ...settings, logRequests: true };
-      setSettings(newSettings);
-      await Storage.saveSettings(newSettings);
-      setActiveTabTitle(tab.title || 'Unknown Tab');
-      setActiveTab('requests');
-      return true;
-    }
-
-    return false;
-  };
-
-  // Helper: Stop recording
-  const stopRecording = async (): Promise<void> => {
-    await withContextCheck(() => chrome.runtime.sendMessage({ action: 'stopRecording' })).catch(() => {});
+  const stopRecording = useCallback(async (): Promise<void> => {
+    await withContextCheck(() => sendStopRecordingMessage()).catch(() => {});
     const newSettings = { ...settings, logRequests: false };
     setSettings(newSettings);
     await Storage.saveSettings(newSettings);
     setActiveTabTitle('');
-  };
+  }, [settings]);
 
   useEffect(() => {
     loadData();
@@ -132,9 +126,7 @@ const App: React.FC = () => {
 
     if (loadedSettings.logRequests) {
       try {
-        const response = await withContextCheck(() => chrome.runtime.sendMessage({ action: 'getRecordingStatus' }), {
-          success: false,
-        });
+        const response = await withContextCheck(() => getRecordingStatus(), { success: false });
         if (response.success && response.data?.tabId) {
           const tab = await chrome.tabs.get(response.data.tabId);
           setActiveTabTitle(tab.title || 'Unknown Tab');
@@ -147,31 +139,21 @@ const App: React.FC = () => {
 
   const handleGlobalToggle = useCallback(
     async (enabled: boolean) => {
-      const newSettings = { ...settings, enabled };
-
-      // If disabling extension, also stop recording and disable CORS
-      if (!enabled) {
-        if (settings.logRequests) {
-          newSettings.logRequests = false;
-          setActiveTabTitle('');
-        }
-        if (settings.corsAutoFix) {
-          newSettings.corsAutoFix = false;
-        }
-      }
+      const newSettings = enabled ? { ...settings, enabled } : createDisabledSettings(settings);
 
       setSettings(newSettings);
       await Storage.saveSettings(newSettings);
-      await withContextCheck(() => chrome.runtime.sendMessage({ action: 'toggleMocking', enabled })).catch(() => {
-        // Silent fail - context invalidated
-      });
+      await withContextCheck(() => chrome.runtime.sendMessage({ action: 'toggleMocking', enabled })).catch(() => {});
+
+      if (!enabled && settings.logRequests) {
+        setActiveTabTitle('');
+      }
     },
     [settings]
   );
 
   const handleRecordingToggle = useCallback(
     async (logRequests: boolean) => {
-      // Don't allow recording when extension is disabled
       if (logRequests && !settings.enabled) {
         return;
       }
@@ -189,7 +171,7 @@ const App: React.FC = () => {
         console.error('Recording toggle error:', error);
       }
     },
-    [settings]
+    [settings.enabled, startRecording, stopRecording]
   );
 
   const handleCorsToggle = useCallback(
@@ -197,7 +179,6 @@ const App: React.FC = () => {
       const newSettings = { ...settings, corsAutoFix };
       setSettings(newSettings);
       await Storage.saveSettings(newSettings);
-      // Notify background to update settings in all tabs
       await withContextCheck(() =>
         chrome.runtime.sendMessage({ action: 'updateSettings', settings: newSettings })
       ).catch(() => {});
@@ -205,11 +186,9 @@ const App: React.FC = () => {
     [settings]
   );
 
-  // Helper: Update rules in storage and background
   const updateRulesEverywhere = async (updatedRules: MockRule[]): Promise<void> => {
     setRules(updatedRules);
 
-    // Validate rules after update
     const warnings = validateAllRules(updatedRules);
     setRuleWarnings(warnings);
 
@@ -295,77 +274,58 @@ const App: React.FC = () => {
   }, []);
 
   const handleMockRequest = useCallback((request: RequestLog) => {
-    setActiveTab('rules');
+    setActiveTab(Tab.Rules);
     setEditingRuleId('new');
     sessionStorage.setItem('mockRequest', JSON.stringify(request));
   }, []);
 
-  // Helper: Download file
-  const downloadFile = (content: string, filename: string, mimeType: string): void => {
-    const blob = new Blob([content], { type: mimeType });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
-
-  const handleExportRules = useCallback(() => {
-    const dataStr = JSON.stringify(rules, null, 2);
-    const filename = `mockapi-rules-${new Date().toISOString().split('T')[0]}.json`;
-    downloadFile(dataStr, filename, 'application/json');
-  }, [rules]);
-
-  // Helper: Validate imported rules structure
-  const validateImportedRules = (data: any): { valid: boolean; error?: string } => {
-    if (!Array.isArray(data)) {
-      return { valid: false, error: 'Invalid format - expected array' };
-    }
-
-    const hasRequiredFields = data.every(
-      (rule) => rule.id && rule.name && rule.urlPattern && rule.method && rule.statusCode !== undefined
-    );
-
-    if (!hasRequiredFields) {
-      return { valid: false, error: 'Missing required fields' };
-    }
-
-    return { valid: true };
-  };
-
-  // Helper: Merge imported rules with existing
-  const mergeImportedRules = (importedRules: MockRule[]): MockRule[] => {
-    const existingIds = new Set(rules.map((r) => r.id));
-    const newRules = importedRules.filter((rule) => !existingIds.has(rule.id));
-    return [...rules, ...newRules];
-  };
+  const handleExportRules = useCallback(
+    (selectedIds?: string[]) => {
+      const dataStr = exportRulesToJSON(rules, selectedIds);
+      const filename = generateExportFilename();
+      downloadFile(dataStr, filename, 'application/json');
+    },
+    [rules]
+  );
 
   const handleImportRules = useCallback(
     async (file: File) => {
       try {
-        const text = await file.text();
-        const importedRules = JSON.parse(text);
-
+        const importedRules = await parseImportFile(file);
         const validation = validateImportedRules(importedRules);
+
         if (!validation.valid) {
           alert(t('rules.importError') + ': ' + validation.error);
           return;
         }
 
-        const updatedRules = mergeImportedRules(importedRules);
-        const newRulesCount = updatedRules.length - rules.length;
+        setImportDialogData({ rules: importedRules });
+      } catch (error) {
+        console.error('Import error:', error);
+        alert(t('rules.importError') + ': ' + (error as Error).message);
+      }
+    },
+    [t]
+  );
+
+  const handleConfirmImport = useCallback(
+    async (mode: ImportMode) => {
+      if (!importDialogData) return;
+
+      try {
+        const importedRules = importDialogData.rules;
+        const updatedRules = mode === ImportMode.Merge ? mergeRules(rules, importedRules) : importedRules;
+        const newRulesCount = mode === ImportMode.Merge ? updatedRules.length - rules.length : importedRules.length;
 
         await updateRulesEverywhere(updatedRules);
+        setImportDialogData(null);
         alert(t('rules.importSuccess').replace('{count}', newRulesCount.toString()));
       } catch (error) {
         console.error('Import error:', error);
         alert(t('rules.importError') + ': ' + (error as Error).message);
       }
     },
-    [rules, t]
+    [importDialogData, rules, t]
   );
 
   return (
@@ -381,15 +341,15 @@ const App: React.FC = () => {
       />
 
       <div className='flex border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 shadow-sm'>
-        <TabButton active={activeTab === 'rules'} onClick={() => setActiveTab('rules')}>
+        <TabButton active={activeTab === Tab.Rules} onClick={() => setActiveTab(Tab.Rules)}>
           {t('tabs.rules')} ({rules.length})
         </TabButton>
-        <TabButton active={activeTab === 'requests'} onClick={() => setActiveTab('requests')}>
+        <TabButton active={activeTab === Tab.Requests} onClick={() => setActiveTab(Tab.Requests)}>
           {t('tabs.requests')} ({requestLog.length})
         </TabButton>
       </div>
 
-      {activeTab === 'rules' ? (
+      {activeTab === Tab.Rules ? (
         <RulesTab
           rules={rules}
           ruleWarnings={ruleWarnings}
@@ -414,6 +374,15 @@ const App: React.FC = () => {
           onClearLog={handleClearLog}
           onMockRequest={handleMockRequest}
           logRequests={settings.logRequests}
+        />
+      )}
+
+      {importDialogData && (
+        <ImportDialog
+          importedRules={importDialogData.rules}
+          existingRules={rules}
+          onConfirm={handleConfirmImport}
+          onCancel={() => setImportDialogData(null)}
         />
       )}
     </div>

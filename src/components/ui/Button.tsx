@@ -1,16 +1,17 @@
 import React from 'react';
 import clsx from 'clsx';
+import { ButtonVariant, ButtonSize } from '../../enums';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'danger' | 'ghost' | 'secondary' | 'outline';
-  size?: 'sm' | 'md' | 'lg';
+  variant?: ButtonVariant;
+  size?: ButtonSize;
   fullWidth?: boolean;
 }
 
 export const Button: React.FC<ButtonProps> = ({
   children,
-  variant = 'primary',
-  size = 'md',
+  variant = ButtonVariant.Primary,
+  size = ButtonSize.Medium,
   fullWidth = false,
   className = '',
   ...props

@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { Storage } from './storage';
 import { MockRule, Settings, MessageAction, MessageResponse } from './types';
+import { MatchType, HttpMethod } from './enums';
 import { findMatchingRule } from './helpers/urlMatching';
 
 let mockRules: MockRule[] = [];
@@ -284,8 +285,8 @@ async function createExampleRule(): Promise<void> {
     name: 'Example API Mock',
     enabled: false,
     urlPattern: 'https://jsonplaceholder.typicode.com/users/*',
-    matchType: 'wildcard',
-    method: 'GET',
+    matchType: MatchType.Wildcard,
+    method: HttpMethod.GET,
     statusCode: 200,
     response: {
       id: 1,

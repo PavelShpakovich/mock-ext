@@ -1,13 +1,14 @@
 import React from 'react';
 import clsx from 'clsx';
+import { BadgeVariant } from '../../enums';
 
 interface BadgeProps {
   children: React.ReactNode;
-  variant?: 'default' | 'success' | 'warning' | 'error' | 'info' | 'purple' | 'outline';
+  variant?: BadgeVariant;
   className?: string;
 }
 
-export const Badge: React.FC<BadgeProps> = ({ children, variant = 'default', className = '' }) => {
+export const Badge: React.FC<BadgeProps> = ({ children, variant = BadgeVariant.Default, className = '' }) => {
   const variants = {
     default:
       'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600',
@@ -30,20 +31,20 @@ export const Badge: React.FC<BadgeProps> = ({ children, variant = 'default', cla
 };
 
 export const MethodBadge: React.FC<{ method: string }> = ({ method }) => {
-  const getVariant = (m: string): BadgeProps['variant'] => {
+  const getVariant = (m: string): BadgeVariant => {
     switch (m.toUpperCase()) {
       case 'GET':
-        return 'success';
+        return BadgeVariant.Success;
       case 'POST':
-        return 'info';
+        return BadgeVariant.Info;
       case 'PUT':
-        return 'warning';
+        return BadgeVariant.Warning;
       case 'DELETE':
-        return 'error';
+        return BadgeVariant.Error;
       case 'PATCH':
-        return 'purple';
+        return BadgeVariant.Purple;
       default:
-        return 'default';
+        return BadgeVariant.Default;
     }
   };
 

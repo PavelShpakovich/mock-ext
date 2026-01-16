@@ -6,6 +6,7 @@ import { Card } from './ui/Card';
 import { Clock, Network } from 'lucide-react';
 import { useI18n } from '../contexts/I18nContext';
 import { formatTime } from '../helpers/formatting';
+import { BadgeVariant, ButtonSize } from '../enums';
 
 interface RequestItemProps {
   request: RequestLog;
@@ -21,7 +22,7 @@ const RequestItem: React.FC<RequestItemProps> = ({ request, onMock }) => {
         <div className='flex-1 min-w-0'>
           <div className='flex items-center gap-2 mb-2 flex-wrap'>
             <MethodBadge method={request.method} />
-            {request.matched && <Badge variant='success'>Mocked</Badge>}
+            {request.matched && <Badge variant={BadgeVariant.Success}>Mocked</Badge>}
             {request.statusCode && <StatusCodeBadge code={request.statusCode} />}
             <span className='text-xs font-medium text-gray-600 dark:text-gray-500 flex items-center gap-1'>
               <Clock className='w-3 h-3' />
@@ -35,7 +36,7 @@ const RequestItem: React.FC<RequestItemProps> = ({ request, onMock }) => {
 
         <div className='flex items-center gap-2 ml-4 flex-shrink-0'>
           <Button
-            size='sm'
+            size={ButtonSize.Small}
             onClick={onMock}
             className='whitespace-nowrap flex items-center gap-2'
             title={t('common.mockThisTooltip')}

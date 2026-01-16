@@ -43,21 +43,21 @@ This document outlines potential features and improvements for future releases.
   - ✅ Counter preservation through rule edits
   - ✅ Full internationalization support for time formatting
 
-### 3. Import/Export Enhancement ⏳
+### 3. Import/Export Enhancement ✅
 
 **Estimated effort:** 30 minutes  
 **Value:** Medium  
-**Status:** ⏳ **PARTIALLY COMPLETED**
+**Status:** ✅ **COMPLETED in v2.5.0**
 
-- **Current implementation:**
-  - ✅ Export all rules (implemented)
-  - ✅ Import rules from JSON file (implemented with merge strategy)
+- **Implementation:**
+  - ✅ Export all rules (implemented in v2.0.0)
+  - ✅ Export selected rules with checkbox selection mode
+  - ✅ Import rules from JSON file with merge strategy
+  - ✅ Import with user choice: merge or replace all modes
+  - ✅ Import preview/confirmation dialog with statistics
   - ✅ Duplicate detection by rule ID
   - ✅ Validation of required fields
-- **Remaining enhancements:**
-  - ⏳ Export selected rules (not just all)
-  - ⏳ Import with user choice: merge or replace all
-  - ⏳ Import preview/confirmation dialog
+  - ✅ Full internationalization support
 
 ### 4. Rule Groups/Folders
 

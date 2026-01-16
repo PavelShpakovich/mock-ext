@@ -9,6 +9,7 @@ import { IconButton } from './ui/IconButton';
 import { Clock, Copy, RotateCcw, Edit, Trash2, AlertCircle, AlertTriangle, Info } from 'lucide-react';
 import { useI18n } from '../contexts/I18nContext';
 import { formatRelativeTime } from '../helpers/time';
+import { BadgeVariant, IconButtonVariant } from '../enums';
 
 interface RuleItemProps {
   rule: MockRule;
@@ -18,6 +19,8 @@ interface RuleItemProps {
   onToggle: () => void;
   onDuplicate: () => void;
   onResetHits: () => void;
+  className?: string;
+  disabled?: boolean;
 }
 
 const RuleItem: React.FC<RuleItemProps> = ({
@@ -28,6 +31,8 @@ const RuleItem: React.FC<RuleItemProps> = ({
   onToggle,
   onDuplicate,
   onResetHits,
+  className = '',
+  disabled = false,
 }) => {
   const { t } = useI18n();
 
@@ -59,10 +64,14 @@ const RuleItem: React.FC<RuleItemProps> = ({
 
   return (
     <Card
-      className={clsx({
-        'opacity-60 bg-gray-100/50 dark:bg-gray-800/50': !rule.enabled,
-      })}
-      hoverEffect={true}
+      className={clsx(
+        {
+          'opacity-60 bg-gray-100/50 dark:bg-gray-800/50': !rule.enabled,
+          'pointer-events-none': disabled,
+        },
+        className
+      )}
+      hoverEffect={!disabled}
     >
       <div className='flex items-start justify-between mb-2'>
         <div className='flex-1'>
@@ -71,7 +80,7 @@ const RuleItem: React.FC<RuleItemProps> = ({
             {rule.method && <MethodBadge method={rule.method} />}
             <StatusCodeBadge code={rule.statusCode} />
             {(rule.matchCount ?? 0) > 0 && (
-              <Badge variant='info' className='flex items-center gap-1'>
+              <Badge variant={BadgeVariant.Info} className='flex items-center gap-1'>
                 {rule.matchCount}
               </Badge>
             )}
@@ -95,7 +104,7 @@ const RuleItem: React.FC<RuleItemProps> = ({
                 }}
                 title={t('rules.resetHits')}
                 className='text-blue-600 dark:text-blue-400/60 hover:text-blue-700 dark:hover:text-blue-400 -my-1'
-                variant='ghost'
+                variant={IconButtonVariant.Ghost}
               >
                 <RotateCcw className='w-3 h-3' />
               </IconButton>
@@ -132,7 +141,7 @@ const RuleItem: React.FC<RuleItemProps> = ({
             <Edit className='w-5 h-5' />
           </IconButton>
 
-          <IconButton variant='danger' onClick={onDelete} title={t('common.delete')}>
+          <IconButton variant={IconButtonVariant.Danger} onClick={onDelete} title={t('common.delete')}>
             <Trash2 className='w-5 h-5' />
           </IconButton>
         </div>

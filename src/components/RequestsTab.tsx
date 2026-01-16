@@ -8,6 +8,7 @@ import { Card } from './ui/Card';
 import { FilterPanel, FilterState } from './ui/FilterPanel';
 import { Search, Trash2, Circle } from 'lucide-react';
 import { useI18n } from '../contexts/I18nContext';
+import { ButtonVariant } from '../enums';
 
 interface RequestsTabProps {
   requests: RequestLog[];
@@ -77,7 +78,11 @@ const RequestsTab: React.FC<RequestsTabProps> = ({
                 onToggle={() => setIsFilterExpanded(!isFilterExpanded)}
               />
             </div>
-            <Button onClick={onClearLog} variant='danger' className='whitespace-nowrap flex items-center gap-2'>
+            <Button
+              onClick={onClearLog}
+              variant={ButtonVariant.Danger}
+              className='whitespace-nowrap flex items-center gap-2'
+            >
               <Trash2 className='w-4 h-4' />
               {t('requests.clear')}
             </Button>

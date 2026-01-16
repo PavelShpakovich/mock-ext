@@ -1,6 +1,8 @@
-export type MatchType = 'wildcard' | 'exact' | 'regex';
-export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' | 'OPTIONS' | 'HEAD' | '';
-export type ResolvedTheme = 'light' | 'dark';
+import { MatchType, HttpMethod, Language, Theme } from './enums';
+
+// Re-export enums for convenience
+export { MatchType, HttpMethod, Language, Theme };
+export type { ResolvedTheme } from './enums';
 
 export interface MockRule {
   id: string;
@@ -25,8 +27,8 @@ export interface Settings {
   logRequests: boolean;
   showNotifications: boolean;
   corsAutoFix: boolean;
-  language?: 'en' | 'ru';
-  theme?: 'system' | 'light' | 'dark';
+  language?: Language;
+  theme?: Theme;
 }
 
 export interface RequestLog {
@@ -81,7 +83,7 @@ export interface MessageAction {
   responseBody?: string;
   responseHeaders?: Record<string, string>;
   ruleId?: string;
-  language?: 'en' | 'ru';
+  language?: Language;
 }
 
 export interface MessageResponse {

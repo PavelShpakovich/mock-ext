@@ -5,6 +5,63 @@ All notable changes to MockAPI Extension will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.0] - 2026-01-16
+
+### Changed
+- **Code Architecture Refactoring**: Comprehensive modular redesign for better maintainability
+  - **Helper Modules**: Extracted business logic into dedicated helper files
+    - `recording.ts`: Recording functionality (tab validation, message sending, settings management)
+    - `importExport.ts`: Import/export logic (validation, merging, statistics, file operations)
+    - `headers.ts`: HTTP header utilities (conversion, extraction, filtering)
+    - `ruleForm.ts`: Form data initialization from rules and captured requests
+    - `ruleValidation.ts`: Enhanced with detailed JSON validation and form validation
+  - **Atomic UI Components**: Reusable components following atomic design principles
+    - `RadioOption`: Radio button with label and description
+    - `StatItem`: Icon + label + value statistics display
+    - `DialogHeader`: Consistent modal header with close button
+    - `InfoPanel`: Contextual information panels with variants (info, warning, danger)
+    - `HeadersEditor`: Reusable HTTP headers editor component
+  - **Component Size Reduction**: Major components refactored for better readability
+    - `App.tsx`: Reduced from 400 to 280 lines (-30%)
+    - `RuleEditor.tsx`: Reduced from 400 to 280 lines (-30%)
+    - `ImportDialog.tsx`: Reduced from 155 to 129 lines (-18%)
+  - **Comprehensive Testing**: Added 81 unit tests for all helper modules
+    - Test coverage: recording, importExport, headers, ruleForm, ruleValidation
+    - Total tests: 194 (was 113)
+    - All tests passing with proper mocking
+
+### Added
+- **Import/Export Enhancement**: Advanced rule management with user control
+  - **Export Selected Rules**: Select specific rules to export, not just all rules
+    - Selection mode with checkbox UI
+    - Select All / Deselect All functionality
+    - Export selected button showing count
+  - **Import Preview Dialog**: Review and confirm imports before applying
+    - Shows number of rules found in import file
+    - Visual statistics with icons and color coding
+    - Cancel option to abort import
+  - **Import Modes**: User choice between merge and replace
+    - **Merge Mode**: Add new rules and skip duplicates (safe, preserves existing)
+      - Shows count of new rules to add
+      - Shows count of duplicates that will be skipped
+      - Shows total rule count after merge
+    - **Replace Mode**: Delete all existing rules and import new ones
+      - Warning banner with alert icon
+      - Shows count of rules to remove
+      - Shows count of rules to add
+      - Red color coding for danger awareness
+  - **Duplicate Detection**: Intelligent matching by rule ID
+  - **Validation**: Import files checked for required fields
+  - **Full i18n Support**: All import/export features translated in EN/RU
+
+### Technical
+- ImportDialog component with radio button mode selection
+- Selection mode state management with Set<string>
+- Checkbox overlays with z-index positioning
+- Conditional preview sections based on mode
+- Type-safe optional selectedIds parameter
+- Helper functions: validateImportedRules, mergeImportedRules
+
 ## [2.4.0] - 2026-01-15
 
 ### Added

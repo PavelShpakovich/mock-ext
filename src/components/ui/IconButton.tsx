@@ -1,15 +1,16 @@
 import React from 'react';
 import clsx from 'clsx';
+import { IconButtonVariant, IconButtonSize } from '../../enums';
 
 interface IconButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'danger' | 'ghost' | 'primary';
-  size?: 'sm' | 'md';
+  variant?: IconButtonVariant;
+  size?: IconButtonSize;
 }
 
 export const IconButton: React.FC<IconButtonProps> = ({
   children,
-  variant = 'ghost',
-  size = 'md',
+  variant = IconButtonVariant.Ghost,
+  size = IconButtonSize.Medium,
   className = '',
   ...props
 }) => {

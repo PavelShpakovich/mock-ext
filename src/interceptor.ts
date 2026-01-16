@@ -1,11 +1,13 @@
 // This script runs in MAIN world (same context as page JavaScript)
 // Intercepts fetch() and XMLHttpRequest before they leave the browser
+// ⚠️ IMPORTANT: Cannot use ES6 imports - must be self-contained
+// ⚠️ String literal types here mirror enums defined in src/enums.ts
 
 interface MockRule {
   id: string;
   enabled: boolean;
   urlPattern: string;
-  matchType: 'wildcard' | 'exact' | 'regex';
+  matchType: 'wildcard' | 'exact' | 'regex'; // ⚠️ Mirrors MatchType enum
   method: string;
   statusCode: number;
   response: string | object;
@@ -21,7 +23,7 @@ interface Settings {
   logRequests: boolean;
   showNotifications: boolean;
   corsAutoFix: boolean;
-  language?: 'en' | 'ru';
+  language?: 'en' | 'ru'; // ⚠️ Mirrors Language enum
 }
 
 class RequestInterceptor {
@@ -489,6 +491,7 @@ class RequestInterceptor {
 
 // Initialize interceptor (singleton pattern)
 // TypeScript type augmentation for Window
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface Window {
   __MOCKAPI_INTERCEPTOR__?: RequestInterceptor;
 }

@@ -1,8 +1,7 @@
 import { MockRule } from '../types';
+import { ValidationWarningType, ValidationSeverity } from '../enums';
 import { matchURL } from './urlMatching';
-
-export type ValidationWarningType = 'overlapping' | 'invalidRegex' | 'invalidJson' | 'unused';
-export type ValidationSeverity = 'error' | 'warning' | 'info';
+import { isValidJSON } from './validation';
 
 export interface ValidationWarning {
   type: ValidationWarningType;
@@ -10,6 +9,15 @@ export interface ValidationWarning {
   messageKey: string;
   messageParams?: Record<string, any>;
   relatedRuleIds?: string[];
+}
+
+export interface FormValidationErrors {
+  [key: string]: string;
+}
+
+export interface JSONValidation {
+  isValid: boolean;
+  message: string;
 }
 
 /**
@@ -29,7 +37,7 @@ export function validateRegexPattern(pattern: string): boolean {
  */
 export function validateJSON(jsonString: string): boolean {
   if (!jsonString || !jsonString.trim()) {
-    return true; // Empty is valid
+    return true;
   }
   try {
     JSON.parse(jsonString);
@@ -40,11 +48,70 @@ export function validateJSON(jsonString: string): boolean {
 }
 
 /**
+ * Validate JSON and return detailed result
+ */
+export function validateJSONDetailed(jsonString: string): JSONValidation {
+  if (!jsonString.trim()) {
+    return { isValid: true, message: 'Empty JSON is valid' };
+  }
+
+  try {
+    JSON.parse(jsonString);
+    return { isValid: true, message: 'Valid JSON ✓' };
+  } catch (e) {
+    const error = e as Error;
+    return {
+      isValid: false,
+      message: `Invalid JSON: ${error.message}`,
+    };
+  }
+}
+
+/**
+ * Validate rule editor form data
+ */
+export function validateRuleForm(
+  formData: {
+    name: string;
+    urlPattern: string;
+    matchType: string;
+    contentType: string;
+    responseBody: string;
+  },
+  jsonValidation: JSONValidation | null,
+  t: (key: string, params?: Record<string, string>) => string
+): FormValidationErrors {
+  const errors: FormValidationErrors = {};
+
+  if (!formData.name.trim()) {
+    errors.name = t('editor.validationError', { error: 'Name is required' });
+  }
+
+  if (!formData.urlPattern.trim()) {
+    errors.urlPattern = t('editor.validationError', { error: 'URL pattern is required' });
+  }
+
+  if (formData.matchType === 'regex' && !validateRegexPattern(formData.urlPattern)) {
+    errors.urlPattern = t('editor.validationError', { error: 'Invalid regex pattern' });
+  }
+
+  if (formData.contentType === 'application/json' && formData.responseBody.trim()) {
+    if (jsonValidation && !jsonValidation.isValid) {
+      return errors;
+    }
+    if (!jsonValidation && !isValidJSON(formData.responseBody)) {
+      return errors;
+    }
+  }
+
+  return errors;
+}
+
+/**
  * Check if a rule hasn't been matched in X days
  */
 export function isRuleUnused(rule: MockRule, daysThreshold: number = 30): boolean {
   if (!rule.lastMatched) {
-    // If never matched and created more than X days ago
     const daysSinceCreated = (Date.now() - rule.created) / (1000 * 60 * 60 * 24);
     return daysSinceCreated > daysThreshold;
   }
@@ -59,16 +126,13 @@ export function isRuleUnused(rule: MockRule, daysThreshold: number = 30): boolea
 export function findOverlappingRules(rule: MockRule, allRules: MockRule[]): MockRule[] {
   const overlapping: MockRule[] = [];
 
-  // Only check enabled rules (disabled rules can't cause conflicts)
   const enabledRules = allRules.filter((r) => r.enabled && r.id !== rule.id);
 
   for (const otherRule of enabledRules) {
-    // If methods don't match, they can't overlap
     if (rule.method && otherRule.method && rule.method !== otherRule.method) {
       continue;
     }
 
-    // Check if patterns could match the same URLs
     if (patternsOverlap(rule, otherRule)) {
       overlapping.push(otherRule);
     }
@@ -81,15 +145,12 @@ export function findOverlappingRules(rule: MockRule, allRules: MockRule[]): Mock
  * Check if two URL patterns could match the same URLs
  */
 function patternsOverlap(rule1: MockRule, rule2: MockRule): boolean {
-  // For exact match, check if patterns are identical
   if (rule1.matchType === 'exact' && rule2.matchType === 'exact') {
     return rule1.urlPattern === rule2.urlPattern;
   }
 
-  // For wildcard and regex, test sample URLs derived from the patterns themselves
   const testUrls = [rule1.urlPattern.replace(/\*/g, 'test'), rule2.urlPattern.replace(/\*/g, 'test')];
 
-  // If any test URL matches both patterns, they overlap
   for (const url of testUrls) {
     try {
       const matches1 = matchURL(url, rule1.urlPattern, rule1.matchType);
@@ -99,7 +160,7 @@ function patternsOverlap(rule1: MockRule, rule2: MockRule): boolean {
         return true;
       }
     } catch {
-      // Ignore match errors
+      // Ignore pattern matching errors for invalid regex
     }
   }
 
@@ -118,8 +179,8 @@ export function validateRule(rule: MockRule, allRules: MockRule[]): ValidationWa
       new RegExp(rule.urlPattern);
     } catch (error) {
       warnings.push({
-        type: 'invalidRegex',
-        severity: 'error',
+        type: ValidationWarningType.InvalidRegex,
+        severity: ValidationSeverity.Error,
         messageKey: 'warnings.invalidRegex',
         messageParams: { error: error instanceof Error ? error.message : 'Unknown error' },
       });
@@ -130,8 +191,8 @@ export function validateRule(rule: MockRule, allRules: MockRule[]): ValidationWa
   if (rule.contentType === 'application/json' && typeof rule.response === 'string') {
     if (!validateJSON(rule.response)) {
       warnings.push({
-        type: 'invalidJson',
-        severity: 'error',
+        type: ValidationWarningType.InvalidJson,
+        severity: ValidationSeverity.Error,
         messageKey: 'warnings.invalidJson',
       });
     }
@@ -140,8 +201,8 @@ export function validateRule(rule: MockRule, allRules: MockRule[]): ValidationWa
   // Check for unused rule
   if (isRuleUnused(rule, 30)) {
     warnings.push({
-      type: 'unused',
-      severity: 'info',
+      type: ValidationWarningType.Unused,
+      severity: ValidationSeverity.Info,
       messageKey: 'warnings.unusedRule',
     });
   }
@@ -150,8 +211,8 @@ export function validateRule(rule: MockRule, allRules: MockRule[]): ValidationWa
   const overlapping = findOverlappingRules(rule, allRules);
   if (overlapping.length > 0) {
     warnings.push({
-      type: 'overlapping',
-      severity: 'warning',
+      type: ValidationWarningType.Overlapping,
+      severity: ValidationSeverity.Warning,
       messageKey: 'warnings.overlappingRules',
       messageParams: { count: overlapping.length },
       relatedRuleIds: overlapping.map((r) => r.id),

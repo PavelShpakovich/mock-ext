@@ -1,13 +1,11 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { Storage } from '../storage';
-
-export type ThemeOption = 'system' | 'light' | 'dark';
-export type ResolvedTheme = 'light' | 'dark';
+import { Theme, ResolvedTheme } from '../enums';
 
 interface ThemeContextType {
-  theme: ThemeOption;
+  theme: Theme;
   resolvedTheme: ResolvedTheme;
-  setTheme: (theme: ThemeOption) => void;
+  setTheme: (theme: Theme) => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -25,30 +23,30 @@ interface ThemeProviderProps {
 }
 
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
-  const [theme, setThemeState] = useState<ThemeOption>('system');
+  const [theme, setThemeState] = useState<Theme>(Theme.System);
   const [resolvedTheme, setResolvedTheme] = useState<ResolvedTheme>(() => {
     // Initialize with system theme immediately
     if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
-      return 'light';
+      return ResolvedTheme.Light;
     }
-    return 'dark';
+    return ResolvedTheme.Dark;
   });
 
   // Detect system theme
   const getSystemTheme = useCallback((): ResolvedTheme => {
     if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
-      return 'light';
+      return ResolvedTheme.Light;
     }
-    return 'dark';
+    return ResolvedTheme.Dark;
   }, []);
 
   // Resolve theme based on user preference
   const resolveTheme = useCallback(
-    (userTheme: ThemeOption): ResolvedTheme => {
-      if (userTheme === 'system') {
+    (userTheme: Theme): ResolvedTheme => {
+      if (userTheme === Theme.System) {
         return getSystemTheme();
       }
-      return userTheme;
+      return userTheme as unknown as ResolvedTheme;
     },
     [getSystemTheme]
   );
@@ -57,7 +55,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   useEffect(() => {
     const loadTheme = async () => {
       const settings = await Storage.getSettings();
-      const savedTheme = settings.theme || 'system';
+      const savedTheme = settings.theme || Theme.System;
       setThemeState(savedTheme);
       setResolvedTheme(resolveTheme(savedTheme));
     };
@@ -66,7 +64,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
 
   // Listen for system theme changes
   useEffect(() => {
-    if (theme !== 'system') return;
+    if (theme !== Theme.System) return;
 
     const mediaQuery = window.matchMedia('(prefers-color-scheme: light)');
     const handleChange = () => {
@@ -87,7 +85,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   }, [resolvedTheme]);
 
   const setTheme = useCallback(
-    async (newTheme: ThemeOption) => {
+    async (newTheme: Theme) => {
       setThemeState(newTheme);
       const resolved = resolveTheme(newTheme);
       setResolvedTheme(resolved);

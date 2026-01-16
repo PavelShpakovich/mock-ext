@@ -5,6 +5,7 @@ import { useI18n } from '../../contexts/I18nContext';
 import { useClickOutside } from '../../hooks/useClickOutside';
 import { FilterSection } from './FilterSection';
 import { FilterButton } from './FilterButton';
+import { ButtonVariant, ButtonSize } from '../../enums';
 
 export interface FilterState {
   statusCodes: number[];
@@ -56,7 +57,11 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({ filters, onFilterChang
 
   return (
     <div ref={panelRef} className='relative'>
-      <Button onClick={onToggle} variant='secondary' className='flex items-center gap-2 whitespace-nowrap'>
+      <Button
+        onClick={onToggle}
+        variant={ButtonVariant.Secondary}
+        className='flex items-center gap-2 whitespace-nowrap'
+      >
         <Filter className='w-4 h-4' />
         {t('requests.filters')}
         {hasActiveFilters && (
@@ -93,8 +98,8 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({ filters, onFilterChang
           {hasActiveFilters && (
             <Button
               onClick={onClear}
-              variant='secondary'
-              size='sm'
+              variant={ButtonVariant.Secondary}
+              size={ButtonSize.Small}
               className='w-full flex items-center justify-center gap-2'
             >
               <X className='w-4 h-4' />

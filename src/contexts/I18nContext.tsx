@@ -2,16 +2,15 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { Storage } from '../storage';
 import enTranslations from '../locales/en.json';
 import ruTranslations from '../locales/ru.json';
-
-export type Language = 'en' | 'ru';
+import { Language } from '../enums';
 
 interface Translations {
   [key: string]: any;
 }
 
-const translations: Record<Language, Translations> = {
-  en: enTranslations,
-  ru: ruTranslations,
+const translations: Record<string, Translations> = {
+  [Language.English]: enTranslations,
+  [Language.Russian]: ruTranslations,
 };
 
 interface I18nContextType {
@@ -23,7 +22,7 @@ interface I18nContextType {
 const I18nContext = createContext<I18nContextType | undefined>(undefined);
 
 export const I18nProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [language, setLanguageState] = useState<Language>('en');
+  const [language, setLanguageState] = useState<Language>(Language.English);
 
   useEffect(() => {
     // Load saved language preference
@@ -35,7 +34,7 @@ export const I18nProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Detect browser language
         const browserLang = navigator.language.toLowerCase();
         if (browserLang.startsWith('ru')) {
-          setLanguageState('ru');
+          setLanguageState(Language.Russian);
         }
       }
     };

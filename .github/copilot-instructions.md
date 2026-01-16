@@ -10,7 +10,7 @@ This is a Chrome Extension (Manifest V3) for mocking API requests with full cont
 - React 19.2.3 + React DOM 19.2.3
 - Tailwind CSS 4.x (with @tailwindcss/postcss)
 - Webpack 5.104.1
-- Jest + Testing Library
+- Jest + Testing Library (194 tests, 76% coverage)
 - Chrome Extension Manifest V3
 
 ## Architecture Patterns
@@ -31,29 +31,136 @@ This is a Chrome Extension (Manifest V3) for mocking API requests with full cont
 src/
 ├── *.ts                    # Core scripts (background, content-script, interceptor, storage)
 ├── types.ts                # Central type definitions
+├── enums.ts                # Centralized enums (MatchType, HttpMethod, etc.)
 ├── components/             # React components
-│   ├── ui/                 # Reusable UI components (Button, Input, Card, etc.)
+│   ├── ui/                 # Reusable UI components (Button, Input, Card, atomic components)
 │   └── *.tsx               # Feature components (App, RuleEditor, RulesTab, etc.)
 ├── contexts/               # React contexts (I18n)
-├── helpers/                # Pure utility functions
+├── helpers/                # Pure utility functions (modular architecture - v2.5.0)
+│   ├── recording.ts        # Recording functionality (tab validation, messages, settings)
+│   ├── importExport.ts     # Import/export logic (validation, merging, statistics)
+│   ├── headers.ts          # HTTP header utilities (conversion, extraction, filtering)
+│   ├── ruleForm.ts         # Form data initialization from rules/requests
+│   ├── ruleValidation.ts   # Enhanced validation (detailed JSON, form validation)
+│   ├── urlMatching.ts      # URL pattern matching logic
+│   ├── filtering.ts        # Request filtering logic
+│   ├── formatting.ts       # Data formatting utilities
+│   ├── time.ts             # Time formatting utilities
+│   ├── string.ts           # String manipulation utilities
+│   └── validation.ts       # General validation functions
 ├── locales/                # Internationalization (en.json, ru.json)
-└── __tests__/              # Jest tests
+└── __tests__/              # Jest tests (comprehensive coverage for all helpers)
+    ├── recording.test.ts   # Recording helpers tests (12 tests)
+    ├── importExport.test.ts # Import/export tests (22 tests)
+    ├── headers.test.ts     # Headers utilities tests (11 tests)
+    ├── ruleForm.test.ts    # Form initialization tests (12 tests)
+    ├── ruleValidation.test.ts # Validation tests (enhanced with 19 tests)
+    └── ...                 # Other test files
 ```
 
-#### Helper Functions Organization
+#### Helper Functions Organization (New in v2.5.0)
 
-All helper modules should export pure, testable functions:
+**All helper modules export pure, testable functions with comprehensive unit tests:**
 
 ```typescript
-// src/helpers/validation.ts
-export function isValidJSON(str: string): boolean { ... }
+// src/helpers/recording.ts - Recording functionality
+export function isValidRecordingTab(tab: chrome.tabs.Tab): boolean { ... }
+export function findValidWebTab(): Promise<chrome.tabs.Tab | null> { ... }
+export function sendStartRecordingMessage(tabId: number): void { ... }
+export function createUpdatedSettings(current: Settings, updates: Partial<Settings>): Settings { ... }
 
-// src/helpers/urlMatching.ts
+// src/helpers/importExport.ts - Import/export logic
+export function downloadFile(filename: string, content: string): void { ... }
+export function exportRulesToJSON(rules: MockRule[], selectedIds?: string[]): string { ... }
+export function validateImportedRules(data: any): ValidationResult { ... }
+export function mergeRules(existing: MockRule[], imported: MockRule[]): MockRule[] { ... }
+export function calculateImportStats(existing: MockRule[], imported: MockRule[]): ImportStats { ... }
+export function getNewAndDuplicateRules(existing: MockRule[], imported: MockRule[]): ImportPreview { ... }
+
+// src/helpers/headers.ts - HTTP header utilities
+export function convertHeadersToArray(headers?: Record<string, string>): HeaderEntry[] { ... }
+export function convertArrayToHeaders(headers: HeaderEntry[]): Record<string, string> | undefined { ... }
+export function extractCapturedHeaders(request?: RequestLog | null): HeaderEntry[] { ... }
+
+// src/helpers/ruleForm.ts - Form data initialization
+export function getInitialFormData(rule: MockRule | null, mockRequest: RequestLog | null): RuleFormData { ... }
+
+// src/helpers/ruleValidation.ts - Enhanced validation (v2.5.0)
+export function validateJSONDetailed(jsonString: string): JSONValidation { ... }
+export function validateRuleForm(formData: any, jsonValidation: JSONValidation | null, t: TranslateFn): FormValidationErrors { ... }
+
+// src/helpers/urlMatching.ts - URL matching
 export function matchURL(url: string, pattern: string, type: MatchType): boolean { ... }
 
-// src/helpers/string.ts
-export function escapeRegExp(string: string): string { ... }
+// src/helpers/validation.ts - General validation
+export function isValidJSON(str: string): boolean { ... }
 ```
+
+### Component Architecture (Refactored in v2.5.0)
+
+#### Size Reduction & Modularization
+
+**Major components refactored for better maintainability:**
+
+- `App.tsx`: **400 → 280 lines (-30%)** - Extracted recording and import/export logic to helpers
+- `RuleEditor.tsx`: **400 → 280 lines (-30%)** - Extracted header utilities and form logic to helpers
+- `ImportDialog.tsx`: **155 → 129 lines (-18%)** - Uses atomic components and helper functions
+
+#### Atomic UI Components (New in v2.5.0)
+
+**Small, reusable components following atomic design principles:**
+
+```typescript
+// src/components/ui/RadioOption.tsx (43 lines)
+// Reusable radio button with label and description
+<RadioOption
+  name="mode"
+  value={ImportMode.Merge}
+  checked={mode === ImportMode.Merge}
+  onChange={() => setMode(ImportMode.Merge)}
+  title="Merge Mode"
+  description="Add new rules and keep existing ones"
+  hoverColor="green"
+/>
+
+// src/components/ui/StatItem.tsx (17 lines)
+// Icon + label + value statistics display
+<StatItem
+  icon={CheckCircle}
+  iconColor="text-green-500"
+  label="New Rules"
+  value={5}
+/>
+
+// src/components/ui/DialogHeader.tsx (17 lines)
+// Consistent modal header with close button
+<DialogHeader
+  title="Import Preview"
+  onClose={onCancel}
+  closeLabel="Cancel"
+/>
+
+// src/components/ui/InfoPanel.tsx (19 lines)
+// Contextual information panels with variants
+<InfoPanel variant="info">
+  {/* Statistics or information content */}
+</InfoPanel>
+
+// src/components/ui/HeadersEditor.tsx (72 lines)
+// Reusable HTTP headers editor component
+<HeadersEditor
+  headers={headers}
+  onChange={setHeaders}
+  error={errors.headers}
+/>
+```
+
+**Benefits:**
+
+- **Reusability**: Components can be used across different features
+- **Consistency**: Uniform styling and behavior
+- **Maintainability**: Small, focused components are easier to test and modify
+- **Composability**: Build complex UIs from simple building blocks
 
 ## Code Style & Patterns
 
@@ -62,20 +169,21 @@ export function escapeRegExp(string: string): string { ... }
 #### 1. Type Safety
 
 - Always use explicit types for function parameters and return values
-- Use union types for restricted values: `type MatchType = 'wildcard' | 'exact' | 'regex'`
+- Use **enums** from `src/enums.ts` for restricted values: `MatchType`, `HttpMethod`, `ImportMode`, etc.
 - Define interfaces for all data structures in `src/types.ts`
 - Use `Record<string, string>` for key-value objects
 - Prefer type-safe optional properties: `headers?: Record<string, string>`
 
 ```typescript
-// ✅ Good
+// ✅ Good - Using enum
+import { MatchType } from '../enums';
 function validateRule(rule: MockRule): boolean {
-  return rule.name.trim().length > 0;
+  return rule.matchType === MatchType.Wildcard;
 }
 
-// ❌ Bad
+// ❌ Bad - Using string literals
 function validateRule(rule: any) {
-  return rule.name.trim().length > 0;
+  return rule.matchType === 'wildcard';
 }
 ```
 
@@ -295,7 +403,7 @@ import clsx from 'clsx';
 />
 ```
 
-### Refactoring Best Practices
+### Refactoring Best Practices (Learned from v2.5.0 Refactoring)
 
 #### 1. Single Responsibility Principle
 
@@ -357,7 +465,41 @@ const Component = () => {
 };
 ```
 
-#### 3. Reduce Nesting
+#### 3. Create Atomic Components
+
+Build small, reusable components for common UI patterns:
+
+```typescript
+// ✅ Good - Atomic component
+// RadioOption.tsx (43 lines)
+export const RadioOption: React.FC<RadioOptionProps> = ({ name, value, checked, onChange, title, description, hoverColor }) => {
+  return (
+    <label className={clsx('cursor-pointer transition-colors', hoverColorClasses[hoverColor])}>
+      <input type="radio" name={name} value={value} checked={checked} onChange={onChange} />
+      <div>
+        <div className="font-medium">{title}</div>
+        <div className="text-sm text-gray-400">{description}</div>
+      </div>
+    </label>
+  );
+};
+
+// Usage in multiple places
+<RadioOption name="mode" value="merge" checked={mode === 'merge'} onChange={handleChange} title="Merge" description="Add new" hoverColor="green" />
+<RadioOption name="mode" value="replace" checked={mode === 'replace'} onChange={handleChange} title="Replace" description="Remove all" hoverColor="red" />
+
+// ❌ Bad - Repeated inline JSX (40+ lines repeated)
+<label className="cursor-pointer ...">
+  <input type="radio" name="mode" value="merge" checked={mode === 'merge'} onChange={handleChange} />
+  <div>
+    <div className="font-medium">Merge</div>
+    <div className="text-sm text-gray-400">Add new rules and keep existing ones</div>
+  </div>
+</label>
+// ... repeat 40+ lines for each radio button
+```
+
+#### 4. Reduce Nesting
 
 Use early returns to flatten code:
 
@@ -384,7 +526,7 @@ function processRule(rule: MockRule): Response | null {
 }
 ```
 
-#### 4. DRY (Don't Repeat Yourself)
+#### 5. DRY (Don't Repeat Yourself)
 
 Extract repeated patterns:
 
@@ -421,6 +563,35 @@ const handleDeleteRule = (id: string) => {
   sendRulesToAllTabs(updated);
 };
 ```
+
+#### 6. Write Comprehensive Tests
+
+Always write unit tests for helper functions:
+
+```typescript
+// src/__tests__/recording.test.ts
+describe('Recording Helpers', () => {
+  describe('isValidRecordingTab', () => {
+    it('should return true for valid web tabs', () => {
+      const validTab: chrome.tabs.Tab = { id: 123, url: 'https://example.com', ... };
+      expect(isValidRecordingTab(validTab)).toBe(true);
+    });
+
+    it('should return false for chrome:// URLs', () => {
+      const tab: chrome.tabs.Tab = { id: 123, url: 'chrome://settings', ... };
+      expect(isValidRecordingTab(tab)).toBe(false);
+    });
+  });
+});
+```
+
+**Test Guidelines:**
+
+- Test all edge cases (null, undefined, empty strings)
+- Mock Chrome APIs using `(globalThis as any).chrome = { ... }`
+- Follow pattern: Arrange → Act → Assert
+- Group related tests with `describe` blocks
+- Use descriptive test names: `it('should handle case when...')`
 
 ### Internationalization (i18n)
 
@@ -813,16 +984,26 @@ npm run type-check    # TypeScript check
 ### Import Patterns
 
 ```typescript
-// Types
+// Types and Enums
 import { MockRule, Settings, RequestLog } from '../types';
+import { MatchType, HttpMethod, ImportMode, ButtonVariant } from '../enums';
 
 // UI Components
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
+import { RadioOption } from './ui/RadioOption';
+import { StatItem } from './ui/StatItem';
+import { DialogHeader } from './ui/DialogHeader';
+import { InfoPanel } from './ui/InfoPanel';
+import { HeadersEditor } from './ui/HeadersEditor';
 
-// Helpers
+// Helpers (v2.5.0 modular architecture)
 import { matchURL } from '../helpers/urlMatching';
-import { isValidJSON } from '../helpers/validation';
+import { isValidJSON, validateJSONDetailed, validateRuleForm } from '../helpers/validation';
+import { isValidRecordingTab, sendStartRecordingMessage } from '../helpers/recording';
+import { exportRulesToJSON, mergeRules, calculateImportStats } from '../helpers/importExport';
+import { convertHeadersToArray, extractCapturedHeaders } from '../helpers/headers';
+import { getInitialFormData } from '../helpers/ruleForm';
 
 // Context
 import { useI18n } from '../contexts/I18nContext';
@@ -831,7 +1012,7 @@ import { useI18n } from '../contexts/I18nContext';
 import { Storage } from '../storage';
 
 // Icons (lucide-react)
-import { Trash2, Copy, Plus, Edit } from 'lucide-react';
+import { Trash2, Copy, Plus, Edit, CheckCircle, AlertCircle } from 'lucide-react';
 
 // Utilities
 import clsx from 'clsx';
@@ -840,22 +1021,44 @@ import { v4 as uuidv4 } from 'uuid';
 
 ### Naming Conventions
 
-- **Components**: PascalCase (`RuleEditor`, `Button`)
-- **Files**: camelCase for helpers (`urlMatching.ts`), PascalCase for components
-- **Functions**: camelCase (`validateRule`, `matchURL`)
+- **Components**: PascalCase (`RuleEditor`, `Button`, `RadioOption`)
+- **Files**: camelCase for helpers (`urlMatching.ts`, `importExport.ts`), PascalCase for components
+- **Functions**: camelCase (`validateRule`, `matchURL`, `isValidRecordingTab`)
 - **Constants**: UPPER_SNAKE_CASE (`MAX_LOG_ENTRIES`, `DEFAULT_SETTINGS`)
-- **Interfaces/Types**: PascalCase (`MockRule`, `MessageAction`)
+- **Interfaces/Types**: PascalCase (`MockRule`, `MessageAction`, `ImportStats`)
+- **Enums**: PascalCase values (`MatchType.Wildcard`, `HttpMethod.GET`, `ImportMode.Merge`)
 - **CSS Classes**: kebab-case in Tailwind (`bg-gray-900`, `text-white`)
 
 ### When Adding New Features
 
 1. **Add types** to `src/types.ts` first
-2. **Add translations** to `en.json` and `ru.json`
-3. **Create helpers** in `src/helpers/` for logic
-4. **Update storage** if persistence needed
-5. **Create UI components** in `src/components/`
-6. **Write tests** in `src/__tests__/`
-7. **Update interceptor** if affecting request handling
-8. **Update CHANGELOG.md**
+2. **Add enums** to `src/enums.ts` if needed (for restricted value sets)
+3. **Add translations** to `en.json` and `ru.json`
+4. **Create helpers** in `src/helpers/` for business logic
+   - Keep functions pure and testable
+   - Export individual functions (not default exports)
+5. **Create atomic components** in `src/components/ui/` for reusable UI patterns
+   - Keep components small (<50 lines when possible)
+   - Support variants and customization props
+6. **Update storage** if persistence needed
+7. **Create feature components** in `src/components/`
+   - Extract helpers for complex logic
+   - Use atomic components for common patterns
+8. **Write comprehensive tests** in `src/__tests__/`
+   - Test all edge cases
+   - Mock Chrome APIs properly
+   - Aim for 70%+ coverage
+9. **Update interceptor** if affecting request handling
+10. **Update CHANGELOG.md** with user-facing changes
+11. **Update README.md** architecture section if needed
+12. **Update copilot-instructions.md** with new patterns
+
+**v2.5.0 Refactoring Lessons:**
+
+- Extract business logic BEFORE creating UI
+- Create atomic components for repeated UI patterns
+- Test helpers immediately after creation
+- Keep components under 300 lines
+- Use helper functions to reduce component complexity
 
 Remember: **Maintainability > Cleverness**. Write clear, simple code that others can understand and modify easily.

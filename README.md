@@ -247,32 +247,74 @@ Response: {"id": {{random_number}}, "type": "entity"}
 mock-ext/
 ├── src/
 │   ├── background.ts           # Service worker (request interception)
+│   ├── content-script.ts       # Bridge between page and extension
+│   ├── interceptor.ts          # Client-side fetch/XHR interception (MAIN world)
 │   ├── popup.tsx               # Main React app entry point
 │   ├── devtools.ts             # DevTools panel registration
 │   ├── devtools-prompt.ts      # Content script for DevTools prompt notification
 │   ├── types.ts                # TypeScript type definitions
+│   ├── enums.ts                # Centralized enums (MatchType, HttpMethod, etc.)
 │   ├── utils.ts                # Utility functions
 │   ├── storage.ts              # Chrome storage API wrapper (with batched logging)
-│   ├── responseGenerator.ts    # Dynamic response generation
+│   ├── contextHandler.ts       # Extension context validation
 │   ├── performance.ts          # Performance monitoring utilities
-│   ├── styles.css              # Global styles with Tailwind
-│   └── components/
-│       ├── App.tsx             # Main app component with tabs
-│       ├── Header.tsx          # Extension header
-│       ├── RulesTab.tsx        # Rules management tab
-│       ├── RequestsTab.tsx     # Request logging tab
-│       ├── RuleEditor.tsx      # Form for creating/editing rules
-│       ├── RuleItem.tsx        # Individual rule display
-│       ├── RequestItem.tsx     # Individual request display
-│       └── ui/                 # Reusable UI components
-│           ├── Badge.tsx
-│           ├── Button.tsx
-│           ├── Card.tsx
-│           ├── Input.tsx
-│           ├── Select.tsx
-│           ├── TabButton.tsx
-│           ├── TextArea.tsx
-│           └── Toggle.tsx
+│   ├── styles.css              # Global styles with Tailwind CSS 4.x
+│   ├── helpers/                # Business logic helpers (modular architecture)
+│   │   ├── recording.ts        # Recording functionality (tab validation, messages)
+│   │   ├── importExport.ts     # Import/export logic (validation, merging, stats)
+│   │   ├── headers.ts          # HTTP header utilities (conversion, extraction)
+│   │   ├── ruleForm.ts         # Form data initialization
+│   │   ├── ruleValidation.ts   # Form & JSON validation
+│   │   ├── urlMatching.ts      # URL pattern matching logic
+│   │   ├── filtering.ts        # Request filtering logic
+│   │   ├── formatting.ts       # Data formatting utilities
+│   │   ├── time.ts             # Time formatting utilities
+│   │   ├── string.ts           # String manipulation utilities
+│   │   └── validation.ts       # General validation functions
+│   ├── components/
+│   │   ├── App.tsx             # Main app component with tabs (280 lines)
+│   │   ├── Header.tsx          # Extension header
+│   │   ├── RulesTab.tsx        # Rules management tab
+│   │   ├── RequestsTab.tsx     # Request logging tab
+│   │   ├── RuleEditor.tsx      # Form for creating/editing rules (280 lines)
+│   │   ├── RuleItem.tsx        # Individual rule display
+│   │   ├── RequestItem.tsx     # Individual request display
+│   │   └── ui/                 # Reusable UI components (atomic design)
+│   │       ├── Badge.tsx       # Status badges
+│   │       ├── Button.tsx      # Primary UI button
+│   │       ├── Card.tsx        # Container cards
+│   │       ├── Input.tsx       # Form inputs
+│   │       ├── Select.tsx      # Dropdown selects
+│   │       ├── TabButton.tsx   # Tab navigation
+│   │       ├── TextArea.tsx    # Multi-line inputs
+│   │       ├── Toggle.tsx      # On/off switches
+│   │       ├── IconButton.tsx  # Icon-only buttons
+│   │       ├── FilterPanel.tsx # Filter UI panel
+│   │       ├── ImportDialog.tsx # Import preview modal (129 lines)
+│   │       ├── HeadersEditor.tsx # HTTP headers editor (72 lines)
+│   │       ├── RadioOption.tsx  # Atomic: Radio with label/description
+│   │       ├── StatItem.tsx     # Atomic: Icon + label + value
+│   │       ├── DialogHeader.tsx # Atomic: Modal header with close
+│   │       └── InfoPanel.tsx    # Atomic: Contextual info panels
+│   ├── contexts/
+│   │   └── I18nContext.tsx     # Internationalization context (EN/RU)
+│   ├── locales/
+│   │   ├── en.json             # English translations
+│   │   └── ru.json             # Russian translations
+│   └── __tests__/              # Unit tests (Jest + Testing Library)
+│       ├── setup.ts            # Test configuration
+│       ├── recording.test.ts   # Recording helpers tests (12 tests)
+│       ├── importExport.test.ts # Import/export tests (22 tests)
+│       ├── headers.test.ts     # Headers utilities tests (11 tests)
+│       ├── ruleForm.test.ts    # Form initialization tests (12 tests)
+│       ├── ruleValidation.test.ts # Validation tests (enhanced with 19 tests)
+│       ├── urlMatching.test.ts # URL matching tests
+│       ├── filtering.test.ts   # Filtering logic tests
+│       ├── time.test.ts        # Time formatting tests
+│       ├── utils.test.ts       # Utility functions tests
+│       ├── storage.test.ts     # Storage tests
+│       ├── contextHandler.test.ts # Context validation tests
+│       └── i18n.test.ts        # I18n tests
 ├── public/
 │   ├── manifest.json           # Extension manifest (Manifest V3)
 │   ├── popup.html              # UI HTML structure
@@ -280,9 +322,10 @@ mock-ext/
 │   └── icons/                  # Extension icons (SVG)
 ├── dist/                       # Build output (generated)
 ├── webpack.config.js           # Webpack configuration
-├── tailwind.config.js          # Tailwind CSS configuration
+├── tailwind.config.js          # Tailwind CSS 4.x configuration
 ├── postcss.config.js           # PostCSS configuration
-├── tsconfig.json               # TypeScript configuration
+├── tsconfig.json               # TypeScript 5.3.3 configuration
+├── jest.config.js              # Jest test configuration
 └── package.json                # Project dependencies
 ```
 
@@ -290,17 +333,18 @@ mock-ext/
 
 ### Architecture
 
+- **Modular Design**: Business logic extracted into dedicated helper modules for maintainability
+- **Atomic UI Components**: Small, reusable components following atomic design principles
 - **Manifest V3**: Uses the latest Chrome Extension APIs
 - **DevTools Integration**: Native panel integrated into Chrome DevTools
-- **TypeScript 5.3.3**: Fully typed codebase for better development experience
+- **TypeScript 5.3.3**: Fully typed codebase with strict mode enabled
 - **React 19.2.3**: Modern React with hooks for UI components
-- **Webpack 5.104.1**: Module bundler with multiple entry points (background, popup, devtools, devtools-prompt)
-- **Tailwind CSS 3.4.1**: Utility-first CSS framework
-- **Service Worker**: Background script for request interception
-- **declarativeNetRequest**: Chrome API for modifying network requests
-- **webRequest API**: For logging and monitoring fetch/XHR requests only
+- **Webpack 5.104.1**: Module bundler with multiple entry points
+- **Tailwind CSS 4.x**: Utility-first CSS framework with @tailwindcss/postcss
+- **Client-Side Interception**: MAIN world interceptor for fetch/XHR before network
+- **Service Worker**: Background script for cross-tab messaging and storage
 - **Chrome Storage**: Persistent data storage for rules and logs
-- **Content Script**: Lightweight script for showing DevTools prompt notification
+- **Comprehensive Testing**: 194 unit tests with Jest and Testing Library (76% coverage)
 
 ### Performance Optimizations
 

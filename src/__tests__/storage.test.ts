@@ -1,5 +1,6 @@
 import { Storage } from '../storage';
 import { MockRule, Settings, RequestLog } from '../types';
+import { MatchType, HttpMethod, Language } from '../enums';
 
 // Mock chrome.storage.local and session
 const mockLocalStorage: { [key: string]: any } = {};
@@ -81,8 +82,8 @@ describe('Storage', () => {
           name: 'Test Rule',
           enabled: true,
           urlPattern: 'https://api.example.com/*',
-          matchType: 'wildcard',
-          method: 'GET',
+          matchType: MatchType.Wildcard,
+          method: HttpMethod.GET,
           statusCode: 200,
           response: {},
           contentType: 'application/json',
@@ -109,8 +110,8 @@ describe('Storage', () => {
           name: 'Rule with Headers',
           enabled: true,
           urlPattern: 'https://api.example.com',
-          matchType: 'exact',
-          method: 'GET',
+          matchType: MatchType.Exact,
+          method: HttpMethod.GET,
           statusCode: 200,
           response: {},
           contentType: 'application/json',
@@ -139,8 +140,8 @@ describe('Storage', () => {
           name: 'Test Rule',
           enabled: true,
           urlPattern: 'https://api.example.com/*',
-          matchType: 'wildcard',
-          method: 'GET',
+          matchType: MatchType.Wildcard,
+          method: HttpMethod.GET,
           statusCode: 200,
           response: {},
           contentType: 'application/json',
@@ -161,8 +162,8 @@ describe('Storage', () => {
           name: 'Test Rule with Headers',
           enabled: true,
           urlPattern: 'https://api.example.com/*',
-          matchType: 'wildcard',
-          method: 'GET',
+          matchType: MatchType.Wildcard,
+          method: HttpMethod.GET,
           statusCode: 200,
           response: {},
           contentType: 'application/json',
@@ -192,322 +193,324 @@ describe('Storage', () => {
         logRequests: true,
         showNotifications: false,
         corsAutoFix: false,
-        language: 'en',
+        language: Language.English,
       };
       mockLocalStorage.settings = mockSettings;
 
       const settings = await Storage.getSettings();
       expect(settings).toEqual(mockSettings);
     });
-
-    it('should return default settings if none exist', async () => {
-      const settings = await Storage.getSettings();
-      expect(settings).toHaveProperty('enabled');
-      expect(settings).toHaveProperty('logRequests');
-    });
   });
 
-  describe('saveSettings', () => {
-    it('should save settings to storage', async () => {
-      const mockSettings: Settings = {
-        enabled: false,
-        logRequests: false,
-        showNotifications: true,
-        corsAutoFix: true,
-        language: 'ru',
-      };
+  it('should return default settings if none exist', async () => {
+    const settings = await Storage.getSettings();
+    expect(settings).toHaveProperty('enabled');
+    expect(settings).toHaveProperty('logRequests');
+  });
+});
 
-      await Storage.saveSettings(mockSettings);
-      expect(mockLocalStorage.settings).toEqual(mockSettings);
-    });
+describe('saveSettings', () => {
+  it('should save settings to storage', async () => {
+    const mockSettings: Settings = {
+      enabled: false,
+      logRequests: false,
+      showNotifications: true,
+      corsAutoFix: true,
+      language: Language.Russian,
+    };
+
+    await Storage.saveSettings(mockSettings);
+    expect(mockLocalStorage.settings).toEqual(mockSettings);
+  });
+});
+
+describe('getRequestLog', () => {
+  it('should return request log from storage', async () => {
+    const mockLog: RequestLog[] = [
+      {
+        id: '1',
+        url: 'https://api.example.com/test',
+        method: HttpMethod.GET,
+        timestamp: Date.now(),
+        matched: false,
+      },
+    ];
+    mockSessionStorage.requestLog = mockLog;
+
+    const log = await Storage.getRequestLog();
+    expect(log).toEqual(mockLog);
   });
 
-  describe('getRequestLog', () => {
-    it('should return request log from storage', async () => {
-      const mockLog: RequestLog[] = [
-        {
-          id: '1',
-          url: 'https://api.example.com/test',
-          method: 'GET',
-          timestamp: Date.now(),
-          matched: false,
-        },
-      ];
-      mockSessionStorage.requestLog = mockLog;
-
-      const log = await Storage.getRequestLog();
-      expect(log).toEqual(mockLog);
-    });
-
-    it('should return empty array if no log exists', async () => {
-      const log = await Storage.getRequestLog();
-      expect(log).toEqual([]);
-    });
-
-    it('should return log entries with response headers', async () => {
-      const mockLog: RequestLog[] = [
-        {
-          id: '1',
-          url: 'https://api.example.com/test',
-          method: 'GET',
-          timestamp: Date.now(),
-          matched: false,
-          statusCode: 200,
-          contentType: 'application/json',
-          responseBody: '{"data": "test"}',
-          responseHeaders: {
-            'cache-control': 'no-cache',
-            'access-control-allow-origin': '*',
-            'x-custom-header': 'custom-value',
-          },
-        },
-      ];
-      mockSessionStorage.requestLog = mockLog;
-
-      const log = await Storage.getRequestLog();
-      expect(log).toHaveLength(1);
-      expect(log[0].responseHeaders).toEqual({
-        'cache-control': 'no-cache',
-        'access-control-allow-origin': '*',
-        'x-custom-header': 'custom-value',
-      });
-    });
+  it('should return empty array if no log exists', async () => {
+    const log = await Storage.getRequestLog();
+    expect(log).toEqual([]);
   });
 
-  describe('addToRequestLog', () => {
-    it('should add entry to request log (buffered)', async () => {
-      const entry: RequestLog = {
+  it('should return log entries with response headers', async () => {
+    const mockLog: RequestLog[] = [
+      {
         id: '1',
         url: 'https://api.example.com/test',
-        method: 'GET',
-        timestamp: Date.now(),
-        matched: false,
-      };
-
-      await Storage.addToRequestLog(entry);
-      // Entry is in buffer, not yet flushed to storage
-      const log = await Storage.getRequestLog();
-      expect(log).toHaveLength(1);
-      expect(log[0]).toEqual(entry);
-    });
-
-    it('should add new entries to the beginning', async () => {
-      const entry1: RequestLog = {
-        id: '1',
-        url: 'https://api.example.com/test1',
-        method: 'GET',
-        timestamp: Date.now(),
-        matched: false,
-      };
-      const entry2: RequestLog = {
-        id: '2',
-        url: 'https://api.example.com/test2',
-        method: 'POST',
-        timestamp: Date.now(),
-        matched: false,
-      };
-
-      await Storage.addToRequestLog(entry1);
-      await Storage.addToRequestLog(entry2);
-
-      const log = await Storage.getRequestLog();
-      expect(log[0]).toEqual(entry2);
-      expect(log[1]).toEqual(entry1);
-    });
-
-    it('should flush buffer after timeout', async () => {
-      const entry: RequestLog = {
-        id: '1',
-        url: 'https://api.example.com/test',
-        method: 'GET',
-        timestamp: Date.now(),
-        matched: false,
-      };
-
-      await Storage.addToRequestLog(entry);
-
-      // Run timers to trigger flush
-      await jest.runAllTimersAsync();
-
-      // Now it should be in session storage
-      expect(mockSessionStorage.requestLog).toHaveLength(1);
-      expect(mockSessionStorage.requestLog[0]).toEqual(entry);
-    });
-
-    it('should add entry with response headers to log', async () => {
-      const entry: RequestLog = {
-        id: '1',
-        url: 'https://api.example.com/test',
-        method: 'GET',
+        method: HttpMethod.GET,
         timestamp: Date.now(),
         matched: false,
         statusCode: 200,
         contentType: 'application/json',
-        responseBody: '{"success": true}',
+        responseBody: '{"data": "test"}',
         responseHeaders: {
-          authorization: 'Bearer token',
-          'cache-control': 'max-age=3600',
+          'cache-control': 'no-cache',
+          'access-control-allow-origin': '*',
+          'x-custom-header': 'custom-value',
         },
-      };
+      },
+    ];
+    mockSessionStorage.requestLog = mockLog;
 
-      await Storage.addToRequestLog(entry);
-      const log = await Storage.getRequestLog();
+    const log = await Storage.getRequestLog();
+    expect(log).toHaveLength(1);
+    expect(log[0].responseHeaders).toEqual({
+      'cache-control': 'no-cache',
+      'access-control-allow-origin': '*',
+      'x-custom-header': 'custom-value',
+    });
+  });
+});
 
-      expect(log).toHaveLength(1);
-      expect(log[0].responseHeaders).toEqual({
+describe('addToRequestLog', () => {
+  it('should add entry to request log (buffered)', async () => {
+    const entry: RequestLog = {
+      id: '1',
+      url: 'https://api.example.com/test',
+      method: HttpMethod.GET,
+      timestamp: Date.now(),
+      matched: false,
+    };
+
+    await Storage.addToRequestLog(entry);
+    // Entry is in buffer, not yet flushed to storage
+    const log = await Storage.getRequestLog();
+    expect(log).toHaveLength(1);
+    expect(log[0]).toEqual(entry);
+  });
+
+  it('should add new entries to the beginning', async () => {
+    const entry1: RequestLog = {
+      id: '1',
+      url: 'https://api.example.com/test1',
+      method: HttpMethod.GET,
+      timestamp: Date.now(),
+      matched: false,
+    };
+    const entry2: RequestLog = {
+      id: '2',
+      url: 'https://api.example.com/test2',
+      method: HttpMethod.POST,
+      timestamp: Date.now(),
+      matched: false,
+    };
+
+    await Storage.addToRequestLog(entry1);
+    await Storage.addToRequestLog(entry2);
+
+    const log = await Storage.getRequestLog();
+    expect(log[0]).toEqual(entry2);
+    expect(log[1]).toEqual(entry1);
+  });
+
+  it('should flush buffer after timeout', async () => {
+    const entry: RequestLog = {
+      id: '1',
+      url: 'https://api.example.com/test',
+      method: HttpMethod.GET,
+      timestamp: Date.now(),
+      matched: false,
+    };
+
+    await Storage.addToRequestLog(entry);
+
+    // Run timers to trigger flush
+    await jest.runAllTimersAsync();
+
+    // Now it should be in session storage
+    expect(mockSessionStorage.requestLog).toHaveLength(1);
+    expect(mockSessionStorage.requestLog[0]).toEqual(entry);
+  });
+
+  it('should add entry with response headers to log', async () => {
+    const entry: RequestLog = {
+      id: '1',
+      url: 'https://api.example.com/test',
+      method: HttpMethod.GET,
+      timestamp: Date.now(),
+      matched: false,
+      statusCode: 200,
+      contentType: 'application/json',
+      responseBody: '{"success": true}',
+      responseHeaders: {
         authorization: 'Bearer token',
         'cache-control': 'max-age=3600',
-      });
+      },
+    };
+
+    await Storage.addToRequestLog(entry);
+    const log = await Storage.getRequestLog();
+
+    expect(log).toHaveLength(1);
+    expect(log[0].responseHeaders).toEqual({
+      authorization: 'Bearer token',
+      'cache-control': 'max-age=3600',
     });
   });
+});
 
-  describe('clearRequestLog', () => {
-    it('should clear request log', async () => {
-      mockSessionStorage.requestLog = [{ id: '1', url: 'test', method: 'GET', timestamp: Date.now(), matched: false }];
+describe('clearRequestLog', () => {
+  it('should clear request log', async () => {
+    mockSessionStorage.requestLog = [
+      { id: '1', url: 'test', method: HttpMethod.GET, timestamp: Date.now(), matched: false },
+    ];
 
-      await Storage.clearRequestLog();
-      const log = await Storage.getRequestLog();
-      expect(log).toEqual([]);
-    });
+    await Storage.clearRequestLog();
+    const log = await Storage.getRequestLog();
+    expect(log).toEqual([]);
   });
+});
 
-  describe('exportAll', () => {
-    it('should export all data', async () => {
-      const mockRules: MockRule[] = [
-        {
-          id: '1',
-          name: 'Test',
-          enabled: true,
-          urlPattern: 'https://example.com',
-          matchType: 'exact',
-          method: 'GET',
-          statusCode: 200,
-          response: {},
-          contentType: 'application/json',
-          delay: 0,
-          created: Date.now(),
-          modified: Date.now(),
-        },
-      ];
-      const mockSettings: Settings = {
+describe('exportAll', () => {
+  it('should export all data', async () => {
+    const mockRules: MockRule[] = [
+      {
+        id: '1',
+        name: 'Test',
         enabled: true,
-        logRequests: false,
-        showNotifications: false,
-        corsAutoFix: false,
-      };
-      const mockLog: RequestLog[] = [
-        { id: '1', url: 'https://example.com', method: 'GET', timestamp: Date.now(), matched: false },
-      ];
+        urlPattern: 'https://example.com',
+        matchType: MatchType.Exact,
+        method: HttpMethod.GET,
+        statusCode: 200,
+        response: {},
+        contentType: 'application/json',
+        delay: 0,
+        created: Date.now(),
+        modified: Date.now(),
+      },
+    ];
+    const mockSettings: Settings = {
+      enabled: true,
+      logRequests: false,
+      showNotifications: false,
+      corsAutoFix: false,
+    };
+    const mockLog: RequestLog[] = [
+      { id: '1', url: 'https://example.com', method: HttpMethod.GET, timestamp: Date.now(), matched: false },
+    ];
 
-      mockLocalStorage.mockRules = mockRules;
-      mockLocalStorage.settings = mockSettings;
-      mockSessionStorage.requestLog = mockLog;
+    mockLocalStorage.mockRules = mockRules;
+    mockLocalStorage.settings = mockSettings;
+    mockSessionStorage.requestLog = mockLog;
 
-      const exported = await Storage.exportAll();
-      expect(exported.mockRules).toEqual(mockRules);
-      expect(exported.settings).toEqual(mockSettings);
-    });
-
-    it('should export rules with custom headers', async () => {
-      const mockRules: MockRule[] = [
-        {
-          id: '1',
-          name: 'Test with Headers',
-          enabled: true,
-          urlPattern: 'https://example.com',
-          matchType: 'exact',
-          method: 'GET',
-          statusCode: 200,
-          response: {},
-          contentType: 'application/json',
-          delay: 0,
-          headers: {
-            'X-Custom-Header': 'custom-value',
-            Authorization: 'Bearer xyz',
-          },
-          created: Date.now(),
-          modified: Date.now(),
-        },
-      ];
-
-      mockLocalStorage.mockRules = mockRules;
-
-      const exported = await Storage.exportAll();
-      expect(exported.mockRules).toEqual(mockRules);
-      expect(exported.mockRules?.[0].headers).toEqual({
-        'X-Custom-Header': 'custom-value',
-        Authorization: 'Bearer xyz',
-      });
-    });
+    const exported = await Storage.exportAll();
+    expect(exported.mockRules).toEqual(mockRules);
+    expect(exported.settings).toEqual(mockSettings);
   });
 
-  describe('importRules', () => {
-    it('should import rules with custom headers', async () => {
-      const existingRules: MockRule[] = [
-        {
-          id: '1',
-          name: 'Existing Rule',
-          enabled: true,
-          urlPattern: 'https://existing.com',
-          matchType: 'exact',
-          method: 'GET',
-          statusCode: 200,
-          response: {},
-          contentType: 'application/json',
-          delay: 0,
-          created: Date.now(),
-          modified: Date.now(),
+  it('should export rules with custom headers', async () => {
+    const mockRules: MockRule[] = [
+      {
+        id: '1',
+        name: 'Test with Headers',
+        enabled: true,
+        urlPattern: 'https://example.com',
+        matchType: MatchType.Exact,
+        method: HttpMethod.GET,
+        statusCode: 200,
+        response: {},
+        contentType: 'application/json',
+        delay: 0,
+        headers: {
+          'X-Custom-Header': 'custom-value',
+          Authorization: 'Bearer xyz',
         },
-      ];
+        created: Date.now(),
+        modified: Date.now(),
+      },
+    ];
 
-      const newRules: MockRule[] = [
-        {
-          id: '2',
-          name: 'Imported with Headers',
-          enabled: true,
-          urlPattern: 'https://api.test.com',
-          matchType: 'exact',
-          method: 'GET',
-          statusCode: 200,
-          response: { success: true },
-          contentType: 'application/json',
-          delay: 0,
-          headers: {
-            'Cache-Control': 'no-cache',
-            'X-API-Key': 'test-key',
-          },
-          created: Date.now(),
-          modified: Date.now(),
-        },
-      ];
+    mockLocalStorage.mockRules = mockRules;
 
-      mockLocalStorage.mockRules = existingRules;
-      await Storage.importRules(newRules);
-      const rules = await Storage.getRules();
-
-      expect(rules).toHaveLength(2);
-      expect(rules[1].headers).toEqual({
-        'Cache-Control': 'no-cache',
-        'X-API-Key': 'test-key',
-      });
+    const exported = await Storage.exportAll();
+    expect(exported.mockRules).toEqual(mockRules);
+    expect(exported.mockRules?.[0].headers).toEqual({
+      'X-Custom-Header': 'custom-value',
+      Authorization: 'Bearer xyz',
     });
   });
+});
 
-  describe('draft operations', () => {
-    it('should save and retrieve draft', async () => {
-      const draft = { test: 'data' };
-      await Storage.saveDraft(draft);
+describe('importRules', () => {
+  it('should import rules with custom headers', async () => {
+    const existingRules: MockRule[] = [
+      {
+        id: '1',
+        name: 'Existing Rule',
+        enabled: true,
+        urlPattern: 'https://existing.com',
+        matchType: MatchType.Exact,
+        method: HttpMethod.GET,
+        statusCode: 200,
+        response: {},
+        contentType: 'application/json',
+        delay: 0,
+        created: Date.now(),
+        modified: Date.now(),
+      },
+    ];
 
-      const retrieved = await Storage.getDraft();
-      expect(retrieved).toEqual(draft);
+    const newRules: MockRule[] = [
+      {
+        id: '2',
+        name: 'Imported with Headers',
+        enabled: true,
+        urlPattern: 'https://api.test.com',
+        matchType: MatchType.Exact,
+        method: HttpMethod.GET,
+        statusCode: 200,
+        response: { success: true },
+        contentType: 'application/json',
+        delay: 0,
+        headers: {
+          'Cache-Control': 'no-cache',
+          'X-API-Key': 'test-key',
+        },
+        created: Date.now(),
+        modified: Date.now(),
+      },
+    ];
+
+    mockLocalStorage.mockRules = existingRules;
+    await Storage.importRules(newRules);
+    const rules = await Storage.getRules();
+
+    expect(rules).toHaveLength(2);
+    expect(rules[1].headers).toEqual({
+      'Cache-Control': 'no-cache',
+      'X-API-Key': 'test-key',
     });
+  });
+});
 
-    it('should clear draft', async () => {
-      await Storage.saveDraft({ test: 'data' });
-      await Storage.clearDraft();
+describe('draft operations', () => {
+  it('should save and retrieve draft', async () => {
+    const draft = { test: 'data' };
+    await Storage.saveDraft(draft);
 
-      const retrieved = await Storage.getDraft();
-      expect(retrieved).toBeNull();
-    });
+    const retrieved = await Storage.getDraft();
+    expect(retrieved).toEqual(draft);
+  });
+
+  it('should clear draft', async () => {
+    await Storage.saveDraft({ test: 'data' });
+    await Storage.clearDraft();
+
+    const retrieved = await Storage.getDraft();
+    expect(retrieved).toBeNull();
   });
 });

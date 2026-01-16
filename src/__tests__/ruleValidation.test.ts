@@ -1,7 +1,10 @@
 import { MockRule } from '../types';
+import { MatchType, HttpMethod, ValidationWarningType, ValidationSeverity } from '../enums';
 import {
   validateRegexPattern,
   validateJSON,
+  validateJSONDetailed,
+  validateRuleForm,
   isRuleUnused,
   findOverlappingRules,
   validateRule,
@@ -13,8 +16,8 @@ describe('Rule Validation', () => {
     id: '1',
     name: 'Test Rule',
     urlPattern: 'https://api.example.com/*',
-    matchType: 'wildcard',
-    method: '',
+    matchType: MatchType.Wildcard,
+    method: HttpMethod.Any,
     response: '{"success": true}',
     enabled: true,
     statusCode: 200,
@@ -100,12 +103,12 @@ describe('Rule Validation', () => {
       const rule1 = createMockRule({
         id: '1',
         urlPattern: 'https://api.example.com/users',
-        matchType: 'exact',
+        matchType: MatchType.Exact,
       });
       const rule2 = createMockRule({
         id: '2',
         urlPattern: 'https://api.example.com/users',
-        matchType: 'exact',
+        matchType: MatchType.Exact,
       });
 
       const overlapping = findOverlappingRules(rule1, [rule1, rule2]);
@@ -114,8 +117,8 @@ describe('Rule Validation', () => {
     });
 
     it('should not flag overlapping rules with different methods', () => {
-      const rule1 = createMockRule({ id: '1', method: 'GET' });
-      const rule2 = createMockRule({ id: '2', method: 'POST' });
+      const rule1 = createMockRule({ id: '1', method: HttpMethod.GET });
+      const rule2 = createMockRule({ id: '2', method: HttpMethod.POST });
 
       const overlapping = findOverlappingRules(rule1, [rule1, rule2]);
       expect(overlapping).toHaveLength(0);
@@ -133,14 +136,14 @@ describe('Rule Validation', () => {
   describe('validateRule', () => {
     it('should detect invalid regex pattern', () => {
       const rule = createMockRule({
-        matchType: 'regex',
+        matchType: MatchType.Regex,
         urlPattern: '[invalid',
       });
 
       const warnings = validateRule(rule, [rule]);
       expect(warnings).toHaveLength(1);
-      expect(warnings[0].type).toBe('invalidRegex');
-      expect(warnings[0].severity).toBe('error');
+      expect(warnings[0].type).toBe(ValidationWarningType.InvalidRegex);
+      expect(warnings[0].severity).toBe(ValidationSeverity.Error);
       expect(warnings[0].messageKey).toBe('warnings.invalidRegex');
     });
 
@@ -152,8 +155,8 @@ describe('Rule Validation', () => {
 
       const warnings = validateRule(rule, [rule]);
       expect(warnings).toHaveLength(1);
-      expect(warnings[0].type).toBe('invalidJson');
-      expect(warnings[0].severity).toBe('error');
+      expect(warnings[0].type).toBe(ValidationWarningType.InvalidJson);
+      expect(warnings[0].severity).toBe(ValidationSeverity.Error);
       expect(warnings[0].messageKey).toBe('warnings.invalidJson');
     });
 
@@ -163,8 +166,8 @@ describe('Rule Validation', () => {
 
       const warnings = validateRule(rule, [rule]);
       expect(warnings).toHaveLength(1);
-      expect(warnings[0].type).toBe('unused');
-      expect(warnings[0].severity).toBe('info');
+      expect(warnings[0].type).toBe(ValidationWarningType.Unused);
+      expect(warnings[0].severity).toBe(ValidationSeverity.Info);
       expect(warnings[0].messageKey).toBe('warnings.unusedRule');
     });
 
@@ -174,8 +177,8 @@ describe('Rule Validation', () => {
 
       const warnings = validateRule(rule1, [rule1, rule2]);
       expect(warnings).toHaveLength(1);
-      expect(warnings[0].type).toBe('overlapping');
-      expect(warnings[0].severity).toBe('warning');
+      expect(warnings[0].type).toBe(ValidationWarningType.Overlapping);
+      expect(warnings[0].severity).toBe(ValidationSeverity.Warning);
       expect(warnings[0].messageKey).toBe('warnings.overlappingRules');
       expect(warnings[0].messageParams).toEqual({ count: 1 });
       expect(warnings[0].relatedRuleIds).toEqual(['2']);
@@ -185,7 +188,7 @@ describe('Rule Validation', () => {
       const oldDate = Date.now() - 40 * 24 * 60 * 60 * 1000;
       const rule1 = createMockRule({
         id: '1',
-        matchType: 'regex',
+        matchType: MatchType.Regex,
         urlPattern: '[invalid',
         lastMatched: oldDate,
       });
@@ -193,8 +196,8 @@ describe('Rule Validation', () => {
 
       const warnings = validateRule(rule1, [rule1, rule2]);
       expect(warnings.length).toBeGreaterThan(1);
-      expect(warnings.some((w) => w.type === 'invalidRegex')).toBe(true);
-      expect(warnings.some((w) => w.type === 'unused')).toBe(true);
+      expect(warnings.some((w) => w.type === ValidationWarningType.InvalidRegex)).toBe(true);
+      expect(warnings.some((w) => w.type === ValidationWarningType.Unused)).toBe(true);
     });
   });
 
@@ -202,7 +205,7 @@ describe('Rule Validation', () => {
     it('should validate all rules and return warnings map', () => {
       const rule1 = createMockRule({
         id: '1',
-        matchType: 'regex',
+        matchType: MatchType.Regex,
         urlPattern: '[invalid',
       });
       const rule2 = createMockRule({
@@ -229,6 +232,202 @@ describe('Rule Validation', () => {
 
       const warningsMap = validateAllRules([rule1, rule2]);
       expect(warningsMap.size).toBe(0);
+    });
+  });
+
+  describe('validateJSONDetailed', () => {
+    it('should validate correct JSON with success message', () => {
+      const result = validateJSONDetailed('{"name": "test", "value": 123}');
+
+      expect(result.isValid).toBe(true);
+      expect(result.message).toContain('Valid JSON');
+    });
+
+    it('should accept empty string', () => {
+      const result = validateJSONDetailed('');
+
+      expect(result.isValid).toBe(true);
+      expect(result.message).toContain('Empty JSON');
+    });
+
+    it('should accept whitespace-only string', () => {
+      const result = validateJSONDetailed('   ');
+
+      expect(result.isValid).toBe(true);
+      expect(result.message).toContain('Empty JSON');
+    });
+
+    it('should reject invalid JSON with error message', () => {
+      const result = validateJSONDetailed('{"name": "test"');
+
+      expect(result.isValid).toBe(false);
+      expect(result.message).toContain('Invalid JSON');
+    });
+
+    it('should reject JSON with trailing comma', () => {
+      const result = validateJSONDetailed('{"name": "test",}');
+
+      expect(result.isValid).toBe(false);
+      expect(result.message).toContain('Invalid JSON');
+    });
+
+    it('should accept JSON array', () => {
+      const result = validateJSONDetailed('[1, 2, 3]');
+
+      expect(result.isValid).toBe(true);
+    });
+
+    it('should accept JSON with nested objects', () => {
+      const result = validateJSONDetailed('{"user": {"name": "test", "age": 30}}');
+
+      expect(result.isValid).toBe(true);
+    });
+
+    it('should accept primitive JSON values', () => {
+      expect(validateJSONDetailed('true').isValid).toBe(true);
+      expect(validateJSONDetailed('false').isValid).toBe(true);
+      expect(validateJSONDetailed('null').isValid).toBe(true);
+      expect(validateJSONDetailed('123').isValid).toBe(true);
+      expect(validateJSONDetailed('"string"').isValid).toBe(true);
+    });
+  });
+
+  describe('validateRuleForm', () => {
+    const createValidFormData = () => ({
+      name: 'Test Rule',
+      urlPattern: 'https://api.example.com/*',
+      matchType: 'wildcard',
+      method: 'GET',
+      statusCode: 200,
+      contentType: 'application/json',
+      responseBody: '{"message": "success"}',
+      delay: 0,
+      headers: [{ key: 'X-Custom', value: 'value' }],
+    });
+
+    const mockT = (key: string, params?: Record<string, string>) => {
+      if (params) {
+        return `${key}: ${params.error || ''}`;
+      }
+      return key;
+    };
+
+    it('should validate correct form data', () => {
+      const formData = createValidFormData();
+      const jsonValidation = { isValid: true, message: 'Valid' };
+
+      const errors = validateRuleForm(formData, jsonValidation, mockT);
+
+      expect(Object.keys(errors)).toHaveLength(0);
+    });
+
+    it('should require rule name', () => {
+      const formData = createValidFormData();
+      formData.name = '';
+      const jsonValidation = { isValid: true, message: 'Valid' };
+
+      const errors = validateRuleForm(formData, jsonValidation, mockT);
+
+      expect(errors.name).toBeDefined();
+      expect(errors.name).toContain('Name is required');
+    });
+
+    it('should require non-whitespace rule name', () => {
+      const formData = createValidFormData();
+      formData.name = '   ';
+      const jsonValidation = { isValid: true, message: 'Valid' };
+
+      const errors = validateRuleForm(formData, jsonValidation, mockT);
+
+      expect(errors.name).toBeDefined();
+    });
+
+    it('should require URL pattern', () => {
+      const formData = createValidFormData();
+      formData.urlPattern = '';
+      const jsonValidation = { isValid: true, message: 'Valid' };
+
+      const errors = validateRuleForm(formData, jsonValidation, mockT);
+
+      expect(errors.urlPattern).toBeDefined();
+      expect(errors.urlPattern).toContain('URL pattern is required');
+    });
+
+    it('should require non-whitespace URL pattern', () => {
+      const formData = createValidFormData();
+      formData.urlPattern = '   ';
+      const jsonValidation = { isValid: true, message: 'Valid' };
+
+      const errors = validateRuleForm(formData, jsonValidation, mockT);
+
+      expect(errors.urlPattern).toBeDefined();
+    });
+
+    it('should validate regex URL patterns', () => {
+      const formData = createValidFormData();
+      formData.matchType = 'regex';
+      formData.urlPattern = '[invalid(regex';
+      const jsonValidation = { isValid: true, message: 'Valid' };
+
+      const errors = validateRuleForm(formData, jsonValidation, mockT);
+
+      expect(errors.urlPattern).toBeDefined();
+      expect(errors.urlPattern).toContain('Invalid regex');
+    });
+
+    it('should accept valid regex patterns', () => {
+      const formData = createValidFormData();
+      formData.matchType = 'regex';
+      formData.urlPattern = 'https://api\\.example\\.com/.*';
+      const jsonValidation = { isValid: true, message: 'Valid' };
+
+      const errors = validateRuleForm(formData, jsonValidation, mockT);
+
+      expect(errors.urlPattern).toBeUndefined();
+    });
+
+    it('should validate JSON response body', () => {
+      const formData = createValidFormData();
+      formData.contentType = 'application/json';
+      formData.responseBody = '{"invalid": json}';
+      const jsonValidation = { isValid: false, message: 'Invalid JSON' };
+
+      const errors = validateRuleForm(formData, jsonValidation, mockT);
+
+      expect(Object.keys(errors)).toHaveLength(0); // Early return on invalid JSON
+    });
+
+    it('should accept empty response body', () => {
+      const formData = createValidFormData();
+      formData.responseBody = '';
+      const jsonValidation = null;
+
+      const errors = validateRuleForm(formData, jsonValidation, mockT);
+
+      expect(errors.responseBody).toBeUndefined();
+    });
+
+    it('should skip JSON validation for non-JSON content types', () => {
+      const formData = createValidFormData();
+      formData.contentType = 'text/plain';
+      formData.responseBody = 'not json at all';
+      const jsonValidation = null;
+
+      const errors = validateRuleForm(formData, jsonValidation, mockT);
+
+      expect(errors.responseBody).toBeUndefined();
+    });
+
+    it('should return multiple errors', () => {
+      const formData = createValidFormData();
+      formData.name = '';
+      formData.urlPattern = '';
+      const jsonValidation = { isValid: true, message: 'Valid' };
+
+      const errors = validateRuleForm(formData, jsonValidation, mockT);
+
+      expect(errors.name).toBeDefined();
+      expect(errors.urlPattern).toBeDefined();
     });
   });
 });

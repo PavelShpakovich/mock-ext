@@ -5,14 +5,13 @@ import { IconButton } from './IconButton';
 import { MenuSection } from './MenuSection';
 import { MenuOption } from './MenuOption';
 import { useClickOutside } from '../../hooks/useClickOutside';
-
-export type ThemeOption = 'system' | 'light' | 'dark';
+import { Theme, Language } from '../../enums';
 
 interface SettingsMenuProps {
-  theme: ThemeOption;
-  language: 'en' | 'ru';
-  onThemeChange: (theme: ThemeOption) => void;
-  onLanguageChange: (language: 'en' | 'ru') => void;
+  theme: Theme;
+  language: Language;
+  onThemeChange: (theme: Theme) => void;
+  onLanguageChange: (language: Language) => void;
   translations: {
     settings: string;
     theme: string;
@@ -35,15 +34,15 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
 
   useClickOutside(menuRef, () => setIsOpen(false), isOpen);
 
-  const themeOptions: { value: ThemeOption; label: string }[] = [
-    { value: 'system', label: translations.themeSystem },
-    { value: 'light', label: translations.themeLight },
-    { value: 'dark', label: translations.themeDark },
+  const themeOptions: { value: Theme; label: string }[] = [
+    { value: Theme.System, label: translations.themeSystem },
+    { value: Theme.Light, label: translations.themeLight },
+    { value: Theme.Dark, label: translations.themeDark },
   ];
 
-  const languageOptions: { value: 'en' | 'ru'; label: string }[] = [
-    { value: 'en', label: 'English' },
-    { value: 'ru', label: 'Русский' },
+  const languageOptions: { value: Language; label: string }[] = [
+    { value: Language.English, label: 'English' },
+    { value: Language.Russian, label: 'Русский' },
   ];
 
   return (

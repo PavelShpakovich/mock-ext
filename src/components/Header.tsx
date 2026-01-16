@@ -2,10 +2,13 @@ import React from 'react';
 import clsx from 'clsx';
 import { Button } from './ui/Button';
 import { Toggle } from './ui/Toggle';
-import { SettingsMenu, ThemeOption } from './ui/SettingsMenu';
+import { SettingsMenu } from './ui/SettingsMenu';
 import { Network, Circle, Square } from 'lucide-react';
 import { useI18n } from '../contexts/I18nContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { ButtonVariant, ButtonSize, Language, Theme } from '../enums';
+
+type LanguageOption = Language;
 
 interface HeaderProps {
   enabled: boolean;
@@ -33,12 +36,11 @@ const Header: React.FC<HeaderProps> = ({
     onToggleRecording(!logRequests);
   };
 
-  const handleThemeChange = (newTheme: ThemeOption) => {
-    console.log('[Header] handleThemeChange called with:', newTheme);
+  const handleThemeChange = (newTheme: Theme) => {
     setTheme(newTheme);
   };
 
-  const handleLanguageChange = (newLanguage: 'en' | 'ru') => {
+  const handleLanguageChange = (newLanguage: LanguageOption) => {
     setLanguage(newLanguage);
   };
 
@@ -89,8 +91,8 @@ const Header: React.FC<HeaderProps> = ({
 
             <Button
               onClick={handleRecordingClick}
-              variant={logRequests ? 'danger' : 'secondary'}
-              size='sm'
+              variant={logRequests ? ButtonVariant.Danger : ButtonVariant.Secondary}
+              size={ButtonSize.Small}
               className='flex items-center gap-1.5'
               disabled={!enabled}
             >
@@ -113,7 +115,7 @@ const Header: React.FC<HeaderProps> = ({
               theme={theme}
               language={language}
               onThemeChange={handleThemeChange}
-              onLanguageChange={handleLanguageChange}
+              onLanguageChange={(lang) => handleLanguageChange(lang as Language)}
               translations={{
                 settings: t('settings.settings'),
                 theme: t('settings.theme'),
