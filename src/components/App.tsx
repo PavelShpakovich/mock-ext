@@ -1,11 +1,19 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { Storage } from '../storage';
-import { MockRule, Settings, RequestLog } from '../types';
-import { Tab, ImportMode } from '../enums';
+import { MockRule, Settings, RequestLog, Folder } from '../types';
+import { Tab, ImportMode, ToastType, ConfirmDialogVariant, FolderEditMode } from '../enums';
 import { useI18n } from '../contexts/I18nContext';
 import { withContextCheck } from '../contextHandler';
-import { validateAllRules, ValidationWarning } from '../helpers';
+import {
+  validateAllRules,
+  ValidationWarning,
+  createFolder,
+  renameFolder,
+  toggleFolderCollapse,
+  deleteFolderAndUngroup,
+  toggleFolderRules,
+} from '../helpers';
 import {
   findValidWebTab,
   sendStartRecordingMessage,
@@ -24,13 +32,17 @@ import {
 import Header from './Header';
 import RulesTab from './RulesTab';
 import RequestsTab from './RequestsTab';
+import FolderEditor from './FolderEditor';
 import { TabButton } from './ui/TabButton';
 import { ImportDialog } from './ui/ImportDialog';
+import { ConfirmDialog } from './ui/ConfirmDialog';
+import { Toast } from './ui/Toast';
 
 const App: React.FC = () => {
   const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<Tab>(Tab.Rules);
   const [rules, setRules] = useState<MockRule[]>([]);
+  const [folders, setFolders] = useState<Folder[]>([]);
   const [settings, setSettings] = useState<Settings>({
     enabled: true,
     logRequests: false,
@@ -39,11 +51,19 @@ const App: React.FC = () => {
   });
   const [requestLog, setRequestLog] = useState<RequestLog[]>([]);
   const [editingRuleId, setEditingRuleId] = useState<string | null>(null);
+  const [editingFolder, setEditingFolder] = useState<Folder | null | FolderEditMode>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [requestsSearchTerm, setRequestsSearchTerm] = useState('');
   const [activeTabTitle, setActiveTabTitle] = useState<string>('');
   const [ruleWarnings, setRuleWarnings] = useState<Map<string, ValidationWarning[]>>(new Map());
   const [importDialogData, setImportDialogData] = useState<{ rules: MockRule[] } | null>(null);
+  const [confirmDialog, setConfirmDialog] = useState<{
+    title: string;
+    message: string;
+    variant?: ConfirmDialogVariant;
+    onConfirm: () => void;
+  } | null>(null);
+  const [toast, setToast] = useState<{ type: ToastType; message: string } | null>(null);
 
   const loadRequestLog = useCallback(async () => {
     const loadedRequestLog = await withContextCheck(() => Storage.getRequestLog(), []);
@@ -105,8 +125,9 @@ const App: React.FC = () => {
   }, [settings.logRequests, loadRequestLog]);
 
   const loadData = async () => {
-    const [loadedRules, loadedSettings, loadedRequestLog] = await Promise.all([
+    const [loadedRules, loadedFolders, loadedSettings, loadedRequestLog] = await Promise.all([
       withContextCheck(() => Storage.getRules(), []),
+      withContextCheck(() => Storage.getFolders(), []),
       withContextCheck(() => Storage.getSettings(), {
         enabled: true,
         logRequests: false,
@@ -117,6 +138,7 @@ const App: React.FC = () => {
     ]);
 
     setRules(loadedRules);
+    setFolders(loadedFolders);
     setSettings(loadedSettings);
     setRequestLog(loadedRequestLog);
 
@@ -295,14 +317,14 @@ const App: React.FC = () => {
         const validation = validateImportedRules(importedRules);
 
         if (!validation.valid) {
-          alert(t('rules.importError') + ': ' + validation.error);
+          setToast({ type: ToastType.Error, message: t('rules.importError') + ': ' + validation.error });
           return;
         }
 
         setImportDialogData({ rules: importedRules });
       } catch (error) {
         console.error('Import error:', error);
-        alert(t('rules.importError') + ': ' + (error as Error).message);
+        setToast({ type: ToastType.Error, message: t('rules.importError') + ': ' + (error as Error).message });
       }
     },
     [t]
@@ -319,13 +341,103 @@ const App: React.FC = () => {
 
         await updateRulesEverywhere(updatedRules);
         setImportDialogData(null);
-        alert(t('rules.importSuccess').replace('{count}', newRulesCount.toString()));
+        setToast({
+          type: ToastType.Success,
+          message: t('rules.importSuccess').replace('{count}', newRulesCount.toString()),
+        });
       } catch (error) {
         console.error('Import error:', error);
-        alert(t('rules.importError') + ': ' + (error as Error).message);
+        setToast({ type: ToastType.Error, message: t('rules.importError') + ': ' + (error as Error).message });
       }
     },
     [importDialogData, rules, t]
+  );
+
+  // Folder management handlers
+  const handleCreateFolder = useCallback(() => {
+    setEditingFolder(FolderEditMode.New);
+  }, []);
+
+  const handleEditFolder = useCallback(
+    (folderId: string) => {
+      const folder = folders.find((f) => f.id === folderId);
+      if (folder) {
+        setEditingFolder(folder);
+      }
+    },
+    [folders]
+  );
+
+  const handleSaveFolder = useCallback(
+    async (name: string) => {
+      let updatedFolders: Folder[];
+
+      if (editingFolder === FolderEditMode.New) {
+        const newFolder = createFolder(name);
+        updatedFolders = [...folders, newFolder];
+      } else if (editingFolder) {
+        updatedFolders = folders.map((f) => (f.id === editingFolder.id ? renameFolder(f, name) : f));
+      } else {
+        return;
+      }
+
+      setFolders(updatedFolders);
+      await Storage.saveFolders(updatedFolders);
+      setEditingFolder(null);
+    },
+    [editingFolder, folders]
+  );
+
+  const handleDeleteFolder = useCallback(
+    (folderId: string) => {
+      const folder = folders.find((f) => f.id === folderId);
+      if (!folder) return;
+
+      setConfirmDialog({
+        title: t('folders.deleteFolder'),
+        message: t('folders.deleteConfirmMessage', { name: folder.name }),
+        variant: ConfirmDialogVariant.Danger,
+        onConfirm: async () => {
+          const result = deleteFolderAndUngroup(folders, rules, folderId);
+          setFolders(result.folders);
+          setRules(result.rules);
+
+          await Promise.all([Storage.saveFolders(result.folders), Storage.saveRules(result.rules)]);
+
+          await withContextCheck(() =>
+            chrome.runtime.sendMessage({ action: 'updateRules', rules: result.rules })
+          ).catch(() => {});
+
+          setConfirmDialog(null);
+        },
+      });
+    },
+    [folders, rules, t]
+  );
+
+  const handleToggleFolderCollapse = useCallback(
+    async (folderId: string) => {
+      const updatedFolders = folders.map((f) => (f.id === folderId ? toggleFolderCollapse(f) : f));
+      setFolders(updatedFolders);
+      await Storage.saveFolders(updatedFolders);
+    },
+    [folders]
+  );
+
+  const handleEnableFolderRules = useCallback(
+    async (folderId: string) => {
+      const updatedRules = toggleFolderRules(rules, folderId, true);
+      await updateRulesEverywhere(updatedRules);
+    },
+    [rules]
+  );
+
+  const handleDisableFolderRules = useCallback(
+    async (folderId: string) => {
+      const updatedRules = toggleFolderRules(rules, folderId, false);
+      await updateRulesEverywhere(updatedRules);
+    },
+    [rules]
   );
 
   return (
@@ -352,6 +464,7 @@ const App: React.FC = () => {
       {activeTab === Tab.Rules ? (
         <RulesTab
           rules={rules}
+          folders={folders}
           ruleWarnings={ruleWarnings}
           searchTerm={searchTerm}
           onSearchChange={setSearchTerm}
@@ -365,6 +478,12 @@ const App: React.FC = () => {
           onCancelEdit={() => setEditingRuleId(null)}
           onExportRules={handleExportRules}
           onImportRules={handleImportRules}
+          onCreateFolder={handleCreateFolder}
+          onEditFolder={handleEditFolder}
+          onDeleteFolder={handleDeleteFolder}
+          onToggleFolderCollapse={handleToggleFolderCollapse}
+          onEnableFolderRules={handleEnableFolderRules}
+          onDisableFolderRules={handleDisableFolderRules}
         />
       ) : (
         <RequestsTab
@@ -385,6 +504,27 @@ const App: React.FC = () => {
           onCancel={() => setImportDialogData(null)}
         />
       )}
+
+      {editingFolder && (
+        <FolderEditor
+          folder={editingFolder === FolderEditMode.New ? null : editingFolder}
+          existingFolders={folders}
+          onSave={handleSaveFolder}
+          onCancel={() => setEditingFolder(null)}
+        />
+      )}
+
+      {confirmDialog && (
+        <ConfirmDialog
+          title={confirmDialog.title}
+          message={confirmDialog.message}
+          variant={confirmDialog.variant}
+          onConfirm={confirmDialog.onConfirm}
+          onCancel={() => setConfirmDialog(null)}
+        />
+      )}
+
+      {toast && <Toast type={toast.type} message={toast.message} onClose={() => setToast(null)} />}
     </div>
   );
 };

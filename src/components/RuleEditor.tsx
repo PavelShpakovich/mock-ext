@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import { MockRule, RequestLog } from '../types';
+import { MockRule, RequestLog, Folder } from '../types';
 import { ButtonVariant, ButtonSize } from '../enums';
 import { isValidJSON } from '../helpers/validation';
 import { convertArrayToHeaders, HeaderEntry } from '../helpers/headers';
@@ -21,6 +21,7 @@ import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 interface RuleEditorProps {
   rule: MockRule | null;
   mockRequest?: RequestLog | null;
+  folders: Folder[];
   onSave: (rule: MockRule) => void;
   onCancel: () => void;
 }
@@ -48,6 +49,7 @@ function buildMockRule(formData: RuleFormData, rule: MockRule | null): MockRule 
     contentType: formData.contentType,
     delay: formData.delay,
     headers: convertArrayToHeaders(formData.headers),
+    folderId: formData.folderId,
     created: rule?.created || now,
     modified: now,
     matchCount: rule?.matchCount,
@@ -55,7 +57,7 @@ function buildMockRule(formData: RuleFormData, rule: MockRule | null): MockRule 
   };
 }
 
-const RuleEditor: React.FC<RuleEditorProps> = ({ rule, mockRequest, onSave, onCancel }) => {
+const RuleEditor: React.FC<RuleEditorProps> = ({ rule, mockRequest, folders, onSave, onCancel }) => {
   const { t } = useI18n();
   const [formData, setFormData] = useState<RuleFormData>(() => getInitialFormData(rule, mockRequest));
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -132,7 +134,7 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, mockRequest, onSave, onCa
         {rule ? t('editor.updateRule') : t('editor.createRule')}
       </h2>
 
-      <form onSubmit={handleSubmit} className='space-y-5'>
+      <form onSubmit={handleSubmit} className='flex flex-col gap-5'>
         <Input
           label={t('editor.ruleName')}
           required
@@ -142,7 +144,23 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, mockRequest, onSave, onCa
           placeholder={t('editor.ruleNamePlaceholder')}
         />
 
-        <div className='border-l-4 border-gray-300 dark:border-blue-500 bg-gray-50 dark:bg-blue-500/5 rounded-r-lg pl-4 pr-4 py-4 space-y-4'>
+        <Select
+          label={`${t('editor.folder')} (${t('editor.optional')})`}
+          value={formData.folderId || ''}
+          onChange={(e) => {
+            const value = e.target.value;
+            setFormData((prev) => ({ ...prev, folderId: value || undefined }));
+          }}
+        >
+          <option value=''>{t('editor.noFolder')}</option>
+          {folders.map((folder) => (
+            <option key={folder.id} value={folder.id}>
+              {folder.name}
+            </option>
+          ))}
+        </Select>
+
+        <div className='border-l-4 border-gray-300 dark:border-blue-500 bg-gray-50 dark:bg-blue-500/5 rounded-r-lg pl-4 pr-4 py-4 flex flex-col gap-4'>
           <Input
             label={t('editor.urlPattern')}
             required
@@ -188,7 +206,7 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, mockRequest, onSave, onCa
           </div>
         </div>
 
-        <div className='border-l-4 border-gray-300 dark:border-green-500 bg-gray-50 dark:bg-green-500/5 rounded-r-lg pl-4 pr-4 py-4 space-y-4'>
+        <div className='border-l-4 border-gray-300 dark:border-green-500 bg-gray-50 dark:bg-green-500/5 rounded-r-lg pl-4 pr-4 py-4 flex flex-col gap-4'>
           <div className='grid grid-cols-2 gap-4'>
             <Input
               label={t('editor.statusCode')}

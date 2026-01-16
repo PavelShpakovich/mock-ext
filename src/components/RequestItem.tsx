@@ -22,7 +22,7 @@ const RequestItem: React.FC<RequestItemProps> = ({ request, onMock }) => {
         <div className='flex-1 min-w-0'>
           <div className='flex items-center gap-2 mb-2 flex-wrap'>
             <MethodBadge method={request.method} />
-            {request.matched && <Badge variant={BadgeVariant.Success}>Mocked</Badge>}
+            {request.matched && <Badge variant={BadgeVariant.Success}>{t('requests.mocked')}</Badge>}
             {request.statusCode && <StatusCodeBadge code={request.statusCode} />}
             <span className='text-xs font-medium text-gray-600 dark:text-gray-500 flex items-center gap-1'>
               <Clock className='w-3 h-3' />
@@ -34,7 +34,7 @@ const RequestItem: React.FC<RequestItemProps> = ({ request, onMock }) => {
           </div>
         </div>
 
-        <div className='flex items-center gap-2 ml-4 flex-shrink-0'>
+        <div className='flex items-center gap-2 ml-4 shrink-0'>
           <Button
             size={ButtonSize.Small}
             onClick={onMock}

@@ -1,4 +1,4 @@
-import { MockRule, Settings, StorageData, RequestLog } from './types';
+import { MockRule, Settings, StorageData, RequestLog, Folder } from './types';
 import { Theme } from './enums';
 
 // Batch buffer for log entries
@@ -22,6 +22,7 @@ export class Storage {
   private static readonly SETTINGS_KEY = 'settings';
   private static readonly LOG_KEY = 'requestLog';
   private static readonly DRAFT_KEY = 'ruleDraft';
+  private static readonly FOLDERS_KEY = 'folders';
 
   // Rules operations
   static async getRules(): Promise<MockRule[]> {
@@ -31,6 +32,16 @@ export class Storage {
 
   static async saveRules(rules: MockRule[]): Promise<void> {
     await chrome.storage.local.set({ [this.RULES_KEY]: rules });
+  }
+
+  // Folders operations
+  static async getFolders(): Promise<Folder[]> {
+    const result = await chrome.storage.local.get(this.FOLDERS_KEY);
+    return result[this.FOLDERS_KEY] || [];
+  }
+
+  static async saveFolders(folders: Folder[]): Promise<void> {
+    await chrome.storage.local.set({ [this.FOLDERS_KEY]: folders });
   }
 
   // Settings operations

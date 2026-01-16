@@ -31,8 +31,8 @@ export const ImportDialog: React.FC<ImportDialogProps> = ({ importedRules, exist
       <Card className='w-full max-w-2xl max-h-[80vh] flex flex-col'>
         <DialogHeader title={t('import.previewTitle')} onClose={onCancel} closeLabel={t('common.cancel')} />
 
-        <div className='p-6 flex-1 overflow-y-auto space-y-6'>
-          <div className='space-y-3'>
+        <div className='p-6 flex-1 overflow-y-auto flex flex-col gap-6'>
+          <div className='flex flex-col gap-3'>
             <div className='flex items-center gap-2 text-gray-700 dark:text-gray-300'>
               <FileText className='w-5 h-5 text-blue-500' />
               <span className='font-medium'>
@@ -40,7 +40,7 @@ export const ImportDialog: React.FC<ImportDialogProps> = ({ importedRules, exist
               </span>
             </div>
 
-            <div className='space-y-2'>
+            <div className='flex flex-col gap-2'>
               <RadioOption
                 name='import-mode'
                 value={ImportMode.Merge}

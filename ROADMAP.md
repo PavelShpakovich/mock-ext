@@ -59,22 +59,29 @@ This document outlines potential features and improvements for future releases.
   - ✅ Validation of required fields
   - ✅ Full internationalization support
 
-### 4. Rule Groups/Folders
+### 4. Rule Groups/Folders ✅
 
 **Estimated effort:** 3-4 hours  
 **Value:** High  
-**Status:** Ready to implement
+**Status:** ✅ **COMPLETED in v2.6.0**
 
-- Organize rules into folders
+- ✅ Organize rules into folders
 - **Features:**
-  - Create folders (e.g., "User API", "Payment API", "Auth")
-  - Drag-and-drop rules between folders
-  - Bulk enable/disable entire folders
-  - Collapse/expand folders
+  - ✅ Create folders (e.g., "User API", "Payment API", "Auth")
+  - ✅ Rename and delete folders
+  - ✅ Bulk enable/disable entire folders
+  - ✅ Collapse/expand folders with visual indicators
+  - ✅ Ungrouped rules section for rules without folders
+  - ✅ Rule count and enabled count badges per folder
+  - ✅ Search filtering works across folders
 - **Implementation:**
-  - Add `folder` field to `MockRule`
-  - Update UI with folder tree view
-  - Add folder management (create, rename, delete)
+  - ✅ Added `folderId` field to `MockRule`
+  - ✅ Created `Folder` interface with collapse state
+  - ✅ Updated UI with folder tree view
+  - ✅ Added folder management (create, rename, delete)
+  - ✅ Folder validation (name uniqueness, length limits)
+  - ✅ Full internationalization support (EN/RU)
+  - ✅ 20 comprehensive unit tests for folder helpers
 
 ### 5. CORS Auto-Fix ✅
 

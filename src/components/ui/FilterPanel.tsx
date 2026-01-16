@@ -72,7 +72,7 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({ filters, onFilterChang
       </Button>
 
       {isExpanded && (
-        <div className='absolute top-full right-0 mt-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-4 space-y-4 shadow-xl z-10 min-w-[320px]'>
+        <div className='absolute top-full right-0 mt-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-4 flex flex-col gap-4 shadow-xl z-10 min-w-[320px]'>
           <FilterSection title={t('requests.filterByMethod')}>
             {METHOD_OPTIONS.map((method) => (
               <FilterButton

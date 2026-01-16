@@ -60,12 +60,23 @@ Example:
 
 ### 🛠️ Rule Management
 
+- **Rule Groups/Folders**: Organize rules into logical groups (NEW in v2.6.0)
+  - Create folders to organize rules (e.g., "User API", "Payment API", "Auth")
+  - Rename and delete folders with validation
+  - Collapse/expand folders to save screen space
+  - Bulk enable/disable all rules in a folder
+  - Visual badges showing rule count and enabled count per folder
+  - Search works seamlessly across all folders
+  - Ungrouped rules section for rules without folders
 - **Rule Hit Counter**: Track rule usage in real-time (NEW in v2.1.1)
   - See how many times each rule has been matched
   - View "Last matched: X minutes ago" timestamps
   - Identify unused rules for cleanup
   - Debug which rules are actually triggering
 - **Export/Import**: Backup rules to JSON file and restore them later
+  - Export all rules or selected rules
+  - Import with merge or replace strategy
+  - Duplicate detection and validation
 - **Duplicate Rules**: Quickly copy existing rules to create variations
 - **Enable/Disable**: Toggle rules on/off without deleting them
 - **Search Rules**: Find rules by name or URL pattern

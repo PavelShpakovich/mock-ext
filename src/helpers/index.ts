@@ -10,3 +10,4 @@ export * from './headers';
 export * from './recording';
 export * from './importExport';
 export * from './ruleForm';
+export * from './folderManagement';

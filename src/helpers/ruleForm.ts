@@ -12,6 +12,7 @@ export interface RuleFormData {
   responseBody: string;
   delay: number;
   headers: HeaderEntry[];
+  folderId?: string;
 }
 
 export function getInitialFormData(rule: MockRule | null, mockRequest: RequestLog | null | undefined): RuleFormData {
@@ -26,6 +27,7 @@ export function getInitialFormData(rule: MockRule | null, mockRequest: RequestLo
       responseBody: typeof rule.response === 'string' ? rule.response : JSON.stringify(rule.response, null, 2),
       delay: rule.delay,
       headers: convertHeadersToArray(rule.headers),
+      folderId: rule.folderId,
     };
   }
 

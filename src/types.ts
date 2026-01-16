@@ -20,6 +20,14 @@ export interface MockRule {
   modified: number;
   matchCount?: number;
   lastMatched?: number;
+  folderId?: string;
+}
+
+export interface Folder {
+  id: string;
+  name: string;
+  collapsed: boolean;
+  created: number;
 }
 
 export interface Settings {
@@ -49,6 +57,7 @@ export interface StorageData {
   mockRules?: MockRule[];
   settings?: Settings;
   requestLog?: RequestLog[];
+  folders?: Folder[];
 }
 
 export interface MessageAction {
@@ -69,7 +78,8 @@ export interface MessageAction {
     | 'logCapturedResponse'
     | 'incrementRuleCounter'
     | 'rulesUpdated'
-    | 'openDevTools';
+    | 'openDevTools'
+    | 'updateFolders';
   rules?: MockRule[];
   settings?: Settings;
   enabled?: boolean;
@@ -84,6 +94,7 @@ export interface MessageAction {
   responseHeaders?: Record<string, string>;
   ruleId?: string;
   language?: Language;
+  folders?: Folder[];
 }
 
 export interface MessageResponse {

@@ -1,17 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { MockRule } from '../types';
-import { ValidationWarning } from '../helpers';
-import { ButtonVariant } from '../enums';
-import RuleItem from './RuleItem';
+import { MockRule, Folder } from '../types';
+import { ValidationWarning, getRulesGroupedByFolder, getFolderRuleCounts } from '../helpers';
 import RuleEditor from './RuleEditor';
-import { Input } from './ui/Input';
-import { Button } from './ui/Button';
-import { Card } from './ui/Card';
-import { Search, Plus, FileText, Download, Upload, CheckSquare, Square } from 'lucide-react';
-import { useI18n } from '../contexts/I18nContext';
+import { RulesSearchBar } from './RulesSearchBar';
+import { RulesToolbar } from './RulesToolbar';
+import { RulesEmptyState } from './RulesEmptyState';
+import { RulesList } from './RulesList';
 
 interface RulesTabProps {
   rules: MockRule[];
+  folders: Folder[];
   ruleWarnings: Map<string, ValidationWarning[]>;
   searchTerm: string;
   onSearchChange: (term: string) => void;
@@ -25,10 +23,17 @@ interface RulesTabProps {
   onCancelEdit: () => void;
   onExportRules: (selectedIds?: string[]) => void;
   onImportRules: (file: File) => void;
+  onCreateFolder: () => void;
+  onEditFolder: (folderId: string) => void;
+  onDeleteFolder: (folderId: string) => void;
+  onToggleFolderCollapse: (folderId: string) => void;
+  onEnableFolderRules: (folderId: string) => void;
+  onDisableFolderRules: (folderId: string) => void;
 }
 
 const RulesTab: React.FC<RulesTabProps> = ({
   rules,
+  folders,
   ruleWarnings,
   searchTerm,
   onSearchChange,
@@ -42,8 +47,13 @@ const RulesTab: React.FC<RulesTabProps> = ({
   onCancelEdit,
   onExportRules,
   onImportRules,
+  onCreateFolder,
+  onEditFolder,
+  onDeleteFolder,
+  onToggleFolderCollapse,
+  onEnableFolderRules,
+  onDisableFolderRules,
 }) => {
-  const { t } = useI18n();
   const [mockRequest, setMockRequest] = useState<any>(null);
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -58,9 +68,20 @@ const RulesTab: React.FC<RulesTabProps> = ({
     );
   });
 
-  const handleImportClick = () => {
-    fileInputRef.current?.click();
-  };
+  const groupedRules = getRulesGroupedByFolder(filteredRules, folders);
+  const ruleCounts = getFolderRuleCounts(rules, folders);
+
+  const enabledCounts = new Map<string | undefined, number>();
+  folders.forEach((folder) => enabledCounts.set(folder.id, 0));
+  enabledCounts.set(undefined, 0);
+  rules.forEach((rule) => {
+    if (rule.enabled) {
+      const count = enabledCounts.get(rule.folderId) || 0;
+      enabledCounts.set(rule.folderId, count + 1);
+    }
+  });
+
+  const handleImportClick = () => fileInputRef.current?.click();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -111,143 +132,64 @@ const RulesTab: React.FC<RulesTabProps> = ({
     }
   }, [editingRuleId]);
 
-  return (
-    <div className='p-6'>
-      {editingRuleId ? (
+  if (editingRuleId) {
+    return (
+      <div className='p-6'>
         <RuleEditor
           rule={editingRuleId === 'new' ? null : rules.find((r) => r.id === editingRuleId) || null}
           onSave={onSaveRule}
           onCancel={onCancelEdit}
           mockRequest={mockRequest}
+          folders={folders}
         />
-      ) : (
-        <>
-          <div className='mb-3 relative'>
-            <Search className='absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500' />
-            <Input
-              placeholder={t('rules.search')}
-              value={searchTerm}
-              onChange={(e) => onSearchChange(e.target.value)}
-              fullWidth
-              className='pl-10'
-            />
-          </div>
-          <div className='mb-4 flex justify-center flex-wrap gap-3'>
-            {selectionMode ? (
-              <>
-                <Button
-                  onClick={handleToggleSelectAll}
-                  variant={ButtonVariant.Secondary}
-                  className='whitespace-nowrap flex items-center gap-2 cursor-pointer'
-                >
-                  {selectedIds.size === filteredRules.length ? (
-                    <CheckSquare className='w-4 h-4' />
-                  ) : (
-                    <Square className='w-4 h-4' />
-                  )}
-                  {selectedIds.size === filteredRules.length ? t('rules.deselectAll') : t('rules.selectAll')}
-                </Button>
-                <Button
-                  onClick={handleExportSelected}
-                  variant={ButtonVariant.Primary}
-                  className='whitespace-nowrap flex items-center gap-2 cursor-pointer'
-                  disabled={selectedIds.size === 0}
-                >
-                  <Upload className='w-4 h-4' />
-                  {t('rules.exportSelected')} ({selectedIds.size})
-                </Button>
-                <Button
-                  onClick={handleToggleSelectionMode}
-                  variant={ButtonVariant.Secondary}
-                  className='whitespace-nowrap cursor-pointer'
-                >
-                  {t('common.cancel')}
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button
-                  onClick={handleImportClick}
-                  variant={ButtonVariant.Secondary}
-                  className='whitespace-nowrap flex items-center gap-2 cursor-pointer'
-                >
-                  <Download className='w-4 h-4' />
-                  {t('rules.import')}
-                </Button>
-                <Button
-                  onClick={() => onExportRules()}
-                  variant={ButtonVariant.Secondary}
-                  className='whitespace-nowrap flex items-center gap-2 cursor-pointer'
-                  disabled={rules.length === 0}
-                >
-                  <Upload className='w-4 h-4' />
-                  {t('rules.exportAll')}
-                </Button>
-                <Button
-                  onClick={handleToggleSelectionMode}
-                  variant={ButtonVariant.Secondary}
-                  className='whitespace-nowrap flex items-center gap-2 cursor-pointer'
-                  disabled={rules.length === 0}
-                >
-                  <CheckSquare className='w-4 h-4' />
-                  {t('rules.selectToExport')}
-                </Button>
-                <Button
-                  onClick={() => onEditRule('new')}
-                  className='whitespace-nowrap flex items-center gap-2 cursor-pointer'
-                >
-                  <Plus className='w-4 h-4' />
-                  {t('rules.addRule')}
-                </Button>
-              </>
-            )}
-            <input ref={fileInputRef} type='file' accept='.json' onChange={handleFileChange} className='hidden' />
-          </div>
+      </div>
+    );
+  }
 
-          {filteredRules.length === 0 ? (
-            <Card className='flex items-center flex-col text-center py-16 border-2 border-dashed border-gray-300 dark:border-gray-700 shadow-sm'>
-              <FileText className='w-12 h-12 mx-auto mb-4 text-gray-400 dark:text-gray-600' />
-              <div className='text-gray-700 dark:text-gray-300 font-bold text-lg mb-2'>{t('rules.noRules')}</div>
-              <div className='text-gray-500 text-sm mb-4'>{t('rules.noRulesDesc')}</div>
-              <Button onClick={() => onEditRule('new')} className='flex items-center gap-2 cursor-pointer'>
-                <Plus className='w-4 h-4' />
-                {t('rules.addRule')}
-              </Button>
-            </Card>
-          ) : (
-            <div className='space-y-2'>
-              {filteredRules.map((rule) => (
-                <div key={rule.id} className='relative'>
-                  {selectionMode && (
-                    <div className='absolute left-2 top-1/2 -translate-y-1/2 z-10'>
-                      <button
-                        onClick={() => handleToggleSelection(rule.id)}
-                        className='flex items-center justify-center w-6 h-6 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded cursor-pointer hover:border-green-500 dark:hover:border-green-500 transition-colors'
-                      >
-                        {selectedIds.has(rule.id) ? (
-                          <CheckSquare className='w-5 h-5 text-green-600 dark:text-green-400' />
-                        ) : (
-                          <Square className='w-5 h-5 text-gray-400' />
-                        )}
-                      </button>
-                    </div>
-                  )}
-                  <RuleItem
-                    rule={rule}
-                    warnings={ruleWarnings.get(rule.id) || []}
-                    onEdit={() => onEditRule(rule.id)}
-                    onDelete={() => onDeleteRule(rule.id)}
-                    onToggle={() => onToggleRule(rule.id)}
-                    onDuplicate={() => onDuplicateRule(rule.id)}
-                    onResetHits={() => onResetRuleHits(rule.id)}
-                    className={selectionMode ? 'pl-12' : ''}
-                    disabled={selectionMode}
-                  />
-                </div>
-              ))}
-            </div>
-          )}
-        </>
+  return (
+    <div className='p-6'>
+      <RulesSearchBar value={searchTerm} onChange={onSearchChange} />
+
+      <RulesToolbar
+        selectionMode={selectionMode}
+        selectedCount={selectedIds.size}
+        totalFilteredCount={filteredRules.length}
+        totalRulesCount={rules.length}
+        onToggleSelectionMode={handleToggleSelectionMode}
+        onToggleSelectAll={handleToggleSelectAll}
+        onExportSelected={handleExportSelected}
+        onExportAll={() => onExportRules()}
+        onImportClick={handleImportClick}
+        onCreateFolder={onCreateFolder}
+        onCreateRule={() => onEditRule('new')}
+        fileInputRef={fileInputRef}
+        onFileChange={handleFileChange}
+      />
+
+      {filteredRules.length === 0 ? (
+        <RulesEmptyState onCreateRule={() => onEditRule('new')} />
+      ) : (
+        <RulesList
+          groupedRules={groupedRules}
+          folders={folders}
+          ruleCounts={ruleCounts}
+          enabledCounts={enabledCounts}
+          ruleWarnings={ruleWarnings}
+          searchTerm={searchTerm}
+          selectionMode={selectionMode}
+          selectedIds={selectedIds}
+          onToggleSelection={handleToggleSelection}
+          onToggleFolderCollapse={onToggleFolderCollapse}
+          onEditFolder={onEditFolder}
+          onDeleteFolder={onDeleteFolder}
+          onEnableFolderRules={onEnableFolderRules}
+          onDisableFolderRules={onDisableFolderRules}
+          onEditRule={onEditRule}
+          onDeleteRule={onDeleteRule}
+          onToggleRule={onToggleRule}
+          onDuplicateRule={onDuplicateRule}
+          onResetRuleHits={onResetRuleHits}
+        />
       )}
     </div>
   );

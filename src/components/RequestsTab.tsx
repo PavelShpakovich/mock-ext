@@ -50,7 +50,7 @@ const RequestsTab: React.FC<RequestsTabProps> = ({
   });
 
   return (
-    <div className='p-4'>
+    <div className='p-6'>
       <div className='mb-4 flex gap-3 items-start'>
         <div className='relative flex-1'>
           <Search className='absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500' />
@@ -116,7 +116,7 @@ const RequestsTab: React.FC<RequestsTabProps> = ({
         </Card>
       ) : (
         filteredRequests.length > 0 && (
-          <div className='space-y-2'>
+          <div className='flex flex-col gap-2'>
             <div className='text-xs text-gray-600 dark:text-gray-500 mb-2'>
               {filteredRequests.length} request{filteredRequests.length !== 1 ? 's' : ''}
               {!logRequests && ' (recording stopped)'}

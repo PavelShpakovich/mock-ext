@@ -36,6 +36,13 @@ module.exports = (env, argv) => {
       clean: true,
     },
     devtool: isProduction ? false : 'cheap-module-source-map',
+    performance: {
+      // Chrome extensions have different performance characteristics than web apps
+      // The popup is opened on-demand, not as part of initial page load
+      maxAssetSize: 500000, // 500 KiB - reasonable for extension UI
+      maxEntrypointSize: 500000, // 500 KiB
+      hints: isProduction ? 'warning' : false,
+    },
     optimization: {
       minimize: isProduction,
       usedExports: true,

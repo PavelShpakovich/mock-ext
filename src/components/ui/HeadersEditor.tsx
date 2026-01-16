@@ -36,7 +36,7 @@ export const HeadersEditor: React.FC<HeadersEditorProps> = ({ headers, onChange 
         {t('editor.customHeaders')}{' '}
         <span className='text-gray-500 dark:text-gray-500 text-xs font-normal'>({t('editor.optional')})</span>
       </label>
-      <div className='space-y-2'>
+      <div className='flex flex-col gap-2'>
         {headers.map((header, index) => (
           <div key={index} className='flex gap-2 items-center'>
             <Input
@@ -66,7 +66,7 @@ export const HeadersEditor: React.FC<HeadersEditorProps> = ({ headers, onChange 
           type='button'
           variant={ButtonVariant.Secondary}
           size={ButtonSize.Small}
-          className='flex items-center'
+          className='flex items-center w-fit'
           onClick={handleAddHeader}
         >
           <Plus className='w-4 h-4 mr-2' />

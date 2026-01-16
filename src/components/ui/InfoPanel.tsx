@@ -14,5 +14,7 @@ export const InfoPanel: React.FC<InfoPanelProps> = ({ variant = 'info', children
     danger: 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/50',
   };
 
-  return <div className={clsx('space-y-3 rounded-lg p-4', variantClasses[variant], className)}>{children}</div>;
+  return (
+    <div className={clsx('flex flex-col gap-3 rounded-lg p-4', variantClasses[variant], className)}>{children}</div>
+  );
 };

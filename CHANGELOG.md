@@ -5,6 +5,80 @@ All notable changes to MockAPI Extension will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.6.0] - 2026-01-16
+
+### Added
+- **Rule Groups/Folders**: Complete folder organization system for managing mock rules
+  - **Create Folders**: Organize rules into logical groups (e.g., "User API", "Payment API")
+  - **Folder Management**: Create, rename, and delete folders with validation
+    - Name uniqueness validation (case-insensitive)
+    - Length limits (max 50 characters)
+    - Modal dialog for folder creation and renaming
+  - **Bulk Operations**: Enable/disable all rules in a folder with one click
+  - **Collapse/Expand**: Minimize folders to save screen space
+    - Visual indicators (chevron icons) for collapsed/expanded state
+    - Folder icon changes when collapsed
+    - Click anywhere on folder card to expand/collapse
+  - **Ungrouped Rules**: Special section for rules without folders
+  - **Visual Badges**: 
+    - Rule count badge per folder shown inline with folder name
+    - Enabled rules count badge (green)
+  - **Smart Delete**: Deleting a folder ungroups its rules instead of deleting them
+  - **Search Integration**: Search works seamlessly across all folders
+  - **Hover Actions**: Folder action buttons appear on hover for cleaner UI
+  - **Full i18n Support**: All folder features translated in English and Russian
+  - **Folder Assignment in Rule Editor**: Select folder when creating or editing rules
+    - Dropdown selector with "No folder (ungrouped)" option
+    - Optional field clearly marked
+
+### Added - Technical
+- **New Components**:
+  - `FolderItem.tsx`: Display folder with collapse/expand, badges, and bulk actions
+  - `FolderEditor.tsx`: Modal dialog for creating/renaming folders with validation
+  - `RulesSearchBar.tsx`: Extracted search input component
+  - `RulesToolbar.tsx`: Compact toolbar with icon buttons for actions
+  - `SelectableRuleItem.tsx`: Rule item with selection checkbox
+  - `RulesEmptyState.tsx`: Empty state display component
+  - `RulesList.tsx`: Folder tree and rules list display
+- **New Helper Module**: `helpers/folderManagement.ts` with 10+ utility functions
+  - `createFolder()`, `renameFolder()`, `toggleFolderCollapse()`
+  - `getRulesGroupedByFolder()`, `getFolderRuleCounts()`
+  - `moveRuleToFolder()`, `deleteFolderAndUngroup()`
+  - `toggleFolderRules()`, `validateFolderName()`
+- **Storage**: Added `folders` array to chrome.storage.local
+- **Types**: Extended `MockRule` with optional `folderId`, added `Folder` interface
+- **Tests**: 20 comprehensive unit tests for all folder management helpers
+  - Total test count increased from 194 to 214
+  - All tests passing with 100% coverage of folder helpers
+
+### Changed
+- **RulesTab**: Completely refactored into atomic components for better maintainability
+  - Main component reduced from ~370 lines to ~195 lines
+  - Split into 5 focused components (SearchBar, Toolbar, EmptyState, SelectableRuleItem, RulesList)
+  - Improved readability and testability
+- **RulesToolbar**: Redesigned for more compact layout
+  - Icon-only buttons for secondary actions (import, export, select, create folder)
+  - Prominent "Add Rule" button on the right
+  - Uses `justify-between` layout instead of centered button row
+  - Significantly reduced visual clutter and vertical space usage
+- **FolderItem UI**: Enhanced visual design and interactions
+  - Toggle button changes variant: Ghost when all enabled, Primary when some disabled
+  - Better visual hierarchy with conditional button styling
+  - Action buttons have proper spacing (gap-2)
+  - Entire card clickable for expand/collapse
+- **RuleItem Display**: Hit count now shown inline with rule name
+  - Format: "Rule Name (5)" instead of separate badge
+  - Cleaner, more compact visual design
+- **Selection Checkboxes**: Improved styling with smaller size and no outline
+  - Changed from medium to small IconButton size
+  - Removed focus ring and outline for cleaner appearance
+  - Icon size reduced from 5x5 to 6x6 for better balance
+- **Internationalization**: Fixed hardcoded "Mocked" text in RequestItem
+  - Added `requests.mocked` translation key
+  - Fully translated in English and Russian
+- **App.tsx**: Added folder state management and 6 new handler functions
+- **UI Layout**: Rule list now shows hierarchical folder structure instead of flat list
+
 ## [2.5.0] - 2026-01-16
 
 ### Changed

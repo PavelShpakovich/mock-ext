@@ -50,6 +50,26 @@ export enum ImportMode {
 }
 
 // ============================================================================
+// UI Component Enums
+// ============================================================================
+
+export enum ToastType {
+  Success = 'success',
+  Error = 'error',
+  Info = 'info',
+  Warning = 'warning',
+}
+
+export enum ConfirmDialogVariant {
+  Danger = 'danger',
+  Primary = 'primary',
+}
+
+export enum FolderEditMode {
+  New = 'new',
+}
+
+// ============================================================================
 // Validation Enums
 // ============================================================================
 

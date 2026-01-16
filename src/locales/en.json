@@ -40,6 +40,23 @@
     "delayMs": "Delay: {{delay}}ms",
     "contentType": "Content Type"
   },
+  "folders": {
+    "createFolder": "New Folder",
+    "renameFolder": "Rename Folder",
+    "deleteFolder": "Delete Folder",
+    "deleteConfirmMessage": "Delete folder \"{{name}}\"? Rules in this folder will be ungrouped.",
+    "folderName": "Folder Name",
+    "folderNamePlaceholder": "E.g., User API, Payment API",
+    "create": "Create",
+    "rename": "Rename",
+    "delete": "Delete",
+    "expand": "Expand folder",
+    "collapse": "Collapse folder",
+    "enabled": "enabled",
+    "enableAll": "Enable all rules",
+    "disableAll": "Disable all rules",
+    "ungrouped": "Ungrouped Rules"
+  },
   "import": {
     "previewTitle": "Import Rules",
     "foundRules": "Found rules",
@@ -63,6 +80,11 @@
     "invalidJson": "Invalid JSON in response body",
     "unusedRule": "Not used in the last 30 days"
   },
+  "validation": {
+    "folderNameEmpty": "Folder name cannot be empty",
+    "folderNameTooLong": "Folder name is too long (max 50 characters)",
+    "folderNameDuplicate": "A folder with this name already exists"
+  },
   "requests": {
     "title": "Request Log",
     "clear": "Clear Log",
@@ -70,6 +92,7 @@
     "noRequests": "No requests logged",
     "noRequestsDesc": "Click Record button and interact with the page to capture requests",
     "mockThis": "Mock This",
+    "mocked": "Mocked",
     "time": "Time",
     "filters": "Filters",
     "filterByMethod": "Filter by Method",
@@ -110,7 +133,9 @@
     "addHeader": "Add Header",
     "removeHeader": "Remove header",
     "validationError": "{{error}}",
-    "variables": "Available variables: {{timestamp}}, {{uuid}}, {{random_number}}"
+    "variables": "Available variables: {{timestamp}}, {{uuid}}, {{random_number}}",
+    "folder": "Folder",
+    "noFolder": "No folder (ungrouped)"
   },
   "settings": {
     "settings": "Settings",

@@ -40,6 +40,23 @@
     "delayMs": "Задержка: {{delay}}мс",
     "contentType": "Тип контента"
   },
+  "folders": {
+    "createFolder": "Новая папка",
+    "renameFolder": "Переименовать папку",
+    "deleteFolder": "Удалить папку",
+    "deleteConfirmMessage": "Удалить папку \"{{name}}\"? Правила из этой папки будут разгруппированы.",
+    "folderName": "Название папки",
+    "folderNamePlaceholder": "Например, API пользователя, API платежей",
+    "create": "Создать",
+    "rename": "Переименовать",
+    "delete": "Удалить",
+    "expand": "Развернуть папку",
+    "collapse": "Свернуть папку",
+    "enabled": "включено",
+    "enableAll": "Включить все правила",
+    "disableAll": "Отключить все правила",
+    "ungrouped": "Без группы"
+  },
   "import": {
     "previewTitle": "Импорт правил",
     "foundRules": "Найдено правил",
@@ -63,6 +80,11 @@
     "invalidJson": "Некорректный JSON в теле ответа",
     "unusedRule": "Не использовалось последние 30 дней"
   },
+  "validation": {
+    "folderNameEmpty": "Имя папки не может быть пустым",
+    "folderNameTooLong": "Имя папки слишком длинное (макс. 50 символов)",
+    "folderNameDuplicate": "Папка с таким именем уже существует"
+  },
   "requests": {
     "title": "Журнал запросов",
     "clear": "Очистить журнал",
@@ -70,6 +92,7 @@
     "noRequests": "Нет записанных запросов",
     "noRequestsDesc": "Нажмите кнопку Запись и взаимодействуйте со страницей для захвата запросов",
     "mockThis": "Мокировать",
+    "mocked": "Замокировано",
     "time": "Время",
     "filters": "Фильтры",
     "filterByMethod": "Фильтр по методу",
@@ -110,7 +133,9 @@
     "addHeader": "Добавить заголовок",
     "removeHeader": "Удалить заголовок",
     "validationError": "{{error}}",
-    "variables": "Доступные переменные: {{timestamp}}, {{uuid}}, {{random_number}}"
+    "variables": "Доступные переменные: {{timestamp}}, {{uuid}}, {{random_number}}",
+    "folder": "Папка",
+    "noFolder": "Без папки (несгруппировано)"
   },
   "settings": {
     "settings": "Настройки",

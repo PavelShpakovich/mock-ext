@@ -3,13 +3,13 @@ import clsx from 'clsx';
 import { MockRule } from '../types';
 import { ValidationWarning } from '../helpers';
 import { Card } from './ui/Card';
-import { Badge, MethodBadge, StatusCodeBadge } from './ui/Badge';
+import { MethodBadge, StatusCodeBadge } from './ui/Badge';
 import { Toggle } from './ui/Toggle';
 import { IconButton } from './ui/IconButton';
 import { Clock, Copy, RotateCcw, Edit, Trash2, AlertCircle, AlertTriangle, Info } from 'lucide-react';
 import { useI18n } from '../contexts/I18nContext';
 import { formatRelativeTime } from '../helpers/time';
-import { BadgeVariant, IconButtonVariant } from '../enums';
+import { IconButtonVariant } from '../enums';
 
 interface RuleItemProps {
   rule: MockRule;
@@ -76,14 +76,14 @@ const RuleItem: React.FC<RuleItemProps> = ({
       <div className='flex items-start justify-between mb-2'>
         <div className='flex-1'>
           <div className='flex items-center gap-2 mb-2 flex-wrap'>
-            <h3 className='font-bold text-gray-900 dark:text-white text-base'>{rule.name}</h3>
+            <h3 className='font-bold text-gray-900 dark:text-white text-base'>
+              {rule.name}
+              {(rule.matchCount ?? 0) > 0 && (
+                <span className='ml-2 text-sm font-normal text-gray-500 dark:text-gray-400'>({rule.matchCount})</span>
+              )}
+            </h3>
             {rule.method && <MethodBadge method={rule.method} />}
             <StatusCodeBadge code={rule.statusCode} />
-            {(rule.matchCount ?? 0) > 0 && (
-              <Badge variant={BadgeVariant.Info} className='flex items-center gap-1'>
-                {rule.matchCount}
-              </Badge>
-            )}
           </div>
           <div className='text-sm text-gray-700 dark:text-gray-300 break-all font-mono bg-gray-100 dark:bg-gray-900 px-2 py-1.5 rounded border border-gray-300 dark:border-gray-700'>
             {rule.urlPattern}
@@ -111,9 +111,8 @@ const RuleItem: React.FC<RuleItemProps> = ({
             </div>
           )}
 
-          {/* Validation Warnings */}
           {warnings.length > 0 && (
-            <div className='mt-3 space-y-2'>
+            <div className='mt-3 flex flex-col gap-2'>
               {warnings.map((warning, index) => (
                 <div
                   key={index}
