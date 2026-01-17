@@ -5,6 +5,54 @@ All notable changes to MockAPI Extension will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.7.1] - 2026-01-18
+
+### Changed
+- **Code Architecture**: Major refactoring of App component following React best practices
+  - Extracted business logic into 5 custom hooks for better separation of concerns
+  - Created `useRulesManager` for all rule CRUD operations and validation
+  - Created `useFoldersManager` for folder management logic
+  - Created `useRecording` for recording, settings, and request log management
+  - Created `useCrossContextSync` for cross-context message handling
+  - Created `useStandaloneWindowStatus` for standalone window status polling
+  - Reduced App.tsx from 570 to ~350 lines with clearer organization
+  - Improved code maintainability, readability, and testability
+  - All handlers properly memoized with useCallback for better performance
+  - Added comprehensive JSDoc comments for all custom hooks
+  - Single Responsibility Principle applied throughout
+
+## [2.7.0] - 2026-01-18
+
+### Added
+- **View Mode Switcher**: Open MockAPI in standalone window or DevTools panel
+  - **"Open in Window" button** in DevTools header with ExternalLink icon
+  - **Standalone window mode**: 800×600 popup window for multi-monitor setups
+  - **Single instance enforcement**: Overlay blocks DevTools when window is open
+  - **Full state synchronization**: Changes in one context instantly reflect in the other
+    - Rules, folders, settings, and request log all sync automatically
+    - Recording state syncs (start/stop in either context)
+    - Enable/disable all, CORS toggle sync across contexts
+  - **Context detection utilities**: Automatic detection of DevTools, standalone window, or popup
+  - **Window management**: Automatic focus if window already open, cleanup on close
+  - **Internationalization**: Full EN/RU translations for all window-related UI
+- **Dynamic Variables Hint**: Added tooltip in Response Body field
+  - Shows available dynamic variables: `{{timestamp}}`, `{{uuid}}`, `{{random_number}}`, `{{random_string}}`
+  - Helps users discover this previously undocumented feature
+  - Info icon with hover tooltip for better discoverability
+
+### Changed
+- **Cross-context messaging**: Enhanced message broadcasting for complete state sync
+  - Added `rulesUpdated`, `settingsUpdated`, `foldersUpdated`, `requestLogUpdated` actions
+  - All state changes now broadcast to other contexts automatically
+  - Ensures DevTools and standalone window stay perfectly in sync
+
+### Technical
+- Created `/public/window.html` for standalone window entry point
+- Added `openStandaloneWindow` and `getStandaloneWindowStatus` to background.js
+- Created `/src/helpers/context.ts` with context detection utilities
+- Created `StandaloneWindowOverlay` component for blocking DevTools when window open
+- Enhanced `TextArea` component with `labelHint` prop for inline tooltips
+
 ## [2.6.1] - 2026-01-17
 
 ### Fixed

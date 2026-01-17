@@ -1,6 +1,8 @@
 {
   "app": {
-    "name": "MockAPI"
+    "name": "MockAPI",
+    "standaloneWindowOpen": "Standalone Window is Open",
+    "standaloneWindowMessage": "MockAPI is currently open in a standalone window. Please use that window or close it to use the DevTools panel."
   },
   "header": {
     "recording": "Recording: {{tabTitle}}",
@@ -9,7 +11,8 @@
     "record": "Record",
     "stop": "Stop",
     "corsAutoFix": "CORS",
-    "corsAutoFixTooltip": "Auto-inject CORS headers to bypass cross-origin restrictions"
+    "corsAutoFixTooltip": "Auto-inject CORS headers to bypass cross-origin restrictions",
+    "openWindow": "Open in standalone window"
   },
   "tabs": {
     "rules": "Rules",
@@ -133,7 +136,7 @@
     "addHeader": "Add Header",
     "removeHeader": "Remove header",
     "validationError": "{{error}}",
-    "variables": "Available variables: {{timestamp}}, {{uuid}}, {{random_number}}",
+    "variables": "Dynamic variables: {{timestamp}} (current time), {{uuid}} (unique ID), {{random_number}} (0-999999), {{random_string}} (random text)",
     "folder": "Folder",
     "noFolder": "No folder (ungrouped)"
   },

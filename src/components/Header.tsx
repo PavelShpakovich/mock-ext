@@ -3,10 +3,12 @@ import clsx from 'clsx';
 import { Button } from './ui/Button';
 import { Toggle } from './ui/Toggle';
 import { SettingsMenu } from './ui/SettingsMenu';
-import { Network, Circle, Square } from 'lucide-react';
+import { IconButton } from './ui/IconButton';
+import { Network, Circle, Square, ExternalLink } from 'lucide-react';
 import { useI18n } from '../contexts/I18nContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { ButtonVariant, ButtonSize, Language, Theme } from '../enums';
+import { isDevTools, openStandaloneWindow } from '../helpers/context';
 
 type LanguageOption = Language;
 
@@ -31,6 +33,7 @@ const Header: React.FC<HeaderProps> = ({
 }) => {
   const { t, language, setLanguage } = useI18n();
   const { theme, setTheme } = useTheme();
+  const showOpenWindowButton = isDevTools();
 
   const handleRecordingClick = () => {
     onToggleRecording(!logRequests);
@@ -42,6 +45,10 @@ const Header: React.FC<HeaderProps> = ({
 
   const handleLanguageChange = (newLanguage: LanguageOption) => {
     setLanguage(newLanguage);
+  };
+
+  const handleOpenWindow = () => {
+    openStandaloneWindow();
   };
 
   return (
@@ -110,6 +117,20 @@ const Header: React.FC<HeaderProps> = ({
             </Button>
 
             <div className='w-px h-6 bg-gray-300 dark:bg-gray-700 mx-1'></div>
+
+            {showOpenWindowButton && (
+              <>
+                <IconButton
+                  onClick={handleOpenWindow}
+                  title={t('header.openWindow')}
+                  className='text-gray-600 dark:text-gray-400 hover:text-green-600 dark:hover:text-green-400'
+                >
+                  <ExternalLink className='w-4 h-4' />
+                </IconButton>
+
+                <div className='w-px h-6 bg-gray-300 dark:bg-gray-700 mx-1'></div>
+              </>
+            )}
 
             <SettingsMenu
               theme={theme}

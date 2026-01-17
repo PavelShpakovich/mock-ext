@@ -250,6 +250,7 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, mockRequest, folders, onS
           <div>
             <TextArea
               label={t('editor.responseBody')}
+              labelHint={t('editor.variables')}
               value={formData.responseBody}
               onChange={(e) => handleChange('responseBody', e.target.value)}
               rows={8}

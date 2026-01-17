@@ -2,7 +2,21 @@
 
 A powerful Chrome DevTools extension for mocking API requests during development and testing. Intercepts HTTP requests at the JavaScript level and responds with custom data, status codes, and delays without modifying your application code.
 
-## ✨ What's New in v2.0
+## ✨ What's New in v2.7
+
+**🚀 View Mode Switcher**: Open MockAPI in a standalone window for multi-monitor setups
+
+- Switch between DevTools panel and standalone window
+- Full state synchronization across all contexts
+- Single instance enforcement with overlay
+
+**♻️ Architecture Improvements**: Major code refactoring for better maintainability
+
+- Custom hooks for feature separation
+- Improved performance and testability
+- Cleaner, more readable code structure
+
+## What's New in v2.0
 
 **🚀 Complete Architecture Redesign**: MockAPI now uses client-side JavaScript interception instead of Chrome's declarativeNetRequest API, unlocking full control over:
 

@@ -191,6 +191,13 @@ async function handleMessage(message: MessageAction, sender?: chrome.runtime.Mes
       }
       return { success: false, error: 'No request data provided' };
 
+    case 'openStandaloneWindow':
+      await openStandaloneWindow();
+      return { success: true };
+
+    case 'getStandaloneWindowStatus':
+      return { success: true, data: { isOpen: standaloneWindowId !== null } };
+
     default:
       return { success: false, error: 'Unknown action' };
   }
@@ -302,6 +309,45 @@ async function createExampleRule(): Promise<void> {
   await Storage.saveRules([exampleRule]);
 }
 
+// Helper: Open standalone window
+let standaloneWindowId: number | null = null;
+
+async function openStandaloneWindow(): Promise<void> {
+  // Check if window already exists
+  if (standaloneWindowId !== null) {
+    try {
+      const existingWindow = await chrome.windows.get(standaloneWindowId);
+      if (existingWindow) {
+        // Focus existing window
+        await chrome.windows.update(standaloneWindowId, { focused: true });
+        return;
+      }
+    } catch {
+      // Window doesn't exist anymore
+      standaloneWindowId = null;
+    }
+  }
+
+  // Create new window
+  const window = await chrome.windows.create({
+    url: 'window.html',
+    type: 'popup',
+    width: 800,
+    height: 600,
+    left: 100,
+    top: 100,
+  });
+
+  standaloneWindowId = window.id || null;
+}
+
+// Clean up window reference when window is closed
+chrome.windows.onRemoved.addListener((windowId) => {
+  if (windowId === standaloneWindowId) {
+    standaloneWindowId = null;
+  }
+});
+
 // Helper: Create context menu
 async function createContextMenu(): Promise<void> {
   chrome.contextMenus.create({
@@ -320,6 +366,6 @@ chrome.action.onClicked.addListener(showDevToolsPromptInActiveTab);
 // Context menu handler
 chrome.contextMenus.onClicked.addListener(async (info) => {
   if (info.menuItemId === 'openFloatingWindow') {
-    await showDevToolsPromptInActiveTab();
+    await openStandaloneWindow();
   }
 });

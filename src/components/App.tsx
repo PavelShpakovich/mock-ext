@@ -1,26 +1,15 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { v4 as uuidv4 } from 'uuid';
-import { Storage } from '../storage';
-import { MockRule, Settings, RequestLog, Folder } from '../types';
+import React, { useState, useCallback, useEffect } from 'react';
+import { MockRule, RequestLog, Folder } from '../types';
 import { Tab, ImportMode, ToastType, ConfirmDialogVariant, FolderEditMode } from '../enums';
 import { useI18n } from '../contexts/I18nContext';
-import { withContextCheck } from '../contextHandler';
+import { isDevTools } from '../helpers/context';
 import {
-  validateAllRules,
-  ValidationWarning,
-  createFolder,
-  renameFolder,
-  toggleFolderCollapse,
-  deleteFolderAndUngroup,
-  toggleFolderRules,
-} from '../helpers';
-import {
-  findValidWebTab,
-  sendStartRecordingMessage,
-  sendStopRecordingMessage,
-  getRecordingStatus,
-  createDisabledSettings,
-} from '../helpers/recording';
+  useStandaloneWindowStatus,
+  useRulesManager,
+  useFoldersManager,
+  useRecording,
+  useCrossContextSync,
+} from '../hooks';
 import {
   downloadFile,
   exportRulesToJSON,
@@ -33,29 +22,25 @@ import Header from './Header';
 import RulesTab from './RulesTab';
 import RequestsTab from './RequestsTab';
 import FolderEditor from './FolderEditor';
+import StandaloneWindowOverlay from './StandaloneWindowOverlay';
 import { TabButton } from './ui/TabButton';
 import { ImportDialog } from './ui/ImportDialog';
 import { ConfirmDialog } from './ui/ConfirmDialog';
 import { Toast } from './ui/Toast';
 
+/**
+ * Main application component
+ * Manages UI state and coordinates between different feature modules
+ */
 const App: React.FC = () => {
   const { t } = useI18n();
+
+  // UI State
   const [activeTab, setActiveTab] = useState<Tab>(Tab.Rules);
-  const [rules, setRules] = useState<MockRule[]>([]);
-  const [folders, setFolders] = useState<Folder[]>([]);
-  const [settings, setSettings] = useState<Settings>({
-    enabled: true,
-    logRequests: false,
-    showNotifications: true,
-    corsAutoFix: false,
-  });
-  const [requestLog, setRequestLog] = useState<RequestLog[]>([]);
   const [editingRuleId, setEditingRuleId] = useState<string | null>(null);
   const [editingFolder, setEditingFolder] = useState<Folder | null | FolderEditMode>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [requestsSearchTerm, setRequestsSearchTerm] = useState('');
-  const [activeTabTitle, setActiveTabTitle] = useState<string>('');
-  const [ruleWarnings, setRuleWarnings] = useState<Map<string, ValidationWarning[]>>(new Map());
   const [importDialogData, setImportDialogData] = useState<{ rules: MockRule[] } | null>(null);
   const [confirmDialog, setConfirmDialog] = useState<{
     title: string;
@@ -65,235 +50,57 @@ const App: React.FC = () => {
   } | null>(null);
   const [toast, setToast] = useState<{ type: ToastType; message: string } | null>(null);
 
-  const loadRequestLog = useCallback(async () => {
-    const loadedRequestLog = await withContextCheck(() => Storage.getRequestLog(), []);
-    setRequestLog(loadedRequestLog);
-  }, []);
+  // Feature Hooks
+  const standaloneWindowOpen = useStandaloneWindowStatus();
+  const rulesManager = useRulesManager();
+  const foldersManager = useFoldersManager();
+  const recording = useRecording();
 
-  const startRecording = useCallback(
-    async (tab: chrome.tabs.Tab): Promise<boolean> => {
-      const response = await withContextCheck(() => sendStartRecordingMessage(tab.id!), { success: false });
+  // Cross-context sync - ensures state stays synchronized across all contexts
+  useCrossContextSync({
+    onRulesUpdated: rulesManager.loadRules,
+    onSettingsUpdated: recording.loadSettings,
+    onFoldersUpdated: foldersManager.loadFolders,
+    onRequestLogUpdated: recording.loadRequestLog,
+  });
 
-      if (response?.success) {
-        const newSettings = { ...settings, logRequests: true };
-        setSettings(newSettings);
-        await Storage.saveSettings(newSettings);
-        setActiveTabTitle(tab.title || 'Unknown Tab');
-        setActiveTab(Tab.Requests);
-        return true;
-      }
-
-      return false;
-    },
-    [settings]
-  );
-
-  const stopRecording = useCallback(async (): Promise<void> => {
-    await withContextCheck(() => sendStopRecordingMessage()).catch(() => {});
-    const newSettings = { ...settings, logRequests: false };
-    setSettings(newSettings);
-    await Storage.saveSettings(newSettings);
-    setActiveTabTitle('');
-  }, [settings]);
-
+  // Initial data load on mount
   useEffect(() => {
-    loadData();
-
-    // Listen for rule updates from background (e.g., counter increments)
-    const messageListener = (message: any) => {
-      if (message.action === 'rulesUpdated') {
-        loadData();
-      }
+    const loadAllData = async () => {
+      await Promise.all([
+        rulesManager.loadRules(),
+        foldersManager.loadFolders(),
+        recording.loadSettings(),
+        recording.loadRequestLog(),
+      ]);
     };
 
-    chrome.runtime.onMessage.addListener(messageListener);
-
-    return () => {
-      chrome.runtime.onMessage.removeListener(messageListener);
-    };
+    loadAllData();
+    // Empty deps - only run once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => {
-    // Always poll for request log updates when recording is active
-    // This ensures the badge count updates even when on Rules tab
-    if (settings.logRequests) {
-      loadRequestLog();
-      const interval = setInterval(loadRequestLog, 500);
-      return () => clearInterval(interval);
-    }
-    return undefined;
-  }, [settings.logRequests, loadRequestLog]);
-
-  const loadData = async () => {
-    const [loadedRules, loadedFolders, loadedSettings, loadedRequestLog] = await Promise.all([
-      withContextCheck(() => Storage.getRules(), []),
-      withContextCheck(() => Storage.getFolders(), []),
-      withContextCheck(() => Storage.getSettings(), {
-        enabled: true,
-        logRequests: false,
-        showNotifications: false,
-        corsAutoFix: false,
-      }),
-      withContextCheck(() => Storage.getRequestLog(), []),
-    ]);
-
-    setRules(loadedRules);
-    setFolders(loadedFolders);
-    setSettings(loadedSettings);
-    setRequestLog(loadedRequestLog);
-
-    // Validate all rules
-    const warnings = validateAllRules(loadedRules);
-    setRuleWarnings(warnings);
-
-    if (loadedSettings.logRequests) {
-      try {
-        const response = await withContextCheck(() => getRecordingStatus(), { success: false });
-        if (response.success && response.data?.tabId) {
-          const tab = await chrome.tabs.get(response.data.tabId);
-          setActiveTabTitle(tab.title || 'Unknown Tab');
-        }
-      } catch (error) {
-        console.error('Failed to restore recording status:', error);
-      }
-    }
-  };
-
-  const handleGlobalToggle = useCallback(
-    async (enabled: boolean) => {
-      const newSettings = enabled ? { ...settings, enabled } : createDisabledSettings(settings);
-
-      setSettings(newSettings);
-      await Storage.saveSettings(newSettings);
-      await withContextCheck(() => chrome.runtime.sendMessage({ action: 'toggleMocking', enabled })).catch(() => {});
-
-      if (!enabled && settings.logRequests) {
-        setActiveTabTitle('');
-      }
-    },
-    [settings]
-  );
-
-  const handleRecordingToggle = useCallback(
-    async (logRequests: boolean) => {
-      if (logRequests && !settings.enabled) {
-        return;
-      }
-
-      try {
-        if (logRequests) {
-          const webTab = await findValidWebTab();
-          if (webTab?.id) {
-            await startRecording(webTab);
-          }
-        } else {
-          await stopRecording();
-        }
-      } catch (error) {
-        console.error('Recording toggle error:', error);
-      }
-    },
-    [settings.enabled, startRecording, stopRecording]
-  );
-
-  const handleCorsToggle = useCallback(
-    async (corsAutoFix: boolean) => {
-      const newSettings = { ...settings, corsAutoFix };
-      setSettings(newSettings);
-      await Storage.saveSettings(newSettings);
-      await withContextCheck(() =>
-        chrome.runtime.sendMessage({ action: 'updateSettings', settings: newSettings })
-      ).catch(() => {});
-    },
-    [settings]
-  );
-
-  const updateRulesEverywhere = async (updatedRules: MockRule[]): Promise<void> => {
-    setRules(updatedRules);
-
-    const warnings = validateAllRules(updatedRules);
-    setRuleWarnings(warnings);
-
-    await Storage.saveRules(updatedRules);
-    await withContextCheck(() => chrome.runtime.sendMessage({ action: 'updateRules', rules: updatedRules })).catch(
-      () => {}
-    );
-  };
+  // ===========================
+  // Rule Handlers
+  // ===========================
 
   const handleSaveRule = useCallback(
     async (rule: MockRule) => {
-      let updatedRules: MockRule[];
-      if (editingRuleId && editingRuleId !== 'new') {
-        updatedRules = rules.map((r) => (r.id === editingRuleId ? rule : r));
-      } else {
-        updatedRules = [...rules, rule];
-      }
-
-      await updateRulesEverywhere(updatedRules);
+      await rulesManager.saveRule(rule, editingRuleId);
       setEditingRuleId(null);
     },
-    [editingRuleId, rules]
+    [rulesManager, editingRuleId]
   );
 
   const handleDeleteRule = useCallback(
     async (id: string) => {
-      const updatedRules = rules.filter((r) => r.id !== id);
-      await updateRulesEverywhere(updatedRules);
+      await rulesManager.deleteRule(id);
       if (editingRuleId === id) {
         setEditingRuleId(null);
       }
     },
-    [rules, editingRuleId]
+    [rulesManager, editingRuleId]
   );
-
-  const handleToggleRule = useCallback(
-    async (id: string) => {
-      const updatedRules = rules.map((r) => (r.id === id ? { ...r, enabled: !r.enabled } : r));
-      await updateRulesEverywhere(updatedRules);
-    },
-    [rules]
-  );
-
-  const handleDuplicateRule = useCallback(
-    async (id: string) => {
-      const ruleToDuplicate = rules.find((r) => r.id === id);
-      if (!ruleToDuplicate) return;
-
-      const now = Date.now();
-      const duplicatedRule: MockRule = {
-        ...ruleToDuplicate,
-        id: uuidv4(),
-        name: `${ruleToDuplicate.name} (Copy)`,
-        created: now,
-        modified: now,
-      };
-
-      const updatedRules = [...rules, duplicatedRule];
-      await updateRulesEverywhere(updatedRules);
-    },
-    [rules]
-  );
-
-  const handleResetRuleHits = useCallback(
-    async (id: string) => {
-      const updatedRules = rules.map((r) =>
-        r.id === id
-          ? {
-              ...r,
-              matchCount: 0,
-              lastMatched: undefined,
-            }
-          : r
-      );
-      await updateRulesEverywhere(updatedRules);
-    },
-    [rules]
-  );
-
-  const handleClearLog = useCallback(async () => {
-    await Storage.clearRequestLog();
-    setRequestLog([]);
-  }, []);
 
   const handleMockRequest = useCallback((request: RequestLog) => {
     setActiveTab(Tab.Rules);
@@ -301,13 +108,32 @@ const App: React.FC = () => {
     sessionStorage.setItem('mockRequest', JSON.stringify(request));
   }, []);
 
+  // ===========================
+  // Recording Handlers
+  // ===========================
+
+  const handleRecordingToggle = useCallback(
+    async (logRequests: boolean) => {
+      await recording.handleRecordingToggle(logRequests);
+      // Switch to Requests tab when starting recording
+      if (logRequests) {
+        setActiveTab(Tab.Requests);
+      }
+    },
+    [recording]
+  );
+
+  // ===========================
+  // Import/Export Handlers
+  // ===========================
+
   const handleExportRules = useCallback(
     (selectedIds?: string[]) => {
-      const dataStr = exportRulesToJSON(rules, selectedIds);
+      const dataStr = exportRulesToJSON(rulesManager.rules, selectedIds);
       const filename = generateExportFilename();
       downloadFile(dataStr, filename, 'application/json');
     },
-    [rules]
+    [rulesManager.rules]
   );
 
   const handleImportRules = useCallback(
@@ -317,14 +143,20 @@ const App: React.FC = () => {
         const validation = validateImportedRules(importedRules);
 
         if (!validation.valid) {
-          setToast({ type: ToastType.Error, message: t('rules.importError') + ': ' + validation.error });
+          setToast({
+            type: ToastType.Error,
+            message: `${t('rules.importError')}: ${validation.error}`,
+          });
           return;
         }
 
         setImportDialogData({ rules: importedRules });
       } catch (error) {
         console.error('Import error:', error);
-        setToast({ type: ToastType.Error, message: t('rules.importError') + ': ' + (error as Error).message });
+        setToast({
+          type: ToastType.Error,
+          message: `${t('rules.importError')}: ${(error as Error).message}`,
+        });
       }
     },
     [t]
@@ -336,10 +168,15 @@ const App: React.FC = () => {
 
       try {
         const importedRules = importDialogData.rules;
-        const updatedRules = mode === ImportMode.Merge ? mergeRules(rules, importedRules) : importedRules;
-        const newRulesCount = mode === ImportMode.Merge ? updatedRules.length - rules.length : importedRules.length;
+        const currentRules = rulesManager.rules;
+        const updatedRules = mode === ImportMode.Merge ? mergeRules(currentRules, importedRules) : importedRules;
+        const newRulesCount =
+          mode === ImportMode.Merge ? updatedRules.length - currentRules.length : importedRules.length;
 
-        await updateRulesEverywhere(updatedRules);
+        // Update rules through the manager
+        rulesManager.setRulesDirectly(updatedRules);
+        await rulesManager.saveRule(updatedRules[0], null); // Trigger save
+
         setImportDialogData(null);
         setToast({
           type: ToastType.Success,
@@ -347,50 +184,45 @@ const App: React.FC = () => {
         });
       } catch (error) {
         console.error('Import error:', error);
-        setToast({ type: ToastType.Error, message: t('rules.importError') + ': ' + (error as Error).message });
+        setToast({
+          type: ToastType.Error,
+          message: `${t('rules.importError')}: ${(error as Error).message}`,
+        });
       }
     },
-    [importDialogData, rules, t]
+    [importDialogData, rulesManager, t]
   );
 
-  // Folder management handlers
+  // ===========================
+  // Folder Handlers
+  // ===========================
+
   const handleCreateFolder = useCallback(() => {
     setEditingFolder(FolderEditMode.New);
   }, []);
 
   const handleEditFolder = useCallback(
     (folderId: string) => {
-      const folder = folders.find((f) => f.id === folderId);
+      const folder = foldersManager.folders.find((f) => f.id === folderId);
       if (folder) {
         setEditingFolder(folder);
       }
     },
-    [folders]
+    [foldersManager.folders]
   );
 
   const handleSaveFolder = useCallback(
     async (name: string) => {
-      let updatedFolders: Folder[];
-
-      if (editingFolder === FolderEditMode.New) {
-        const newFolder = createFolder(name);
-        updatedFolders = [...folders, newFolder];
-      } else if (editingFolder) {
-        updatedFolders = folders.map((f) => (f.id === editingFolder.id ? renameFolder(f, name) : f));
-      } else {
-        return;
-      }
-
-      setFolders(updatedFolders);
-      await Storage.saveFolders(updatedFolders);
+      const folderToEdit = editingFolder === FolderEditMode.New ? null : (editingFolder as Folder | null);
+      await foldersManager.saveFolder(name, folderToEdit);
       setEditingFolder(null);
     },
-    [editingFolder, folders]
+    [editingFolder, foldersManager]
   );
 
   const handleDeleteFolder = useCallback(
     (folderId: string) => {
-      const folder = folders.find((f) => f.id === folderId);
+      const folder = foldersManager.folders.find((f) => f.id === folderId);
       if (!folder) return;
 
       setConfirmDialog({
@@ -398,108 +230,97 @@ const App: React.FC = () => {
         message: t('folders.deleteConfirmMessage', { name: folder.name }),
         variant: ConfirmDialogVariant.Danger,
         onConfirm: async () => {
-          const result = deleteFolderAndUngroup(folders, rules, folderId);
-          setFolders(result.folders);
-          setRules(result.rules);
-
-          await Promise.all([Storage.saveFolders(result.folders), Storage.saveRules(result.rules)]);
-
-          await withContextCheck(() =>
-            chrome.runtime.sendMessage({ action: 'updateRules', rules: result.rules })
-          ).catch(() => {});
-
+          const result = await foldersManager.deleteFolderAndUpdateRules(folderId, rulesManager.rules);
+          rulesManager.setRulesDirectly(result.rules);
           setConfirmDialog(null);
         },
       });
     },
-    [folders, rules, t]
-  );
-
-  const handleToggleFolderCollapse = useCallback(
-    async (folderId: string) => {
-      const updatedFolders = folders.map((f) => (f.id === folderId ? toggleFolderCollapse(f) : f));
-      setFolders(updatedFolders);
-      await Storage.saveFolders(updatedFolders);
-    },
-    [folders]
+    [foldersManager, rulesManager, t]
   );
 
   const handleEnableFolderRules = useCallback(
     async (folderId: string) => {
-      const updatedRules = toggleFolderRules(rules, folderId, true);
-      await updateRulesEverywhere(updatedRules);
+      const updatedRules = await foldersManager.enableFolderRules(rulesManager.rules, folderId);
+      rulesManager.setRulesDirectly(updatedRules);
     },
-    [rules]
+    [foldersManager, rulesManager]
   );
 
   const handleDisableFolderRules = useCallback(
     async (folderId: string) => {
-      const updatedRules = toggleFolderRules(rules, folderId, false);
-      await updateRulesEverywhere(updatedRules);
+      const updatedRules = await foldersManager.disableFolderRules(rulesManager.rules, folderId);
+      rulesManager.setRulesDirectly(updatedRules);
     },
-    [rules]
+    [foldersManager, rulesManager]
   );
+
+  // ===========================
+  // Render
+  // ===========================
 
   return (
     <div className='min-h-screen bg-gray-50 dark:bg-black text-gray-900 dark:text-white'>
       <Header
-        enabled={settings.enabled}
-        logRequests={settings.logRequests}
-        corsAutoFix={settings.corsAutoFix}
-        onToggleEnabled={handleGlobalToggle}
+        enabled={recording.settings.enabled}
+        logRequests={recording.settings.logRequests}
+        corsAutoFix={recording.settings.corsAutoFix}
+        onToggleEnabled={recording.handleGlobalToggle}
         onToggleRecording={handleRecordingToggle}
-        onToggleCors={handleCorsToggle}
-        activeTabTitle={activeTabTitle}
+        onToggleCors={recording.handleCorsToggle}
+        activeTabTitle={recording.activeTabTitle}
       />
 
       <div className='flex border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 shadow-sm'>
         <TabButton active={activeTab === Tab.Rules} onClick={() => setActiveTab(Tab.Rules)}>
-          {t('tabs.rules')} ({rules.length})
+          {t('tabs.rules')} ({rulesManager.rules.length})
         </TabButton>
         <TabButton active={activeTab === Tab.Requests} onClick={() => setActiveTab(Tab.Requests)}>
-          {t('tabs.requests')} ({requestLog.length})
+          {t('tabs.requests')} ({recording.requestLog.length})
         </TabButton>
       </div>
 
       {activeTab === Tab.Rules ? (
         <RulesTab
-          rules={rules}
-          folders={folders}
-          ruleWarnings={ruleWarnings}
+          rules={rulesManager.rules}
+          folders={foldersManager.folders}
+          ruleWarnings={rulesManager.ruleWarnings}
           searchTerm={searchTerm}
           onSearchChange={setSearchTerm}
           editingRuleId={editingRuleId}
           onEditRule={setEditingRuleId}
           onSaveRule={handleSaveRule}
           onDeleteRule={handleDeleteRule}
-          onToggleRule={handleToggleRule}
-          onDuplicateRule={handleDuplicateRule}
-          onResetRuleHits={handleResetRuleHits}
+          onToggleRule={rulesManager.toggleRule}
+          onDuplicateRule={rulesManager.duplicateRule}
+          onResetRuleHits={rulesManager.resetRuleHits}
           onCancelEdit={() => setEditingRuleId(null)}
           onExportRules={handleExportRules}
           onImportRules={handleImportRules}
           onCreateFolder={handleCreateFolder}
           onEditFolder={handleEditFolder}
           onDeleteFolder={handleDeleteFolder}
-          onToggleFolderCollapse={handleToggleFolderCollapse}
+          onToggleFolderCollapse={foldersManager.toggleCollapse}
           onEnableFolderRules={handleEnableFolderRules}
           onDisableFolderRules={handleDisableFolderRules}
         />
       ) : (
         <RequestsTab
-          requests={requestLog}
+          requests={recording.requestLog}
           searchTerm={requestsSearchTerm}
           onSearchChange={setRequestsSearchTerm}
-          onClearLog={handleClearLog}
+          onClearLog={recording.clearLog}
           onMockRequest={handleMockRequest}
-          logRequests={settings.logRequests}
+          logRequests={recording.settings.logRequests}
         />
       )}
+
+      {standaloneWindowOpen && isDevTools() && <StandaloneWindowOverlay />}
 
       {importDialogData && (
         <ImportDialog
           importedRules={importDialogData.rules}
-          existingRules={rules}
+          existingRules={rulesManager.rules}
           onConfirm={handleConfirmImport}
           onCancel={() => setImportDialogData(null)}
         />
@@ -508,7 +329,7 @@ const App: React.FC = () => {
       {editingFolder && (
         <FolderEditor
           folder={editingFolder === FolderEditMode.New ? null : editingFolder}
-          existingFolders={folders}
+          existingFolders={foldersManager.folders}
           onSave={handleSaveFolder}
           onCancel={() => setEditingFolder(null)}
         />

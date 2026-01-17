@@ -78,8 +78,13 @@ export interface MessageAction {
     | 'logCapturedResponse'
     | 'incrementRuleCounter'
     | 'rulesUpdated'
+    | 'settingsUpdated'
+    | 'foldersUpdated'
+    | 'requestLogUpdated'
     | 'openDevTools'
-    | 'updateFolders';
+    | 'updateFolders'
+    | 'openStandaloneWindow'
+    | 'getStandaloneWindowStatus';
   rules?: MockRule[];
   settings?: Settings;
   enabled?: boolean;

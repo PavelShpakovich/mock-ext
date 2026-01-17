@@ -1,6 +1,8 @@
 {
   "app": {
-    "name": "MockAPI"
+    "name": "MockAPI",
+    "standaloneWindowOpen": "Отдельное окно открыто",
+    "standaloneWindowMessage": "MockAPI в данный момент открыт в отдельном окне. Пожалуйста, используйте это окно или закройте его, чтобы использовать панель DevTools."
   },
   "header": {
     "recording": "Запись: {{tabTitle}}",
@@ -9,7 +11,8 @@
     "record": "Запись",
     "stop": "Стоп",
     "corsAutoFix": "CORS",
-    "corsAutoFixTooltip": "Автоматически добавлять CORS заголовки для обхода ограничений"
+    "corsAutoFixTooltip": "Автоматически добавлять CORS заголовки для обхода ограничений cross-origin",
+    "openWindow": "Открыть в отдельном окне"
   },
   "tabs": {
     "rules": "Правила",
@@ -133,7 +136,7 @@
     "addHeader": "Добавить заголовок",
     "removeHeader": "Удалить заголовок",
     "validationError": "{{error}}",
-    "variables": "Доступные переменные: {{timestamp}}, {{uuid}}, {{random_number}}",
+    "variables": "Динамические переменные: {{timestamp}} (текущее время), {{uuid}} (уникальный ID), {{random_number}} (0-999999), {{random_string}} (случайный текст)",
     "folder": "Папка",
     "noFolder": "Без папки (несгруппировано)"
   },

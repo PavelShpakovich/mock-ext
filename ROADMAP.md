@@ -134,6 +134,81 @@ This document outlines potential features and improvements for future releases.
 - ✅ Full internationalization support
 - ✅ Comprehensive test coverage (20 tests)
 
+### 8. Dynamic Variables Support ✅
+
+**Estimated effort:** Built-in  
+**Value:** High  
+**Status:** ✅ **COMPLETED** (feature exists but was undocumented)
+
+- Use dynamic variables in mock responses
+- **Available variables:**
+  - `{{timestamp}}` - Current timestamp in milliseconds
+  - `{{uuid}}` - Generated UUID v4
+  - `{{random_number}}` - Random number (0-999999)
+  - `{{random_string}}` - Random alphanumeric string
+- **Implementation:**
+  - ✅ Variables are automatically replaced in response body
+  - ✅ Works with JSON and text responses
+  - ✅ Applied at runtime for each request
+  - ✅ Added UI tooltip to inform users (v2.6.2)
+
+### 9. View Mode Switcher ✅
+
+**Estimated effort:** 3-4 hours  
+**Value:** Medium  
+**Status:** ✅ **COMPLETED in v2.7.0**
+
+- Switch between DevTools panel and standalone window
+- **Features:**
+  - ✅ "Open in Window" button in DevTools header
+  - ✅ Standalone window (800x600 popup)
+  - ✅ Context menu option on extension icon
+  - ✅ Automatic window focus if already open
+  - ✅ State synchronization across contexts
+  - ✅ Full internationalization support (EN/RU)
+- **Implementation:**
+  - ✅ Created window.html for standalone mode
+  - ✅ Added window management in background.js
+  - ✅ Context detection utility (DevTools/Window/Popup)
+  - ✅ ExternalLink icon button in header (DevTools only)
+  - ✅ Window reference cleanup on close
+- **Use cases:**
+  - Multi-monitor setup: detach to separate screen
+  - Work without DevTools open
+  - Better for side-by-side testing workflow
+
+### 10. Code Architecture Refactoring ✅
+
+**Estimated effort:** 4-5 hours  
+**Value:** High  
+**Status:** ✅ **COMPLETED in v2.7.1**
+
+- Refactor App component following React best practices
+- **Goals:**
+  - Improve code maintainability and readability
+  - Better separation of concerns
+  - Enhanced testability
+  - Reduced component complexity
+- **Implementation:**
+  - ✅ Extracted 5 custom hooks for feature separation:
+    - `useRulesManager` - All rule CRUD operations and validation
+    - `useFoldersManager` - Folder management logic
+    - `useRecording` - Recording, settings, and request log
+    - `useCrossContextSync` - Cross-context message handling
+    - `useStandaloneWindowStatus` - Window status polling
+  - ✅ Reduced App.tsx from 570 to ~350 lines
+  - ✅ Proper memoization with useCallback throughout
+  - ✅ Clear code organization with section comments
+  - ✅ Comprehensive JSDoc comments for all hooks
+  - ✅ Single Responsibility Principle applied
+  - ✅ Type safety improvements
+- **Benefits:**
+  - Each feature isolated in its own hook
+  - Easier to locate and fix bugs
+  - Improved performance (proper memoization)
+  - Better developer experience
+  - Future-proof architecture for scaling
+
 ## Deferred Features
 
 These features are valuable but deprioritized for now:
@@ -168,6 +243,44 @@ These features are valuable but deprioritized for now:
 
 - Pre-built templates (404, 500, pagination, etc.)
 - **Reason for deferral:** Can be added as enhancement
+
+### Response Hook / Custom Modifier
+
+**Estimated effort:** 3-4 hours
+
+- Allow custom JavaScript to modify mock responses before returning
+- **Use cases:**
+  - Dynamic data generation (timestamps, random IDs, UUIDs)
+  - Response templating with variables
+  - Computed fields based on request context
+  - Add request-specific data to responses
+- **Implementation:**
+  - Add optional `responseHook` field to `MockRule` (JavaScript code as string)
+  - Provide safe evaluation context with:
+    - `response` - Current response body (parsed JSON)
+    - `request` - Request details (url, method, headers, body)
+    - `helpers` - Utility functions (randomId, timestamp, faker, etc.)
+  - Execute hook before returning response
+  - Support both sync and async hooks
+  - Error handling with fallback to original response
+- **Example:**
+
+  ```javascript
+  // Add current timestamp to response
+  response.timestamp = Date.now();
+
+  // Generate dynamic ID from request
+  response.id = helpers.randomId();
+
+  // Echo request data in response
+  response.requestedBy = request.headers['User-Agent'];
+  ```
+
+- **Security considerations:**
+  - Sandboxed execution environment
+  - Limited API access
+  - Timeout protection
+- **Reason for deferral:** Complex feature requiring careful security implementation
 
 ### GraphQL Support
 

@@ -3,6 +3,7 @@ import clsx from 'clsx';
 
 interface TextAreaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
   label?: string;
+  labelHint?: string;
   error?: string;
   fullWidth?: boolean;
   action?: React.ReactNode;
@@ -10,6 +11,7 @@ interface TextAreaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement
 
 export const TextArea: React.FC<TextAreaProps> = ({
   label,
+  labelHint,
   error,
   fullWidth = true,
   action,
@@ -23,8 +25,19 @@ export const TextArea: React.FC<TextAreaProps> = ({
     <div className={clsx({ 'w-full': fullWidth }, className)}>
       <div className='flex items-center justify-between mb-1'>
         {label && (
-          <label htmlFor={areaId} className='block text-sm font-bold text-gray-700 dark:text-gray-300'>
+          <label
+            htmlFor={areaId}
+            className='block text-sm font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1.5 group'
+          >
             {label}
+            {labelHint && (
+              <span className='relative inline-block'>
+                <span className='text-gray-400 dark:text-gray-500 text-xs cursor-help'>ⓘ</span>
+                <span className='absolute left-0 top-full mt-1 w-64 px-2 py-1.5 bg-gray-900 dark:bg-gray-700 text-white text-xs rounded shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-opacity duration-200 pointer-events-none z-10 whitespace-normal'>
+                  {labelHint}
+                </span>
+              </span>
+            )}
           </label>
         )}
         {action}

@@ -79,6 +79,7 @@ module.exports = (env, argv) => {
           { from: 'public/manifest.json', to: 'manifest.json' },
           { from: 'public/popup.html', to: 'popup.html' },
           { from: 'public/devtools.html', to: 'devtools.html' },
+          { from: 'public/window.html', to: 'window.html' },
           { from: 'public/icons', to: 'icons' },
         ],
       }),
