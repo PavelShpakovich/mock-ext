@@ -249,8 +249,17 @@ class RequestInterceptor {
 
     window.fetch = async function (input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
       const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
-      const method = init?.method || 'GET';
-      const rule = matchesRule(url, method.toUpperCase());
+
+      // Extract method: from init, or from Request object, or default to GET
+      let method = init?.method || 'GET';
+      if (typeof input === 'object' && 'method' in input && input.method) {
+        method = input.method;
+      }
+
+      // Normalize method to uppercase for consistency
+      method = method.toUpperCase();
+
+      const rule = matchesRule(url, method);
 
       if (rule) {
         notifyInterception(url, method, rule.id, rule.statusCode);

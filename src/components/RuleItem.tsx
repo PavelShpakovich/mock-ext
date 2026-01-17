@@ -74,7 +74,7 @@ const RuleItem: React.FC<RuleItemProps> = ({
       hoverEffect={!disabled}
     >
       <div className='flex items-start justify-between mb-2'>
-        <div className='flex-1'>
+        <div className='flex-1 min-w-0'>
           <div className='flex items-center gap-2 mb-2 flex-wrap'>
             <h3 className='font-bold text-gray-900 dark:text-white text-base'>
               {rule.name}
@@ -85,8 +85,10 @@ const RuleItem: React.FC<RuleItemProps> = ({
             {rule.method && <MethodBadge method={rule.method} />}
             <StatusCodeBadge code={rule.statusCode} />
           </div>
-          <div className='text-sm text-gray-700 dark:text-gray-300 break-all font-mono bg-gray-100 dark:bg-gray-900 px-2 py-1.5 rounded border border-gray-300 dark:border-gray-700'>
-            {rule.urlPattern}
+          <div className='bg-gray-100 dark:bg-gray-900 px-2 py-1.5 rounded border border-gray-300 dark:border-gray-700 overflow-hidden'>
+            <div className='text-sm text-gray-700 dark:text-gray-300 wrap-break-word font-mono line-clamp-3'>
+              {rule.urlPattern}
+            </div>
           </div>
           {rule.delay > 0 && (
             <div className='text-xs text-yellow-700 dark:text-yellow-500/80 mt-2 font-medium flex items-center gap-1'>
@@ -117,7 +119,7 @@ const RuleItem: React.FC<RuleItemProps> = ({
                 <div
                   key={index}
                   className={clsx(
-                    'text-xs px-2 py-1.5 rounded border flex items-start gap-2',
+                    'text-xs px-2 py-1.5 rounded border flex items-start gap-2 w-fit',
                     getWarningColor(warning.severity)
                   )}
                 >
@@ -129,20 +131,22 @@ const RuleItem: React.FC<RuleItemProps> = ({
           )}
         </div>
 
-        <div className='flex items-center gap-2 ml-4 shrink-0'>
+        <div className='flex flex-col items-end gap-2 ml-4 shrink-0'>
+          <div className='flex items-center gap-2'>
+            <IconButton onClick={onDuplicate} title={t('rules.duplicate')}>
+              <Copy className='w-5 h-5' />
+            </IconButton>
+
+            <IconButton onClick={onEdit} title={t('common.edit')}>
+              <Edit className='w-5 h-5' />
+            </IconButton>
+
+            <IconButton variant={IconButtonVariant.Danger} onClick={onDelete} title={t('common.delete')}>
+              <Trash2 className='w-5 h-5' />
+            </IconButton>
+          </div>
+
           <Toggle checked={rule.enabled} onChange={onToggle} />
-
-          <IconButton onClick={onDuplicate} title={t('rules.duplicate')}>
-            <Copy className='w-5 h-5' />
-          </IconButton>
-
-          <IconButton onClick={onEdit} title={t('common.edit')}>
-            <Edit className='w-5 h-5' />
-          </IconButton>
-
-          <IconButton variant={IconButtonVariant.Danger} onClick={onDelete} title={t('common.delete')}>
-            <Trash2 className='w-5 h-5' />
-          </IconButton>
         </div>
       </div>
     </Card>

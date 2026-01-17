@@ -166,7 +166,7 @@ const RulesTab: React.FC<RulesTabProps> = ({
         onFileChange={handleFileChange}
       />
 
-      {filteredRules.length === 0 ? (
+      {filteredRules.length === 0 && folders.length === 0 ? (
         <RulesEmptyState onCreateRule={() => onEditRule('new')} />
       ) : (
         <RulesList

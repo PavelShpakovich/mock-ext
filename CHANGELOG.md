@@ -5,6 +5,32 @@ All notable changes to MockAPI Extension will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.6.1] - 2026-01-17
+
+### Fixed
+- **HTTP Method Detection**: Fixed critical bug where all fetch requests with Request objects were logged as GET
+  - Now correctly extracts method from Request object's `.method` property
+  - Methods are normalized to uppercase for consistency (POST, PUT, DELETE, etc.)
+  - Fixes matching rules by HTTP method for non-GET requests
+- **Relative URL Handling**: Fixed crash when clicking "Mock This" on requests with relative URLs
+  - Safe pathname extraction with fallback for relative URLs like `/api/endpoint`
+  - No longer requires absolute URLs for mock rule creation
+- **Empty Folders Display**: Fixed bug where empty folders weren't shown when no rules exist
+  - Empty state now only displays when both rules and folders are absent
+  - Folders without rules are now properly displayed
+- **Rule Item Overflow**: Fixed action buttons overflowing outside card on long URLs
+  - Added `min-w-0` to flex container to properly constrain content width
+  - Long URL patterns now limited to 2 lines with ellipsis (`line-clamp-2`)
+  - Changed `break-all` to `break-words` for better text wrapping
+
+### Changed
+- **UI Polish**:
+  - ConfirmDialog: Refactored to use flexbox with `gap-6` for cleaner spacing
+  - Toast: Replaced HTML entity `×` with lucide-react X icon for consistency
+  - Toast: Changed from transparent to solid opaque backgrounds for better visibility
+  - Toggle: Added highlighted green ring border when enabled for better visual feedback
+  - Toggle: Added separate dark mode green color variant (`dark:peer-checked:bg-green-500`)
+
 ## [2.6.0] - 2026-01-16
 
 ### Added

@@ -32,8 +32,17 @@ export function getInitialFormData(rule: MockRule | null, mockRequest: RequestLo
   }
 
   if (mockRequest) {
+    // Extract pathname safely - handle both absolute and relative URLs
+    let pathname: string;
+    try {
+      pathname = new URL(mockRequest.url).pathname;
+    } catch {
+      // If URL is relative, use it as-is or extract the path part
+      pathname = mockRequest.url.split('?')[0]; // Remove query string if present
+    }
+
     return {
-      name: `Mock for ${new URL(mockRequest.url).pathname}`,
+      name: `Mock for ${pathname}`,
       urlPattern: mockRequest.url,
       matchType: MatchType.Exact,
       method: mockRequest.method as HttpMethod,
