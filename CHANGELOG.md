@@ -5,6 +5,15 @@ All notable changes to Moq Extension will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.7.3] - 2026-01-19
+
+### Fixed
+- **Theme Sync**: Theme changes now properly synchronize between DevTools and standalone window
+  - ThemeContext now listens for `settingsUpdated` messages from other contexts
+  - Theme changes in one context immediately reflect in the other
+  - Fixes issue where theme remained out of sync when switching between contexts
+- **UI Consistency**: All placeholder texts now start with a capital letter in both English and Russian
+
 ## [2.7.2] - 2026-01-19
 
 ### Changed

@@ -62,6 +62,26 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     loadTheme();
   }, [resolveTheme]);
 
+  // Listen for theme changes from other contexts
+  useEffect(() => {
+    const messageListener = (message: any) => {
+      if (message.action === 'settingsUpdated') {
+        // Reload theme from storage when settings change in another context
+        Storage.getSettings().then((settings) => {
+          const savedTheme = settings.theme || Theme.System;
+          setThemeState(savedTheme);
+          setResolvedTheme(resolveTheme(savedTheme));
+        });
+      }
+    };
+
+    chrome.runtime.onMessage.addListener(messageListener);
+
+    return () => {
+      chrome.runtime.onMessage.removeListener(messageListener);
+    };
+  }, [resolveTheme]);
+
   // Listen for system theme changes
   useEffect(() => {
     if (theme !== Theme.System) return;
@@ -99,6 +119,9 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
       // Save to storage
       const settings = await Storage.getSettings();
       await Storage.saveSettings({ ...settings, theme: newTheme });
+
+      // Notify other contexts about theme change
+      chrome.runtime.sendMessage({ action: 'settingsUpdated' }).catch(() => {});
     },
     [resolveTheme]
   );

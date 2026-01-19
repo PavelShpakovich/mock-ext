@@ -1,6 +1,6 @@
 {
   "name": "moq-extension",
-  "version": "2.7.2",
+  "version": "2.7.3",
   "description": "Chrome extension for mocking API requests with full control over status codes, delays, and responses",
   "scripts": {
     "build": "webpack --mode production",
