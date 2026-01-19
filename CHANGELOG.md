@@ -5,6 +5,19 @@ All notable changes to Moq Extension will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.7.2] - 2026-01-19
+
+### Changed
+- **Rebranding**: Extension renamed from "MockAPI" to "Moq"
+  - Updated extension name across all UI, documentation, and code
+  - Updated custom header from `X-MockAPI` to `X-Moq`
+  - Updated export filename prefix from `mockapi-rules-` to `moq-rules-`
+  - Updated all console log prefixes from `[MockAPI]` to `[Moq]`
+  - Updated package name from `mockapi-extension` to `moq-extension`
+  - Updated message type constants (e.g., `MOCKAPI_INTERCEPTED` to `MOQ_INTERCEPTED`)
+  - Updated window property from `__MOCKAPI_INTERCEPTOR__` to `__MOQ_INTERCEPTOR__`
+- **Description**: Updated extension description to better highlight key features
+
 ## [2.7.1] - 2026-01-18
 
 ### Changed
