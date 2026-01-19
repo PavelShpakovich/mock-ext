@@ -68,7 +68,7 @@ describe('Import/Export Helpers', () => {
     it('should generate filename with current date', () => {
       const filename = generateExportFilename();
 
-      expect(filename).toMatch(/^mockapi-rules-\d{4}-\d{2}-\d{2}\.json$/);
+      expect(filename).toMatch(/^moq-rules-\d{4}-\d{2}-\d{2}\.json$/);
     });
 
     it('should include .json extension', () => {

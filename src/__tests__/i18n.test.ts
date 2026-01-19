@@ -12,13 +12,13 @@ describe('I18n Translations', () => {
     it('should have valid English translations', () => {
       expect(enTranslations).toBeDefined();
       expect(enTranslations.app).toBeDefined();
-      expect(enTranslations.app.name).toBe('MockAPI');
+      expect(enTranslations.app.name).toBe('Moq');
     });
 
     it('should have valid Russian translations', () => {
       expect(ruTranslations).toBeDefined();
       expect(ruTranslations.app).toBeDefined();
-      expect(ruTranslations.app.name).toBe('MockAPI');
+      expect(ruTranslations.app.name).toBe('Moq');
     });
 
     it('should have matching keys between EN and RU', () => {
@@ -136,7 +136,7 @@ describe('I18n Translations', () => {
     };
 
     it('should retrieve nested translation keys', () => {
-      expect(getNestedValue(enTranslations, 'app.name')).toBe('MockAPI');
+      expect(getNestedValue(enTranslations, 'app.name')).toBe('Moq');
       expect(getNestedValue(enTranslations, 'header.enabled')).toBe('Enabled');
       expect(getNestedValue(enTranslations, 'editor.createRule')).toBe('Create Rule');
     });

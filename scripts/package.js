@@ -8,7 +8,7 @@ const { join } = require('path');
 const packageJson = JSON.parse(readFileSync(join(__dirname, '..', 'package.json'), 'utf-8'));
 const version = packageJson.version;
 
-console.log(`📦 Packaging MockAPI Extension v${version}...`);
+console.log(`📦 Packaging Moq Extension v${version}...`);
 
 // Build the extension
 console.log('🔨 Building...');
@@ -21,7 +21,7 @@ if (!existsSync(releasesDir)) {
 }
 
 // Create zip file with version number
-const zipName = `mockapi-extension-v${version}.zip`;
+const zipName = `moq-extension-v${version}.zip`;
 console.log(`🗜️  Creating ${zipName}...`);
 execSync(`cd dist && zip -r ../releases/${zipName} . && cd ..`, { stdio: 'inherit' });
 

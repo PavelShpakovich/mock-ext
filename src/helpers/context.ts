@@ -52,6 +52,6 @@ export async function openStandaloneWindow(): Promise<void> {
   try {
     await chrome.runtime.sendMessage({ action: 'openStandaloneWindow' });
   } catch (error) {
-    console.error('[MockAPI] Failed to open standalone window:', error);
+    console.error('[Moq] Failed to open standalone window:', error);
   }
 }

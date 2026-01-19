@@ -102,7 +102,7 @@ export class Storage {
       const combinedLog = this.combineAndLimitLog(logBuffer, existingLog);
       await chrome.storage.session.set({ [this.LOG_KEY]: combinedLog });
     } catch (error) {
-      console.error('[MockAPI] Error flushing log buffer:', error);
+      console.error('[Moq] Error flushing log buffer:', error);
     } finally {
       logBuffer = [];
       flushTimeout = null;

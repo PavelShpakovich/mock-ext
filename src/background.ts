@@ -21,7 +21,7 @@ async function initialize(): Promise<void> {
     settings = await Storage.getSettings();
     await updateRulesInAllTabs();
   } catch (error) {
-    console.error('[MockAPI] Initialization error:', error);
+    console.error('[Moq] Initialization error:', error);
   }
 }
 
@@ -104,7 +104,7 @@ chrome.runtime.onMessage.addListener(
     handleMessage(message, sender)
       .then((response) => sendResponse(response))
       .catch((error) => {
-        console.error('[MockAPI] Message handler error:', error);
+        console.error('[Moq] Message handler error:', error);
         sendResponse({ success: false, error: error.message });
       });
 
@@ -352,7 +352,7 @@ chrome.windows.onRemoved.addListener((windowId) => {
 async function createContextMenu(): Promise<void> {
   chrome.contextMenus.create({
     id: 'openFloatingWindow',
-    title: 'Open MockAPI',
+    title: 'Open Moq',
     contexts: ['action'],
   });
 }

@@ -1,10 +1,10 @@
-# Privacy Policy for MockAPI Extension
+# Privacy Policy for Moq Extension
 
 **Last updated:** January 10, 2026
 
 ## Overview
 
-MockAPI Extension is committed to protecting your privacy. This extension does not collect, store, transmit, or share any personal or user data with third parties.
+Moq Extension is committed to protecting your privacy. This extension does not collect, store, transmit, or share any personal or user data with third parties.
 
 ## Data Collection
 
@@ -38,7 +38,7 @@ Queries basic tab information (title only) to show which tab's network traffic i
 
 ### contextMenus
 
-Creates a context menu item on the extension icon that provides quick access to open the MockAPI DevTools panel.
+Creates a context menu item on the extension icon that provides quick access to open the Moq DevTools panel.
 
 ### Host Permissions (<all_urls>)
 
@@ -86,4 +86,4 @@ You have full control over your data:
 
 ---
 
-**Summary:** MockAPI Extension respects your privacy. All operations are local, no data is collected or transmitted, and you maintain full control over your information.
+**Summary:** Moq Extension respects your privacy. All operations are local, no data is collected or transmitted, and you maintain full control over your information.

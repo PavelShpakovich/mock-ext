@@ -1,5 +1,5 @@
 {
-  "name": "mockapi-extension",
+  "name": "moq-extension",
   "version": "2.7.1",
   "description": "Chrome extension for mocking API requests with full control over status codes, delays, and responses",
   "scripts": {

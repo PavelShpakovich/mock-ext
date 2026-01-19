@@ -1,10 +1,10 @@
-# MockAPI
+# Moq
 
 A powerful Chrome DevTools extension for mocking API requests during development and testing. Intercepts HTTP requests at the JavaScript level and responds with custom data, status codes, and delays without modifying your application code.
 
 ## ✨ What's New in v2.7
 
-**🚀 View Mode Switcher**: Open MockAPI in a standalone window for multi-monitor setups
+**🚀 View Mode Switcher**: Open Moq in a standalone window for multi-monitor setups
 
 - Switch between DevTools panel and standalone window
 - Full state synchronization across all contexts
@@ -18,7 +18,7 @@ A powerful Chrome DevTools extension for mocking API requests during development
 
 ## What's New in v2.0
 
-**🚀 Complete Architecture Redesign**: MockAPI now uses client-side JavaScript interception instead of Chrome's declarativeNetRequest API, unlocking full control over:
+**🚀 Complete Architecture Redesign**: Moq now uses client-side JavaScript interception instead of Chrome's declarativeNetRequest API, unlocking full control over:
 
 - ✅ **Custom Status Codes** - Finally works! Return 404, 500, or any status code
 - ✅ **Response Delays** - Accurately simulate network latency
@@ -154,18 +154,18 @@ npm run dev
 
 ## Quick Start
 
-### Opening MockAPI
+### Opening Moq
 
 1. **Open Chrome DevTools** on any webpage:
    - Mac: `Cmd + Option + I`
    - Windows/Linux: `Ctrl + Shift + I`
    - Right-click anywhere and select "Inspect"
-2. **Look for the "MockAPI" tab** in the DevTools panel (usually at the top or under >> menu)
+2. **Look for the "Moq" tab** in the DevTools panel (usually at the top or under >> menu)
 3. **Alternative**: Click the extension icon to see a helpful prompt with the keyboard shortcut
 
 ### Creating Your First Mock Rule
 
-1. **Open MockAPI in DevTools**
+1. **Open Moq in DevTools**
 2. **Go to "Rules" tab**
 3. **Click "+ Add Rule"**
 4. **Fill in the form**:
@@ -191,7 +191,7 @@ Now all GET requests to `https://api.example.com/users/*` will return your mock 
 ### Recording and Mocking Requests
 
 1. **Open DevTools** on the website you want to test
-2. **Navigate to MockAPI panel**
+2. **Navigate to Moq panel**
 3. **Go to "Requests" tab**
 4. **Click "Record" button** (red circle icon)
 5. **Interact with the website** to generate fetch/XHR requests
@@ -448,7 +448,7 @@ Major improvements to logging performance and extension reliability:
 
 The extension now operates exclusively as a DevTools panel:
 
-- **Native DevTools Panel**: Integrated as "MockAPI" tab in Chrome DevTools
+- **Native DevTools Panel**: Integrated as "Moq" tab in Chrome DevTools
 - **Removed Floating Window**: Simplified architecture with single UI mode
 - **DevTools Prompt**: Lightweight notification guides users to open DevTools when clicking extension icon
 - **Improved Workflow**: Better integration with existing developer tools
@@ -479,18 +479,18 @@ Previously attempted to capture response bodies using content scripts running in
 - Verify HTTP method matches (or leave empty for all methods)
 - Check JSON syntax is valid (error will prevent rule creation)
 
-### Can't Find MockAPI Panel
+### Can't Find Moq Panel
 
 - Open Chrome DevTools (Cmd+Option+I or Ctrl+Shift+I)
-- Look for "MockAPI" tab in the top panel
-- If not visible, click the **>>** menu and select "MockAPI"
+- Look for "Moq" tab in the top panel
+- If not visible, click the **>>** menu and select "Moq"
 - **Reload the extension** if panel doesn't appear
 - Close and reopen DevTools after reloading extension
 
 ### Requests Not Being Logged
 
 - Ensure **DevTools is open** on the tab you want to monitor
-- Click "Record" button in MockAPI panel (red circle icon)
+- Click "Record" button in Moq panel (red circle icon)
 - Recording is tab-specific
 - Only fetch/XHR requests are logged (not images, CSS, fonts)
 - Mocked requests are automatically filtered out
@@ -521,7 +521,7 @@ Previously attempted to capture response bodies using content scripts running in
 
 ## Testing
 
-MockAPI has comprehensive test coverage for critical business logic:
+Moq has comprehensive test coverage for critical business logic:
 
 ### Test Suites
 
@@ -582,8 +582,8 @@ https://github.com/PavelShpakovich/mock-ext/issues
 **Q: Can I mock requests on any website?**  
 A: Yes, the extension has host_permissions for all URLs.
 
-**Q: How do I access MockAPI?**  
-A: Open Chrome DevTools (Cmd+Option+I or Ctrl+Shift+I) and look for the "MockAPI" tab. Click the extension icon for a helpful prompt.
+**Q: How do I access Moq?**  
+A: Open Chrome DevTools (Cmd+Option+I or Ctrl+Shift+I) and look for the "Moq" tab. Click the extension icon for a helpful prompt.
 
 **Q: Are my mock rules shared across devices?**  
 A: No, rules are stored locally in Chrome storage. Export/import features coming soon.
@@ -601,7 +601,7 @@ A: This extension is designed for manual testing in DevTools. For automated test
 A: Recording tracks requests from a specific tab to avoid confusion when working with multiple pages. The recording status shows which tab is being monitored.
 
 **Q: Can I use the extension without opening DevTools?**  
-A: No, MockAPI operates exclusively as a DevTools panel. This design provides better integration with your development workflow.
+A: No, Moq operates exclusively as a DevTools panel. This design provides better integration with your development workflow.
 
 ## Contributing
 

@@ -8,12 +8,12 @@ chrome.runtime.onMessage.addListener((message) => {
 const translations = {
   en: {
     title: 'Open DevTools',
-    message: 'to open DevTools and access MockAPI panel',
+    message: 'to open DevTools and access Moq panel',
     gotIt: 'Got it',
   },
   ru: {
     title: 'Открыть DevTools',
-    message: 'чтобы открыть DevTools и получить доступ к панели MockAPI',
+    message: 'чтобы открыть DevTools и получить доступ к панели Moq',
     gotIt: 'Понятно',
   },
 };
@@ -21,7 +21,7 @@ const translations = {
 function showDevToolsPrompt(language: string = 'en', theme: string = 'system') {
   const t = translations[language as keyof typeof translations] || translations.en;
   // Remove any existing prompt
-  const existing = document.getElementById('mockapi-devtools-prompt');
+  const existing = document.getElementById('moq-devtools-prompt');
   if (existing) {
     existing.remove();
   }
@@ -45,7 +45,7 @@ function showDevToolsPrompt(language: string = 'en', theme: string = 'system') {
 
   // Create prompt overlay
   const overlay = document.createElement('div');
-  overlay.id = 'mockapi-devtools-prompt';
+  overlay.id = 'moq-devtools-prompt';
   overlay.style.cssText = `
     position: fixed;
     top: 20px;
@@ -80,7 +80,7 @@ function showDevToolsPrompt(language: string = 'en', theme: string = 'system') {
             t.message
           }</span>
         </div>
-        <button id="mockapi-prompt-close" style="
+        <button id="moq-prompt-close" style="
           background: #10b981;
           border: none;
           color: white;
@@ -92,7 +92,7 @@ function showDevToolsPrompt(language: string = 'en', theme: string = 'system') {
           transition: background 0.2s;
         ">${t.gotIt}</button>
       </div>
-      <button id="mockapi-prompt-dismiss" style="
+      <button id="moq-prompt-dismiss" style="
         background: none;
         border: none;
         color: ${dismissColor};
@@ -125,8 +125,8 @@ function showDevToolsPrompt(language: string = 'en', theme: string = 'system') {
   document.body.appendChild(overlay);
 
   // Add hover effect to buttons
-  const closeBtn = overlay.querySelector('#mockapi-prompt-close') as HTMLElement;
-  const dismissBtn = overlay.querySelector('#mockapi-prompt-dismiss') as HTMLElement;
+  const closeBtn = overlay.querySelector('#moq-prompt-close') as HTMLElement;
+  const dismissBtn = overlay.querySelector('#moq-prompt-dismiss') as HTMLElement;
 
   closeBtn.addEventListener('mouseenter', () => {
     closeBtn.style.background = '#059669';

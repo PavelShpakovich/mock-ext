@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to MockAPI Extension will be documented in this file.
+All notable changes to Moq Extension will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -24,7 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.7.0] - 2026-01-18
 
 ### Added
-- **View Mode Switcher**: Open MockAPI in standalone window or DevTools panel
+- **View Mode Switcher**: Open Moq in standalone window or DevTools panel
   - **"Open in Window" button** in DevTools header with ExternalLink icon
   - **Standalone window mode**: 800×600 popup window for multi-monitor setups
   - **Single instance enforcement**: Overlay blocks DevTools when window is open
@@ -336,7 +336,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Custom Response Headers**: Full support for custom HTTP response headers in mock rules
   - Add, edit, and remove custom headers with key-value pairs
   - Headers automatically populate when mocking logged requests
-  - Auto-filters standard headers (Content-Type, X-MockAPI) to show only relevant custom headers
+  - Auto-filters standard headers (Content-Type, X-Moq) to show only relevant custom headers
   - UI includes convenient add/remove buttons for managing headers
 - **Response Headers Capture**: Interceptor now captures all response headers from real requests
   - Captured headers stored in request log for reference
@@ -580,7 +580,7 @@ Existing rules will continue to work. No user action required. The extension aut
   - Collapsible filter panel with active filter count badge
   - Filters button positioned in header for easy access
 - **Export/Import Rules**: Export rules to JSON file and import them back
-  - Downloads as `mockapi-rules-YYYY-MM-DD.json`
+  - Downloads as `moq-rules-YYYY-MM-DD.json`
   - Validates imported rules structure
   - Merges with existing rules avoiding duplicates
 - **Duplicate Rule Feature**: Quick copy of existing rules

@@ -1,4 +1,4 @@
-# GitHub Copilot Instructions for MockAPI Extension
+# GitHub Copilot Instructions for Moq Extension
 
 ## Project Overview
 

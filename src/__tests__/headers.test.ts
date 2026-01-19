@@ -168,7 +168,7 @@ describe('Headers Helpers', () => {
       expect(result[0].key).toBe('X-Custom-Header');
     });
 
-    it('should exclude x-mockapi header', () => {
+    it('should exclude x-moq header', () => {
       const mockRequest: RequestLog = {
         id: '1',
         timestamp: Date.now(),
@@ -179,7 +179,7 @@ describe('Headers Helpers', () => {
         responseBody: '{}',
         matched: true,
         responseHeaders: {
-          'x-mockapi': 'true',
+          'x-moq': 'true',
           'X-Custom-Header': 'custom-value',
         },
       };
@@ -202,7 +202,7 @@ describe('Headers Helpers', () => {
         matched: true,
         responseHeaders: {
           'Content-Type': 'application/json',
-          'X-MOCKAPI': 'true',
+          'X-MOQ': 'true',
           'X-Custom-Header': 'custom-value',
         },
       };

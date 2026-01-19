@@ -99,7 +99,7 @@ class RequestInterceptor {
     try {
       return new RegExp(pattern).test(url);
     } catch {
-      console.error('[MockAPI] Invalid regex pattern:', pattern);
+      console.error('[Moq] Invalid regex pattern:', pattern);
       return false;
     }
   }
@@ -147,7 +147,7 @@ class RequestInterceptor {
   private buildResponseHeaders(rule: MockRule): Record<string, string> {
     const headers: Record<string, string> = {
       'Content-Type': rule.contentType || 'application/json',
-      'X-MockAPI': 'true',
+      'X-Moq': 'true',
     };
 
     // Inject CORS headers if enabled
@@ -165,7 +165,7 @@ class RequestInterceptor {
   private notifyInterception(url: string, method: string, ruleId: string, statusCode: number): void {
     window.postMessage(
       {
-        type: 'MOCKAPI_INTERCEPTED',
+        type: 'MOQ_INTERCEPTED',
         url,
         method,
         ruleId,
@@ -177,7 +177,7 @@ class RequestInterceptor {
     // Increment rule counter
     window.postMessage(
       {
-        type: 'MOCKAPI_INCREMENT_COUNTER',
+        type: 'MOQ_INCREMENT_COUNTER',
         ruleId,
       },
       '*'
@@ -204,7 +204,7 @@ class RequestInterceptor {
 
     window.postMessage(
       {
-        type: 'MOCKAPI_RESPONSE_CAPTURED',
+        type: 'MOQ_RESPONSE_CAPTURED',
         url,
         method,
         statusCode,
@@ -299,7 +299,7 @@ class RequestInterceptor {
         if (lowerName === 'content-type') {
           return rule.contentType || 'application/json';
         }
-        if (lowerName === 'x-mockapi') {
+        if (lowerName === 'x-moq') {
           return 'true';
         }
 
@@ -307,7 +307,7 @@ class RequestInterceptor {
       },
 
       getAllHeaders: () => {
-        let headers = `content-type: ${rule.contentType || 'application/json'}\r\nx-mockapi: true\r\n`;
+        let headers = `content-type: ${rule.contentType || 'application/json'}\r\nx-moq: true\r\n`;
 
         // Add CORS headers if enabled
         if (this.settings.corsAutoFix) {
@@ -449,7 +449,7 @@ class RequestInterceptor {
     // Listen for rule and settings updates from content script
     window.addEventListener('message', (event) => {
       if (event.source !== window) return;
-      if (event.data.type === 'MOCKAPI_UPDATE_RULES') {
+      if (event.data.type === 'MOQ_UPDATE_RULES') {
         this.rules = event.data.rules;
         if (event.data.settings) {
           this.settings = event.data.settings;
@@ -502,9 +502,9 @@ class RequestInterceptor {
 // TypeScript type augmentation for Window
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface Window {
-  __MOCKAPI_INTERCEPTOR__?: RequestInterceptor;
+  __MOQ_INTERCEPTOR__?: RequestInterceptor;
 }
 
-if (!window.__MOCKAPI_INTERCEPTOR__) {
-  window.__MOCKAPI_INTERCEPTOR__ = new RequestInterceptor();
+if (!window.__MOQ_INTERCEPTOR__) {
+  window.__MOQ_INTERCEPTOR__ = new RequestInterceptor();
 }

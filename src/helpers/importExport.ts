@@ -39,7 +39,7 @@ export function exportRulesToJSON(rules: MockRule[], selectedIds?: string[]): st
 }
 
 export function generateExportFilename(): string {
-  return `mockapi-rules-${new Date().toISOString().split('T')[0]}.json`;
+  return `moq-rules-${new Date().toISOString().split('T')[0]}.json`;
 }
 
 export function validateImportedRules(data: unknown): ValidationResult {

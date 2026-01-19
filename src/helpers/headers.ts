@@ -26,7 +26,7 @@ export function convertArrayToHeaders(headers: HeaderEntry[]): Record<string, st
 export function extractCapturedHeaders(mockRequest?: RequestLog | null): HeaderEntry[] {
   if (!mockRequest?.responseHeaders) return [];
 
-  const excludeHeaders = ['content-type', 'x-mockapi'];
+  const excludeHeaders = ['content-type', 'x-moq'];
   return Object.entries(mockRequest.responseHeaders)
     .filter(([key]) => !excludeHeaders.includes(key.toLowerCase()))
     .map(([key, value]) => ({ key, value }));

@@ -1,4 +1,4 @@
-# MockAPI Extension - Roadmap
+# Moq Extension - Roadmap
 
 This document outlines potential features and improvements for future releases.
 

@@ -1,8 +1,8 @@
 {
   "app": {
-    "name": "MockAPI",
+    "name": "Moq",
     "standaloneWindowOpen": "Standalone Window is Open",
-    "standaloneWindowMessage": "MockAPI is currently open in a standalone window. Please use that window or close it to use the DevTools panel."
+    "standaloneWindowMessage": "Moq is currently open in a standalone window. Please use that window or close it to use the DevTools panel."
   },
   "header": {
     "recording": "Recording: {{tabTitle}}",
@@ -151,7 +151,7 @@
   },
   "devtoolsPrompt": {
     "title": "Open DevTools",
-    "message": "Press <strong>{{shortcut}}</strong> to open DevTools and access MockAPI panel",
+    "message": "Press <strong>{{shortcut}}</strong> to open DevTools and access Moq panel",
     "gotIt": "Got it"
   },
   "common": {

@@ -16,7 +16,7 @@ interface MessageResponse {
 }
 
 interface PageMessageData {
-  type: 'MOCKAPI_INTERCEPTED' | 'MOCKAPI_RESPONSE_CAPTURED' | 'MOCKAPI_INCREMENT_COUNTER';
+  type: 'MOQ_INTERCEPTED' | 'MOQ_RESPONSE_CAPTURED' | 'MOQ_INCREMENT_COUNTER';
   url?: string;
   method?: string;
   ruleId?: string;
@@ -63,15 +63,15 @@ class ContentScriptBridge {
   private handlePageMessage(event: MessageEvent): void {
     if (event.source !== window) return;
 
-    if (event.data.type === 'MOCKAPI_INTERCEPTED') {
+    if (event.data.type === 'MOQ_INTERCEPTED') {
       this.forwardMockedRequest(event.data);
     }
 
-    if (event.data.type === 'MOCKAPI_RESPONSE_CAPTURED') {
+    if (event.data.type === 'MOQ_RESPONSE_CAPTURED') {
       this.forwardCapturedResponse(event.data);
     }
 
-    if (event.data.type === 'MOCKAPI_INCREMENT_COUNTER') {
+    if (event.data.type === 'MOQ_INCREMENT_COUNTER') {
       this.incrementRuleCounter(event.data.ruleId);
     }
   }
@@ -147,7 +147,7 @@ class ContentScriptBridge {
   private updatePageRules(rules: MockRule[], settings?: Settings) {
     window.postMessage(
       {
-        type: 'MOCKAPI_UPDATE_RULES',
+        type: 'MOQ_UPDATE_RULES',
         rules: rules,
         settings: settings,
       },
@@ -159,12 +159,12 @@ class ContentScriptBridge {
     const translations = {
       en: {
         title: 'Open DevTools',
-        message: 'to open DevTools and access MockAPI panel',
+        message: 'to open DevTools and access Moq panel',
         gotIt: 'Got it',
       },
       ru: {
         title: 'Открыть DevTools',
-        message: 'чтобы открыть DevTools и получить доступ к панели MockAPI',
+        message: 'чтобы открыть DevTools и получить доступ к панели Moq',
         gotIt: 'Понятно',
       },
     };
@@ -218,7 +218,7 @@ class ContentScriptBridge {
             ${t.message}
           </p>
           <button 
-            id="mockapi-prompt-close"
+            id="moq-prompt-close"
             style="
               background: #10b981;
               color: white;
@@ -248,7 +248,7 @@ class ContentScriptBridge {
     }, 10000);
 
     // Manual dismiss
-    const closeBtn = document.getElementById('mockapi-prompt-close');
+    const closeBtn = document.getElementById('moq-prompt-close');
     if (closeBtn) {
       closeBtn.addEventListener('click', () => {
         clearTimeout(timeout);
@@ -261,14 +261,14 @@ class ContentScriptBridge {
     const t = this.getTranslations(language);
 
     // Remove any existing prompt
-    const existing = document.getElementById('mockapi-devtools-prompt');
+    const existing = document.getElementById('moq-devtools-prompt');
     if (existing) {
       existing.remove();
     }
 
     // Create prompt overlay
     const overlay = document.createElement('div');
-    overlay.id = 'mockapi-devtools-prompt';
+    overlay.id = 'moq-devtools-prompt';
     overlay.style.cssText = this.getPromptStyles();
     overlay.innerHTML = this.getPromptHTML(t);
 
@@ -280,7 +280,7 @@ class ContentScriptBridge {
 // Initialize bridge
 const bridge = new ContentScriptBridge();
 bridge.initialize().catch((error) => {
-  console.error('[MockAPI] Failed to initialize content script bridge:', error);
+  console.error('[Moq] Failed to initialize content script bridge:', error);
 });
 
 export {};
