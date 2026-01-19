@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Moq",
   "version": "2.7.2",
-  "description": "Intercept and mock HTTP requests with custom responses, status codes, delays, and headers. Features client-side interception, request logging, dynamic variables, rule folders, and standalone window mode for multi-monitor setups.",
+  "description": "Mock HTTP requests with custom responses, status codes, delays, and headers. Perfect for development, testing, and debugging.",
   "privacy_policy": "https://github.com/PavelShpakovich/mock-ext/blob/main/PRIVACY.md",
   "permissions": ["storage", "activeTab", "tabs", "contextMenus"],
   "host_permissions": ["<all_urls>"],
