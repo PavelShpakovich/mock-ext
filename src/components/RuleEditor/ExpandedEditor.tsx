@@ -72,22 +72,6 @@ export const ExpandedEditor: React.FC<ExpandedEditorProps> = ({
           </div>
         )}
       </div>
-
-      {(error || validation) && (
-        <div className='px-6 pb-2 shrink-0'>
-          {error && <p className='text-xs text-red-400 font-medium'>{error}</p>}
-          {validation && (
-            <p
-              className={clsx('text-xs', {
-                'text-gray-400': validation.isValid,
-                'text-red-400 font-medium': !validation.isValid,
-              })}
-            >
-              {validation.message}
-            </p>
-          )}
-        </div>
-      )}
     </div>
   );
 };
