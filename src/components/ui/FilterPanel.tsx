@@ -65,7 +65,7 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({ filters, onFilterChang
         <Filter className='w-4 h-4' />
         {t('requests.filters')}
         {hasActiveFilters && (
-          <span className='bg-blue-500 text-white text-xs px-1.5 py-0.5 rounded-full'>
+          <span className='bg-blue-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full font-semibold'>
             {(filters.statusCodes.length > 0 ? 1 : 0) + (filters.methods.length > 0 ? 1 : 0)}
           </span>
         )}

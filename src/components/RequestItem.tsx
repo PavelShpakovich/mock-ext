@@ -1,12 +1,12 @@
 import React from 'react';
 import { RequestLog } from '../types';
 import { MethodBadge, StatusCodeBadge, Badge } from './ui/Badge';
-import { Button } from './ui/Button';
+import { IconButton } from './ui/IconButton';
 import { Card } from './ui/Card';
-import { Clock, Network } from 'lucide-react';
+import { Clock, FilePlus } from 'lucide-react';
 import { useI18n } from '../contexts/I18nContext';
 import { formatTime } from '../helpers/formatting';
-import { BadgeVariant, ButtonSize } from '../enums';
+import { BadgeVariant, IconButtonVariant } from '../enums';
 
 interface RequestItemProps {
   request: RequestLog;
@@ -35,15 +35,9 @@ const RequestItem: React.FC<RequestItemProps> = ({ request, onMock }) => {
         </div>
 
         <div className='flex items-center gap-2 pl-4 shrink-0'>
-          <Button
-            size={ButtonSize.Small}
-            onClick={onMock}
-            className='whitespace-nowrap flex items-center gap-2'
-            title={t('common.mockThisTooltip')}
-          >
-            <Network className='w-4 h-4' />
-            {t('requests.mockThis')}
-          </Button>
+          <IconButton variant={IconButtonVariant.Primary} onClick={onMock} title={t('requests.mockThis')}>
+            <FilePlus className='w-5 h-5' />
+          </IconButton>
         </div>
       </div>
     </Card>
