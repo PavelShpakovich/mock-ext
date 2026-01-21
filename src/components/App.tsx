@@ -260,7 +260,7 @@ const App: React.FC = () => {
   // ===========================
 
   return (
-    <div className='min-h-screen bg-gray-50 dark:bg-black text-gray-900 dark:text-white'>
+    <div className='min-h-screen bg-gray-50 dark:bg-black text-gray-800 dark:text-white'>
       <Header
         enabled={recording.settings.enabled}
         logRequests={recording.settings.logRequests}
@@ -271,7 +271,7 @@ const App: React.FC = () => {
         activeTabTitle={recording.activeTabTitle}
       />
 
-      <div className='flex border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 shadow-sm'>
+      <div className='flex bg-gray-100 dark:bg-gray-950 border-b border-gray-200 dark:border-gray-800'>
         <TabButton active={activeTab === Tab.Rules} onClick={() => setActiveTab(Tab.Rules)}>
           {t('tabs.rules')} ({rulesManager.rules.length})
         </TabButton>

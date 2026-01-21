@@ -20,7 +20,7 @@ import { RuleResponseSection } from './RuleEditor/RuleResponseSection';
 import { ExpandedEditor } from './RuleEditor/ExpandedEditor';
 import { useI18n } from '../contexts/I18nContext';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
-import { X } from 'lucide-react';
+import { X, Check } from 'lucide-react';
 
 interface RuleEditorProps {
   rule: MockRule | null;
@@ -157,6 +157,13 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, mockRequest, folders, onS
     onSave(savedRule);
   };
 
+  const handleSaveClick = () => {
+    if (!validate()) return;
+
+    const savedRule = buildMockRule(formData, rule);
+    onSave(savedRule);
+  };
+
   const formatJSON = () => {
     if (formData.contentType === 'application/json' && isValidJSON(formData.responseBody)) {
       try {
@@ -190,12 +197,22 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, mockRequest, folders, onS
   return (
     <Card className='p-8 shadow-2xl flex flex-col gap-6'>
       <div className='flex items-center justify-between pb-3 border-b border-gray-300 dark:border-gray-700'>
-        <h2 className='text-2xl font-bold text-gray-900 dark:text-white'>
+        <h2 className='text-2xl font-bold text-gray-800 dark:text-white'>
           {rule ? t('editor.updateRule') : t('editor.createRule')}
         </h2>
-        <IconButton onClick={onCancel} title={t('common.cancel')}>
-          <X className='w-5 h-5' />
-        </IconButton>
+        <div className='flex items-center gap-2'>
+          <IconButton
+            onClick={handleSaveClick}
+            title={rule ? t('editor.updateRule') : t('editor.createRule')}
+            disabled={formData.responseHookEnabled && !!errors.responseHook}
+            className='text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 hover:bg-green-500/10 disabled:opacity-50 disabled:cursor-not-allowed'
+          >
+            <Check className='w-5 h-5' />
+          </IconButton>
+          <IconButton onClick={onCancel} title={t('common.cancel')}>
+            <X className='w-5 h-5' />
+          </IconButton>
+        </div>
       </div>
 
       <form onSubmit={handleSubmit} className='flex flex-col gap-5'>

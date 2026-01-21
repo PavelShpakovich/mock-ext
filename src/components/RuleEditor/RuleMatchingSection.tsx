@@ -48,7 +48,6 @@ export const RuleMatchingSection: React.FC<RuleMatchingSectionProps> = ({
     <div className='border-l-4 border-gray-300 dark:border-blue-500 bg-gray-50 dark:bg-blue-500/5 rounded-r-lg pl-4 pr-4 py-4 flex flex-col gap-4'>
       <Input
         label={t('editor.urlPattern')}
-        required
         value={urlPattern}
         onChange={(e) => onUrlPatternChange(e.target.value)}
         error={errors.urlPattern}

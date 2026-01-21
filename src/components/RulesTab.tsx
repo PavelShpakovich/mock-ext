@@ -147,7 +147,7 @@ const RulesTab: React.FC<RulesTabProps> = ({
   }
 
   return (
-    <div className='p-6 flex flex-col gap-4'>
+    <div className='p-6 flex flex-col gap-3'>
       <RulesSearchBar value={searchTerm} onChange={onSearchChange} />
 
       <RulesToolbar

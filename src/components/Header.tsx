@@ -3,11 +3,10 @@ import clsx from 'clsx';
 import { Button } from './ui/Button';
 import { Toggle } from './ui/Toggle';
 import { SettingsMenu } from './ui/SettingsMenu';
-import { IconButton } from './ui/IconButton';
-import { Circle, Square, ExternalLink } from 'lucide-react';
+import { Circle, Square } from 'lucide-react';
 import { useI18n } from '../contexts/I18nContext';
 import { useTheme } from '../contexts/ThemeContext';
-import { ButtonVariant, ButtonSize, Language, Theme } from '../enums';
+import { ButtonVariant, ButtonSize, Language, Theme, ResolvedTheme } from '../enums';
 import { isDevTools, openStandaloneWindow } from '../helpers/context';
 
 type LanguageOption = Language;
@@ -32,7 +31,7 @@ const Header: React.FC<HeaderProps> = ({
   activeTabTitle,
 }) => {
   const { t, language, setLanguage } = useI18n();
-  const { theme, setTheme } = useTheme();
+  const { theme, resolvedTheme, setTheme } = useTheme();
   const showOpenWindowButton = isDevTools();
 
   const handleRecordingClick = () => {
@@ -51,12 +50,14 @@ const Header: React.FC<HeaderProps> = ({
     openStandaloneWindow();
   };
 
+  const iconSrc = resolvedTheme === ResolvedTheme.Light ? '/icons/icon128light.png' : '/icons/icon128.png';
+
   return (
-    <div className='bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white p-4'>
+    <div className='bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 text-gray-800 dark:text-white p-4'>
       <div className='flex items-center justify-between gap-4 flex-wrap'>
         <div className='flex items-center gap-3'>
-          <img src='/icons/icon128.png' alt='Moq' className='w-10 h-10 rounded-lg shrink-0' />
-          <h1 className='text-xl font-bold text-gray-900 dark:text-white whitespace-nowrap'>{t('app.name')}</h1>
+          <img src={iconSrc} alt='Moq' className='w-10 h-10 rounded-lg shrink-0' />
+          <h1 className='text-xl font-bold text-gray-800 dark:text-white whitespace-nowrap'>{t('app.name')}</h1>
 
           {logRequests && activeTabTitle && (
             <div className='flex items-center gap-2 bg-red-100 dark:bg-red-500/10 border border-red-400 dark:border-red-500/30 rounded-full px-3 py-1'>
@@ -118,25 +119,13 @@ const Header: React.FC<HeaderProps> = ({
 
             <div className='w-px h-6 bg-gray-300 dark:bg-gray-700'></div>
 
-            {showOpenWindowButton && (
-              <>
-                <IconButton
-                  onClick={handleOpenWindow}
-                  title={t('header.openWindow')}
-                  className='text-gray-600 dark:text-gray-400 hover:text-green-600 dark:hover:text-green-400'
-                >
-                  <ExternalLink className='w-4 h-4' />
-                </IconButton>
-
-                <div className='w-px h-6 bg-gray-300 dark:bg-gray-700'></div>
-              </>
-            )}
-
             <SettingsMenu
               theme={theme}
               language={language}
               onThemeChange={handleThemeChange}
               onLanguageChange={(lang) => handleLanguageChange(lang as Language)}
+              showOpenWindow={showOpenWindowButton}
+              onOpenWindow={handleOpenWindow}
               translations={{
                 settings: t('settings.settings'),
                 theme: t('settings.theme'),
@@ -144,6 +133,7 @@ const Header: React.FC<HeaderProps> = ({
                 themeLight: t('settings.themeLight'),
                 themeDark: t('settings.themeDark'),
                 language: t('settings.language'),
+                openWindow: t('header.openWindow'),
               }}
             />
           </div>

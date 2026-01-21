@@ -66,7 +66,7 @@ export const ImportDialog: React.FC<ImportDialogProps> = ({ importedRules, exist
           {mode === ImportMode.Merge && (
             <InfoPanel variant='info'>
               <div className='flex flex-col gap-3'>
-                <div className='font-medium text-gray-900 dark:text-white'>{t('import.mergePreview')}</div>
+                <div className='font-medium text-gray-800 dark:text-white'>{t('import.mergePreview')}</div>
                 <div className='flex flex-col gap-2'>
                   <StatItem
                     icon={CheckCircle}
@@ -84,7 +84,7 @@ export const ImportDialog: React.FC<ImportDialogProps> = ({ importedRules, exist
                   )}
                 </div>
                 <div className='pt-2 border-t border-gray-300 dark:border-gray-700'>
-                  <span className='font-medium text-gray-900 dark:text-white'>
+                  <span className='font-medium text-gray-800 dark:text-white'>
                     {t('import.totalAfterMerge')}: {currentStats.total}
                   </span>
                 </div>

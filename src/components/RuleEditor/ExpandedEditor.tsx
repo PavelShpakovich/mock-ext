@@ -36,7 +36,7 @@ export const ExpandedEditor: React.FC<ExpandedEditorProps> = ({
   return (
     <div className='fixed inset-0 z-50 bg-white/95 dark:bg-black/95 flex flex-col m-0'>
       <div className='flex items-center justify-between p-4 border-b border-gray-300 dark:border-gray-700 shrink-0'>
-        <h3 className='text-lg font-bold text-gray-900 dark:text-white'>{title}</h3>
+        <h3 className='text-lg font-bold text-gray-800 dark:text-white'>{title}</h3>
         <div className='flex items-center gap-3'>
           {onBeautify && (
             <IconButton type='button' onClick={onBeautify} title='Beautify'>
@@ -54,13 +54,13 @@ export const ExpandedEditor: React.FC<ExpandedEditorProps> = ({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
-          className='w-full h-full bg-white dark:bg-gray-950 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-700 rounded px-4 py-3 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-green-600 dark:focus:ring-green-500 resize-none custom-scrollbar'
+          className='w-full h-full bg-white dark:bg-gray-950 text-gray-800 dark:text-white border border-gray-300 dark:border-gray-700 rounded px-4 py-3 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-green-600 dark:focus:ring-green-500 resize-none custom-scrollbar'
         />
       </div>
 
       {(error || validation) && (
         <div className='px-6 pb-2 shrink-0'>
-          {error && <p className='text-xs text-red-400 font-medium'>{error}</p>}
+          {error && <p className='text-red-600 dark:text-red-400 text-sm font-semibold'>{error}</p>}
           {validation && (
             <p
               className={clsx('text-xs italic', {

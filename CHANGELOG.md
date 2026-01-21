@@ -5,6 +5,41 @@ All notable changes to Moq Extension will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.9.2] - 2026-01-21
+
+### Added
+- **Theme-Aware Header Icon**: Extension logo now adapts to light/dark themes
+  - Uses `icon128light.png` for light theme, `icon128.png` for dark theme
+  - Automatically switches based on resolved theme (including system preference)
+- **Quick Save Button**: Added check icon button in rule editor header for faster saving
+  - Positioned next to close button for easy access
+  - Shows validation errors when clicked (same as main save button)
+  - Disabled state when response hook has validation errors
+
+### Improved
+- **Accessibility & Focus States**: Enhanced keyboard navigation across all interactive components
+  - Replaced `focus:` with `focus-visible:` on Button, IconButton, TabButton, and Toggle
+  - Focus rings now only appear for keyboard navigation, not mouse clicks
+  - Cleaner visual experience while maintaining full accessibility compliance
+- **Settings Menu UX**: Moved "Open Window" control from header toolbar to settings dropdown
+  - Cleaner, less cluttered header layout
+  - Logical grouping with other context management settings
+  - Added smooth rotation animation to settings icon (90° when open)
+- **Tab Design**: Simplified tab button styling for consistency with design system
+  - Reduced padding and removed excessive shadows
+  - Cleaner active state with green accent color
+  - Better visual hierarchy and modern appearance
+- **Validation Error Display**: Standardized error message styling across all form inputs
+  - Consistent font weight (semibold) and sizing (text-sm)
+  - Removed warning emoji for cleaner presentation
+  - Removed HTML5 `required` attributes to prevent browser popups
+  - Custom validation now works consistently from both save buttons
+
+### Fixed
+- **Validation Trigger**: Rule editor validation now properly triggers from icon button clicks
+  - Created separate `handleSaveClick` handler for non-form submissions
+  - Validation errors display correctly regardless of save method used
+
 ## [2.9.1] - 2026-01-21
 
 ### Fixed

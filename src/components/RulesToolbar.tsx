@@ -1,5 +1,5 @@
 import React from 'react';
-import { Download, Upload, CheckSquare, Square, FolderPlus, Plus } from 'lucide-react';
+import { Download, Upload, CheckSquare, Square, FolderPlus, PlusCircle } from 'lucide-react';
 import { Button } from './ui/Button';
 import { IconButton } from './ui/IconButton';
 import { ButtonVariant, IconButtonVariant } from '../enums';
@@ -96,10 +96,9 @@ export const RulesToolbar: React.FC<RulesToolbarProps> = ({
       </div>
 
       {!selectionMode && (
-        <Button onClick={onCreateRule} className='flex items-center gap-2 cursor-pointer'>
-          <Plus className='w-4 h-4' />
-          {t('rules.addRule')}
-        </Button>
+        <IconButton onClick={onCreateRule} variant={IconButtonVariant.Primary} title={t('rules.addRule')}>
+          <PlusCircle className='w-5 h-5' />
+        </IconButton>
       )}
 
       <input ref={fileInputRef} type='file' accept='.json' onChange={onFileChange} className='hidden' />

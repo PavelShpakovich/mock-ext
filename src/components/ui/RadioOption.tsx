@@ -49,7 +49,7 @@ export const RadioOption: React.FC<RadioOptionProps> = ({
         className={clsx('w-4 h-4 cursor-pointer', radioColorClasses[hoverColor])}
       />
       <div className='flex-1'>
-        <div className='font-medium text-gray-900 dark:text-white'>{title}</div>
+        <div className='font-medium text-gray-800 dark:text-white'>{title}</div>
         <div className='text-sm text-gray-600 dark:text-gray-400'>{description}</div>
       </div>
     </label>

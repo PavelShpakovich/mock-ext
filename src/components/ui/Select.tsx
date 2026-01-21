@@ -31,7 +31,7 @@ export const Select: React.FC<SelectProps> = ({
         <select
           id={selectId}
           className={clsx(
-            'w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600/50 dark:focus:ring-green-500/50 focus:border-green-600 dark:focus:border-green-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-bold cursor-pointer transition-all shadow-sm appearance-none',
+            'w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600/50 dark:focus:ring-green-500/50 focus:border-green-600 dark:focus:border-green-500 bg-white dark:bg-gray-700 text-gray-800 dark:text-white font-bold cursor-pointer transition-all shadow-sm appearance-none',
             {
               'border-red-500': error,
               'border-gray-300 dark:border-gray-600': !error,
@@ -48,7 +48,7 @@ export const Select: React.FC<SelectProps> = ({
         </div>
       </div>
       {description && <p className='text-gray-500 dark:text-gray-400 text-xs'>{description}</p>}
-      {error && <p className='text-red-400 text-sm'>{error}</p>}
+      {error && <p className='text-red-600 dark:text-red-400 text-sm font-semibold'>{error}</p>}
     </div>
   );
 };

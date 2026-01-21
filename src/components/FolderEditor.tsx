@@ -47,7 +47,7 @@ const FolderEditor: React.FC<FolderEditorProps> = ({ folder, existingFolders, on
         className='bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md flex flex-col gap-4'
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className='text-xl font-bold text-gray-900 dark:text-white'>
+        <h2 className='text-xl font-bold text-gray-800 dark:text-white'>
           {folder ? t('folders.renameFolder') : t('folders.createFolder')}
         </h2>
 
@@ -66,7 +66,7 @@ const FolderEditor: React.FC<FolderEditorProps> = ({ folder, existingFolders, on
             fullWidth
             autoFocus
           />
-          {error && <div className='text-red-600 dark:text-red-400 text-sm'>{error}</div>}
+          {error && <div className='text-red-600 dark:text-red-400 text-sm font-semibold'>{error}</div>}
         </div>
 
         <div className='flex justify-end gap-2'>

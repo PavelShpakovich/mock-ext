@@ -50,7 +50,7 @@ const RequestsTab: React.FC<RequestsTabProps> = ({
   });
 
   return (
-    <div className='p-6 flex flex-col gap-4'>
+    <div className='p-6 flex flex-col gap-3'>
       <div className='flex gap-3 items-start'>
         <div className='relative flex-1'>
           <Search className='absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500' />

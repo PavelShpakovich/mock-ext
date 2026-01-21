@@ -32,7 +32,6 @@ export const RuleBasicInfo: React.FC<RuleBasicInfoProps> = ({
     <>
       <Input
         label={t('editor.ruleName')}
-        required
         value={name}
         onChange={(e) => onNameChange(e.target.value)}
         error={errors.name}

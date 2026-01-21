@@ -29,7 +29,7 @@ const RequestItem: React.FC<RequestItemProps> = ({ request, onMock }) => {
               {formatTime(request.timestamp)}
             </span>
           </div>
-          <div className='text-sm text-gray-900 dark:text-white break-all font-mono bg-gray-100 dark:bg-gray-900 px-2 py-1.5 rounded border border-gray-300 dark:border-gray-700'>
+          <div className='text-sm text-gray-800 dark:text-white break-all font-mono bg-gray-100 dark:bg-gray-900 px-2 py-1.5 rounded border border-gray-300 dark:border-gray-700'>
             {request.url}
           </div>
         </div>

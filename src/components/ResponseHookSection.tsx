@@ -66,14 +66,7 @@ const ResponseHookSection: React.FC<ResponseHookSectionProps> = ({
           </div>
         </summary>
 
-        <div className='flex flex-col gap-3 pt-4'>
-          {hasHookCode && (
-            <div className='flex items-center justify-between border-b border-gray-200 dark:border-gray-700 pb-3'>
-              <div />
-              <Toggle checked={enabled} onChange={onEnabledChange} />
-            </div>
-          )}
-
+        <div className='flex flex-col gap-2 pt-2'>
           <TextArea
             label=''
             value={value || ''}
@@ -83,6 +76,7 @@ const ResponseHookSection: React.FC<ResponseHookSectionProps> = ({
             className='font-mono text-xs custom-scrollbar'
             action={
               <div className='flex items-center gap-3'>
+                {hasHookCode && <Toggle checked={enabled} onChange={onEnabledChange} />}
                 <IconButton type='button' onClick={onBeautify} title={t('editor.beautify')}>
                   <Wand2 className='w-4 h-4' />
                 </IconButton>
@@ -93,16 +87,16 @@ const ResponseHookSection: React.FC<ResponseHookSectionProps> = ({
             }
           />
 
-          <div className='min-h-[52px]'>
+          <div className='min-h-10'>
             {error && (
-              <div className='bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3'>
-                <p className='text-xs text-red-600 dark:text-red-400 font-medium'>{error}</p>
+              <div className='bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-2'>
+                <p className='text-red-600 dark:text-red-400 text-sm font-semibold'>{error}</p>
               </div>
             )}
           </div>
 
           {hasHookCode && (
-            <div className='flex flex-col gap-2 border-t border-gray-200 dark:border-gray-700 pt-3'>
+            <div className='flex flex-col gap-2 border-t border-gray-200 dark:border-gray-700 pt-2'>
               <label className='text-sm font-bold text-gray-700 dark:text-gray-300'>{t('editor.responseMode')}</label>
               <div className='flex flex-col gap-2'>
                 <RadioOption

@@ -12,6 +12,8 @@ interface SettingsMenuProps {
   language: Language;
   onThemeChange: (theme: Theme) => void;
   onLanguageChange: (language: Language) => void;
+  showOpenWindow?: boolean;
+  onOpenWindow?: () => void;
   translations: {
     settings: string;
     theme: string;
@@ -19,6 +21,7 @@ interface SettingsMenuProps {
     themeLight: string;
     themeDark: string;
     language: string;
+    openWindow?: string;
   };
 }
 
@@ -27,6 +30,8 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
   language,
   onThemeChange,
   onLanguageChange,
+  showOpenWindow,
+  onOpenWindow,
   translations,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -57,7 +62,11 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
         )}
         title={translations.settings}
       >
-        <Settings className='w-4 h-4 text-gray-600 dark:text-gray-300' />
+        <Settings
+          className={clsx('w-4 h-4 text-gray-600 dark:text-gray-300 transition-transform duration-300', {
+            'rotate-90': isOpen,
+          })}
+        />
       </IconButton>
 
       {isOpen && (
@@ -74,7 +83,7 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
             ))}
           </MenuSection>
 
-          <MenuSection title={translations.language}>
+          <MenuSection title={translations.language} showBorder={showOpenWindow}>
             {languageOptions.map((option) => (
               <MenuOption
                 key={option.value}
@@ -85,6 +94,20 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
               />
             ))}
           </MenuSection>
+
+          {showOpenWindow && onOpenWindow && translations.openWindow && (
+            <div className='p-2'>
+              <button
+                onClick={() => {
+                  onOpenWindow();
+                  setIsOpen(false);
+                }}
+                className='w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors cursor-pointer'
+              >
+                {translations.openWindow}
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

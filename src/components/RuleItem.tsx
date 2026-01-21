@@ -76,7 +76,7 @@ const RuleItem: React.FC<RuleItemProps> = ({
       <div className='flex items-start justify-between'>
         <div className='flex-1 min-w-0 flex flex-col gap-2'>
           <div className='flex items-center gap-2 flex-wrap'>
-            <h3 className='font-bold text-gray-900 dark:text-white text-base flex items-center gap-2'>
+            <h3 className='font-bold text-gray-800 dark:text-white text-base flex items-center gap-2'>
               {rule.name}
               {(rule.matchCount ?? 0) > 0 && (
                 <span className='text-sm font-normal text-gray-500 dark:text-gray-400'>({rule.matchCount})</span>

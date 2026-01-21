@@ -60,7 +60,7 @@ const FolderItem: React.FC<FolderItemProps> = ({
               <FolderOpen className='w-5 h-5 text-blue-600 dark:text-blue-400' />
             )}
 
-            <h3 className='font-bold text-gray-900 dark:text-white text-base flex-1 flex items-center gap-2'>
+            <h3 className='font-bold text-gray-800 dark:text-white text-base flex-1 flex items-center gap-2'>
               {folder.name}
               <span className='text-sm font-normal text-gray-500 dark:text-gray-400'>({ruleCount})</span>
             </h3>
