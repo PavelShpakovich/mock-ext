@@ -5,6 +5,19 @@ All notable changes to Moq Extension will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.9.1] - 2026-01-21
+
+### Fixed
+- **Chrome Web Store Compatibility**: Fixed "Could not decode image" error preventing extension download
+  - Converted extension icons from SVG to PNG format (required by Chrome Web Store)
+  - Updated manifest.json to reference PNG icons (16x16, 48x48, 128x128)
+  - Extension now properly displays in Chrome Web Store and extensions page
+
+### Changed
+- **Header Icon**: Updated to use extension's branded icon instead of generic network icon
+  - Displays 128px PNG icon with rounded corners
+  - Better brand recognition and visual consistency
+
 ## [2.9.0] - 2026-01-21
 
 ### Added

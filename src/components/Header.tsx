@@ -4,7 +4,7 @@ import { Button } from './ui/Button';
 import { Toggle } from './ui/Toggle';
 import { SettingsMenu } from './ui/SettingsMenu';
 import { IconButton } from './ui/IconButton';
-import { Network, Circle, Square, ExternalLink } from 'lucide-react';
+import { Circle, Square, ExternalLink } from 'lucide-react';
 import { useI18n } from '../contexts/I18nContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { ButtonVariant, ButtonSize, Language, Theme } from '../enums';
@@ -55,7 +55,7 @@ const Header: React.FC<HeaderProps> = ({
     <div className='bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white p-4'>
       <div className='flex items-center justify-between gap-4 flex-wrap'>
         <div className='flex items-center gap-3'>
-          <Network className='w-7 h-7 text-green-600 dark:text-green-400 shrink-0' />
+          <img src='/icons/icon128.png' alt='Moq' className='w-10 h-10 rounded-lg shrink-0' />
           <h1 className='text-xl font-bold text-gray-900 dark:text-white whitespace-nowrap'>{t('app.name')}</h1>
 
           {logRequests && activeTabTitle && (
