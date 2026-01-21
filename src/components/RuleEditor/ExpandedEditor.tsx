@@ -49,13 +49,28 @@ export const ExpandedEditor: React.FC<ExpandedEditorProps> = ({
         </div>
       </div>
 
-      <div className='flex-1 p-6 overflow-hidden'>
+      <div className='flex-1 flex flex-col p-6 gap-2 overflow-hidden'>
         <textarea
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
-          className='w-full h-full bg-white dark:bg-gray-950 text-gray-800 dark:text-white border border-gray-300 dark:border-gray-700 rounded px-4 py-3 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-green-600 dark:focus:ring-green-500 resize-none custom-scrollbar'
+          className='flex-1 w-full bg-white dark:bg-gray-950 text-gray-800 dark:text-white border border-gray-300 dark:border-gray-700 rounded px-4 py-3 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-green-600 dark:focus:ring-green-500 resize-none custom-scrollbar'
         />
+        {(error || validation) && (
+          <div className='shrink-0'>
+            {error && <p className='text-xs text-red-400 font-medium'>{error}</p>}
+            {validation && (
+              <p
+                className={clsx('text-xs', {
+                  'text-gray-400': validation.isValid,
+                  'text-red-400 font-medium': !validation.isValid,
+                })}
+              >
+                {validation.message}
+              </p>
+            )}
+          </div>
+        )}
       </div>
 
       {(error || validation) && (
