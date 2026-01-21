@@ -52,7 +52,6 @@ export const RuleMatchingSection: React.FC<RuleMatchingSectionProps> = ({
         onChange={(e) => onUrlPatternChange(e.target.value)}
         error={errors.urlPattern}
         placeholder={t('editor.urlPatternPlaceholder')}
-        className='font-mono text-sm'
       />
 
       <div className='grid grid-cols-2 gap-4'>

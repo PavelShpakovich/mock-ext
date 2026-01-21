@@ -1,15 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import * as prettier from 'prettier/standalone';
-import * as parserBabel from 'prettier/plugins/babel';
-import * as prettierPluginEstree from 'prettier/plugins/estree';
 import { MockRule, RequestLog, Folder, ResponseMode } from '../types';
 import { ButtonVariant } from '../enums';
 import { isValidJSON } from '../helpers/validation';
 import { convertArrayToHeaders, HeaderEntry } from '../helpers/headers';
 import { getInitialFormData, RuleFormData } from '../helpers/ruleForm';
-import { validateRuleForm, validateJSONDetailed, JSONValidation } from '../helpers/ruleValidation';
-import { validateResponseHook } from '../helpers/responseHook';
+import { validateJSONDetailed, JSONValidation, validateRuleForm } from '../helpers/ruleValidation';
 import { VALIDATION_DEBOUNCE_MS } from '../constants';
 import { Button } from './ui/Button';
 import { Card } from './ui/Card';
@@ -124,13 +120,15 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, mockRequest, folders, onS
     }, VALIDATION_DEBOUNCE_MS);
   };
 
-  const validateResponseHookField = (hookCode: string) => {
+  const validateResponseHookField = async (hookCode: string) => {
     if (hookValidationTimeoutRef.current) {
       clearTimeout(hookValidationTimeoutRef.current);
     }
 
-    hookValidationTimeoutRef.current = setTimeout(() => {
-      const hookError = validateResponseHook(hookCode);
+    hookValidationTimeoutRef.current = setTimeout(async () => {
+      // Lazy load validation
+      const { validateResponseHookLazy } = await import('../helpers/lazyValidation');
+      const hookError = await validateResponseHookLazy(hookCode);
       if (hookError) {
         setErrors((prev) => ({ ...prev, responseHook: t('editor.validationError', { error: hookError }) }));
       } else {
@@ -143,25 +141,26 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, mockRequest, folders, onS
     }, VALIDATION_DEBOUNCE_MS);
   };
 
-  const validate = (): boolean => {
-    const newErrors = validateRuleForm(formData, jsonValidation, t);
+  const validate = async (): Promise<boolean> => {
+    const newErrors = await validateRuleForm(formData, jsonValidation, t);
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validate()) return;
+  const saveRule = async () => {
+    if (!(await validate())) return;
 
     const savedRule = buildMockRule(formData, rule);
     onSave(savedRule);
   };
 
-  const handleSaveClick = () => {
-    if (!validate()) return;
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await saveRule();
+  };
 
-    const savedRule = buildMockRule(formData, rule);
-    onSave(savedRule);
+  const handleSaveClick = async () => {
+    await saveRule();
   };
 
   const formatJSON = () => {
@@ -178,9 +177,14 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, mockRequest, folders, onS
   const beautifyResponseHook = async () => {
     if (formData.responseHook && formData.responseHook.trim()) {
       try {
+        // Lazy load Prettier only when beautify is clicked
+        const prettier = await import('prettier/standalone');
+        const parserBabel = await import('prettier/plugins/babel');
+        const prettierPluginEstree = await import('prettier/plugins/estree');
+
         const formatted = await prettier.format(formData.responseHook, {
           parser: 'babel',
-          plugins: [parserBabel, prettierPluginEstree],
+          plugins: [parserBabel.default, prettierPluginEstree.default],
           semi: true,
           singleQuote: true,
           tabWidth: 2,

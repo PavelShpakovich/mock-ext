@@ -86,7 +86,10 @@
   "validation": {
     "folderNameEmpty": "Folder name cannot be empty",
     "folderNameTooLong": "Folder name is too long (max 50 characters)",
-    "folderNameDuplicate": "A folder with this name already exists"
+    "folderNameDuplicate": "A folder with this name already exists",
+    "nameRequired": "Name is required",
+    "urlPatternRequired": "URL pattern is required",
+    "invalidRegexPattern": "Invalid regex pattern"
   },
   "requests": {
     "title": "Request Log",
@@ -184,7 +187,6 @@
     "yes": "Yes",
     "no": "No",
     "expandEditor": "Expand editor",
-    "mockThisTooltip": "Create mock rule from this request",
     "switchToRussian": "Switch to Russian",
     "switchToEnglish": "Switch to English"
   },

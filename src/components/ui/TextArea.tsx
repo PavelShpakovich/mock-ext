@@ -55,7 +55,7 @@ export const TextArea: React.FC<TextAreaProps> = ({
         )}
         {...props}
       />
-      {error && <p className='text-red-600 dark:text-red-400 text-sm font-semibold'>{error}</p>}
+      {error && <p className='text-xs text-red-400 font-medium'>{error}</p>}
     </div>
   );
 };

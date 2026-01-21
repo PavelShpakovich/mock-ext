@@ -2,7 +2,6 @@ import { MockRule } from '../types';
 import { ValidationWarningType, ValidationSeverity } from '../enums';
 import { matchURL } from './urlMatching';
 import { isValidJSON } from './validation';
-import { validateResponseHook } from './responseHook';
 import { UNUSED_RULE_DAYS_THRESHOLD } from '../constants';
 
 export interface ValidationWarning {
@@ -72,7 +71,7 @@ export function validateJSONDetailed(jsonString: string): JSONValidation {
 /**
  * Validate rule editor form data
  */
-export function validateRuleForm(
+export async function validateRuleForm(
   formData: {
     name: string;
     urlPattern: string;
@@ -83,19 +82,19 @@ export function validateRuleForm(
   },
   jsonValidation: JSONValidation | null,
   t: (key: string, params?: Record<string, string>) => string
-): FormValidationErrors {
+): Promise<FormValidationErrors> {
   const errors: FormValidationErrors = {};
 
   if (!formData.name.trim()) {
-    errors.name = t('editor.validationError', { error: 'Name is required' });
+    errors.name = t('validation.nameRequired');
   }
 
   if (!formData.urlPattern.trim()) {
-    errors.urlPattern = t('editor.validationError', { error: 'URL pattern is required' });
+    errors.urlPattern = t('validation.urlPatternRequired');
   }
 
   if (formData.matchType === 'regex' && !validateRegexPattern(formData.urlPattern)) {
-    errors.urlPattern = t('editor.validationError', { error: 'Invalid regex pattern' });
+    errors.urlPattern = t('validation.invalidRegexPattern');
   }
 
   if (formData.contentType === 'application/json' && formData.responseBody.trim()) {
@@ -109,7 +108,9 @@ export function validateRuleForm(
 
   // Validate response hook if provided
   if (formData.responseHook && formData.responseHook.trim()) {
-    const hookError = validateResponseHook(formData.responseHook);
+    // Lazy load validation
+    const { validateResponseHookLazy } = await import('./lazyValidation');
+    const hookError = await validateResponseHookLazy(formData.responseHook);
     if (hookError) {
       errors.responseHook = t('editor.validationError', { error: hookError });
     }

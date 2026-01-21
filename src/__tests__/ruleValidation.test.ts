@@ -321,110 +321,110 @@ describe('Rule Validation', () => {
       expect(Object.keys(errors)).toHaveLength(0);
     });
 
-    it('should require rule name', () => {
+    it('should require rule name', async () => {
       const formData = createValidFormData();
       formData.name = '';
       const jsonValidation = { isValid: true, message: 'Valid' };
 
-      const errors = validateRuleForm(formData, jsonValidation, mockT);
+      const errors = await validateRuleForm(formData, jsonValidation, mockT);
 
       expect(errors.name).toBeDefined();
-      expect(errors.name).toContain('Name is required');
+      expect(errors.name).toBe('validation.nameRequired');
     });
 
-    it('should require non-whitespace rule name', () => {
+    it('should require non-whitespace rule name', async () => {
       const formData = createValidFormData();
       formData.name = '   ';
       const jsonValidation = { isValid: true, message: 'Valid' };
 
-      const errors = validateRuleForm(formData, jsonValidation, mockT);
+      const errors = await validateRuleForm(formData, jsonValidation, mockT);
 
       expect(errors.name).toBeDefined();
     });
 
-    it('should require URL pattern', () => {
+    it('should require URL pattern', async () => {
       const formData = createValidFormData();
       formData.urlPattern = '';
       const jsonValidation = { isValid: true, message: 'Valid' };
 
-      const errors = validateRuleForm(formData, jsonValidation, mockT);
+      const errors = await validateRuleForm(formData, jsonValidation, mockT);
 
       expect(errors.urlPattern).toBeDefined();
-      expect(errors.urlPattern).toContain('URL pattern is required');
+      expect(errors.urlPattern).toBe('validation.urlPatternRequired');
     });
 
-    it('should require non-whitespace URL pattern', () => {
+    it('should require non-whitespace URL pattern', async () => {
       const formData = createValidFormData();
       formData.urlPattern = '   ';
       const jsonValidation = { isValid: true, message: 'Valid' };
 
-      const errors = validateRuleForm(formData, jsonValidation, mockT);
+      const errors = await validateRuleForm(formData, jsonValidation, mockT);
 
       expect(errors.urlPattern).toBeDefined();
     });
 
-    it('should validate regex URL patterns', () => {
+    it('should validate regex URL patterns', async () => {
       const formData = createValidFormData();
       formData.matchType = 'regex';
       formData.urlPattern = '[invalid(regex';
       const jsonValidation = { isValid: true, message: 'Valid' };
 
-      const errors = validateRuleForm(formData, jsonValidation, mockT);
+      const errors = await validateRuleForm(formData, jsonValidation, mockT);
 
       expect(errors.urlPattern).toBeDefined();
-      expect(errors.urlPattern).toContain('Invalid regex');
+      expect(errors.urlPattern).toBe('validation.invalidRegexPattern');
     });
 
-    it('should accept valid regex patterns', () => {
+    it('should accept valid regex patterns', async () => {
       const formData = createValidFormData();
       formData.matchType = 'regex';
       formData.urlPattern = 'https://api\\.example\\.com/.*';
       const jsonValidation = { isValid: true, message: 'Valid' };
 
-      const errors = validateRuleForm(formData, jsonValidation, mockT);
+      const errors = await validateRuleForm(formData, jsonValidation, mockT);
 
       expect(errors.urlPattern).toBeUndefined();
     });
 
-    it('should validate JSON response body', () => {
+    it('should validate JSON response body', async () => {
       const formData = createValidFormData();
       formData.contentType = 'application/json';
       formData.responseBody = '{"invalid": json}';
       const jsonValidation = { isValid: false, message: 'Invalid JSON' };
 
-      const errors = validateRuleForm(formData, jsonValidation, mockT);
+      const errors = await validateRuleForm(formData, jsonValidation, mockT);
 
       expect(Object.keys(errors)).toHaveLength(0); // Early return on invalid JSON
     });
 
-    it('should accept empty response body', () => {
+    it('should accept empty response body', async () => {
       const formData = createValidFormData();
       formData.responseBody = '';
       const jsonValidation = null;
 
-      const errors = validateRuleForm(formData, jsonValidation, mockT);
+      const errors = await validateRuleForm(formData, jsonValidation, mockT);
 
       expect(errors.responseBody).toBeUndefined();
     });
 
-    it('should skip JSON validation for non-JSON content types', () => {
+    it('should skip JSON validation for non-JSON content types', async () => {
       const formData = createValidFormData();
       formData.contentType = 'text/plain';
       formData.responseBody = 'not json at all';
       const jsonValidation = null;
 
-      const errors = validateRuleForm(formData, jsonValidation, mockT);
+      const errors = await validateRuleForm(formData, jsonValidation, mockT);
 
       expect(errors.responseBody).toBeUndefined();
     });
 
-    it('should return multiple errors', () => {
+    it('should return multiple errors', async () => {
       const formData = createValidFormData();
       formData.name = '';
       formData.urlPattern = '';
       const jsonValidation = { isValid: true, message: 'Valid' };
 
-      const errors = validateRuleForm(formData, jsonValidation, mockT);
+      const errors = await validateRuleForm(formData, jsonValidation, mockT);
 
       expect(errors.name).toBeDefined();
       expect(errors.urlPattern).toBeDefined();

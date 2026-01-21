@@ -5,6 +5,19 @@ All notable changes to Moq Extension will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.9.3] - 2026-01-22
+
+### Performance
+- **Bundle Size Optimization**: Reduced initial popup bundle size by 65% (1.04 MB → 364 KB)
+  - Implemented lazy loading for Prettier (~301 KB) - loads only when "Beautify" is clicked
+  - Implemented lazy loading for validation dependencies (~74 KB) - loads only when validating response hooks
+  - Created `lazyValidation.ts` wrapper for CSP-compliant async module loading
+  - Updated webpack configuration to exclude lazy-loaded modules from vendor bundle
+  - Heavy dependencies now load on-demand, significantly improving initial popup render time
+- **Code Quality**: Eliminated code duplication in RuleEditor save logic
+  - Extracted common validation and save logic into shared `saveRule` function
+  - Improved maintainability and consistency across form submission handlers
+
 ## [2.9.2] - 2026-01-21
 
 ### Added

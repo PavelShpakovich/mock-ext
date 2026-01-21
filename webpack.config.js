@@ -63,7 +63,21 @@ module.exports = (env, argv) => {
             priority: 20,
           },
           vendor: {
-            test: /[\\/]node_modules[\\/]/,
+            test(module) {
+              // Exclude lazy-loaded validation dependencies from vendor chunk
+              // These should stay in their async chunks loaded on-demand
+              if (module.nameForCondition) {
+                const name = module.nameForCondition();
+                if (
+                  name &&
+                  /[\\/]node_modules[\\/](acorn|eslint-scope|estraverse|esrecurse|prettier)[\\/]/.test(name)
+                ) {
+                  return false;
+                }
+              }
+              // Include all other node_modules
+              return /[\\/]node_modules[\\/]/.test(module.nameForCondition?.() || '');
+            },
             name: 'vendor',
             priority: 10,
           },

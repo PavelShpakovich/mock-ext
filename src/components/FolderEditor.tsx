@@ -66,7 +66,7 @@ const FolderEditor: React.FC<FolderEditorProps> = ({ folder, existingFolders, on
             fullWidth
             autoFocus
           />
-          {error && <div className='text-red-600 dark:text-red-400 text-sm font-semibold'>{error}</div>}
+          {error && <div className='text-xs text-red-400 font-medium'>{error}</div>}
         </div>
 
         <div className='flex justify-end gap-2'>

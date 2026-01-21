@@ -86,7 +86,10 @@
   "validation": {
     "folderNameEmpty": "Имя папки не может быть пустым",
     "folderNameTooLong": "Имя папки слишком длинное (макс. 50 символов)",
-    "folderNameDuplicate": "Папка с таким именем уже существует"
+    "folderNameDuplicate": "Папка с таким именем уже существует",
+    "nameRequired": "Требуется имя",
+    "urlPatternRequired": "Требуется шаблон URL",
+    "invalidRegexPattern": "Некорректное регулярное выражение"
   },
   "requests": {
     "title": "Журнал запросов",
@@ -184,7 +187,6 @@
     "yes": "Да",
     "no": "Нет",
     "expandEditor": "Развернуть редактор",
-    "mockThisTooltip": "Создать правило из этого запроса",
     "switchToRussian": "Переключить на русский",
     "switchToEnglish": "Переключить на английский"
   },

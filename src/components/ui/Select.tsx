@@ -48,7 +48,7 @@ export const Select: React.FC<SelectProps> = ({
         </div>
       </div>
       {description && <p className='text-gray-500 dark:text-gray-400 text-xs'>{description}</p>}
-      {error && <p className='text-red-600 dark:text-red-400 text-sm font-semibold'>{error}</p>}
+      {error && <p className='text-xs text-red-400 font-medium'>{error}</p>}
     </div>
   );
 };

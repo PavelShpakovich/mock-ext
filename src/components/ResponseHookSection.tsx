@@ -90,7 +90,7 @@ const ResponseHookSection: React.FC<ResponseHookSectionProps> = ({
           <div className='min-h-10'>
             {error && (
               <div className='bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-2'>
-                <p className='text-red-600 dark:text-red-400 text-sm font-semibold'>{error}</p>
+                <p className='text-xs text-red-400 font-medium'>{error}</p>
               </div>
             )}
           </div>
