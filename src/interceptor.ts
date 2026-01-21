@@ -3,6 +3,10 @@
 // ⚠️ IMPORTANT: Cannot use ES6 imports - must be self-contained
 // ⚠️ String literal types here mirror enums defined in src/enums.ts
 
+// Constants (duplicated from src/constants.ts - cannot use imports in MAIN world)
+const MAX_RESPONSE_BODY_SIZE = 100000;
+const MAX_RANDOM_NUMBER = 1000000;
+
 interface MockRule {
   id: string;
   enabled: boolean;
@@ -16,6 +20,9 @@ interface MockRule {
   headers?: Record<string, string>;
   matchCount?: number;
   lastMatched?: number;
+  responseHook?: string; // Optional JavaScript code to modify response
+  responseHookEnabled?: boolean; // Whether the hook is active (default: true if hook exists)
+  responseMode?: 'mock' | 'passthrough'; // Note: Cannot use enum in MAIN world - values must match ResponseMode enum
 }
 
 interface Settings {
@@ -110,12 +117,24 @@ class RequestInterceptor {
     return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   }
 
-  private async createMockResponse(rule: MockRule): Promise<Response> {
+  private async createMockResponse(
+    rule: MockRule,
+    url: string,
+    method: string,
+    requestInit?: RequestInit
+  ): Promise<Response> {
     // Apply delay if specified
     await this.applyDelay(rule.delay);
 
-    // Prepare response body with dynamic variables
-    const body = this.prepareResponseBody(rule.response);
+    // Prepare response body with dynamic variables and optional response hook
+    const body = await this.prepareResponseBody(
+      rule.response,
+      rule.responseHook,
+      rule.responseHookEnabled,
+      url,
+      method,
+      requestInit
+    );
 
     // Create Response object with proper status and headers
     const statusCode = this.getValidStatusCode(rule.statusCode);
@@ -128,6 +147,47 @@ class RequestInterceptor {
     });
   }
 
+  private async createPassthroughResponse(
+    rule: MockRule,
+    input: RequestInfo | URL,
+    init: RequestInit | undefined,
+    url: string,
+    method: string,
+    originalFetch: typeof fetch
+  ): Promise<Response> {
+    try {
+      await this.applyDelay(rule.delay);
+
+      const realResponse = await originalFetch.call(window, input, init);
+      const realBody = await realResponse.text();
+
+      let modifiedBody = realBody;
+      const hookEnabled = rule.responseHookEnabled !== false; // Default to true
+      if (rule.responseHook && rule.responseHook.trim() !== '' && hookEnabled) {
+        try {
+          const modifiedResponse = this.executeResponseHook(rule.responseHook, realBody, url, method, init);
+          modifiedBody = typeof modifiedResponse === 'string' ? modifiedResponse : JSON.stringify(modifiedResponse);
+        } catch (error) {
+          console.error('[Moq] Passthrough hook failed:', error);
+          modifiedBody = realBody;
+        }
+      }
+
+      const statusCode = this.getValidStatusCode(rule.statusCode);
+      const headers = this.buildResponseHeaders(rule);
+
+      return new Response(modifiedBody, {
+        status: statusCode,
+        statusText: this.getStatusText(statusCode),
+        headers,
+      });
+    } catch (error) {
+      console.error('[Moq] Passthrough mode failed:', error);
+      // Fallback to mock response on error
+      return this.createMockResponse(rule, url, method, init);
+    }
+  }
+
   private async applyDelay(delay: number): Promise<void> {
     const validDelay = typeof delay === 'number' && !isNaN(delay) ? delay : 0;
     if (validDelay > 0) {
@@ -135,9 +195,192 @@ class RequestInterceptor {
     }
   }
 
-  private prepareResponseBody(response: string | object): string {
-    const body = typeof response === 'string' ? response : JSON.stringify(response);
-    return this.applyDynamicVariables(body);
+  private async prepareResponseBody(
+    response: string | object,
+    responseHook: string | undefined,
+    responseHookEnabled: boolean | undefined,
+    url: string,
+    method: string,
+    requestInit?: RequestInit
+  ): Promise<string> {
+    let responseBody = typeof response === 'string' ? response : JSON.stringify(response);
+
+    const hookEnabled = responseHookEnabled !== false; // Default to true
+    if (responseHook && responseHook.trim() !== '' && hookEnabled) {
+      try {
+        const modifiedResponse = this.executeResponseHook(responseHook, responseBody, url, method, requestInit);
+        responseBody = typeof modifiedResponse === 'string' ? modifiedResponse : JSON.stringify(modifiedResponse);
+      } catch (error) {
+        console.error('[Moq] Response hook failed:', error);
+      }
+    }
+
+    return this.applyDynamicVariables(responseBody);
+  }
+
+  /**
+   * Executes a response hook with the provided context.
+   * Self-contained implementation (no imports allowed in MAIN world).
+   */
+  private executeResponseHook(
+    hookCode: string,
+    response: string,
+    url: string,
+    method: string,
+    requestInit?: RequestInit
+  ): unknown {
+    try {
+      let parsedResponse: unknown = response;
+      try {
+        parsedResponse = JSON.parse(response);
+      } catch {
+        parsedResponse = response;
+      }
+
+      // Helper functions available in response hooks
+      const helpers = {
+        randomId: (): string => Math.random().toString(36).substring(2, 11),
+        timestamp: (): number => Date.now(),
+        uuid: (): string => {
+          // Simple UUID v4 implementation
+          return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+            const r = (Math.random() * 16) | 0;
+            const v = c === 'x' ? r : (r & 0x3) | 0x8;
+            return v.toString(16);
+          });
+        },
+        randomNumber: (min: number = 0, max: number = 999999): number => {
+          return Math.floor(Math.random() * (max - min + 1)) + min;
+        },
+        randomString: (length: number = 8): string => {
+          const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+          let result = '';
+          for (let i = 0; i < length; i++) {
+            result += chars.charAt(Math.floor(Math.random() * chars.length));
+          }
+          return result;
+        },
+      };
+
+      const requestHeaders: Record<string, string> = {};
+      if (requestInit?.headers) {
+        const headers = requestInit.headers;
+        if (headers instanceof Headers) {
+          headers.forEach((value, key) => {
+            requestHeaders[key] = value;
+          });
+        } else if (Array.isArray(headers)) {
+          headers.forEach(([key, value]) => {
+            requestHeaders[key] = value;
+          });
+        } else {
+          Object.assign(requestHeaders, headers);
+        }
+      }
+
+      const request = {
+        url,
+        method,
+        headers: requestHeaders,
+        body: requestInit?.body ? String(requestInit.body) : undefined,
+      };
+
+      const fn = new Function(
+        'response',
+        'request',
+        'helpers',
+        `
+        'use strict';
+        try {
+          ${hookCode}
+          return response;
+        } catch (error) {
+          console.error('[Moq] Response hook error:', error.message);
+          return response;
+        }
+      `
+      );
+
+      // Execute hook
+      const modifiedResponse = fn(parsedResponse, request, helpers);
+      return modifiedResponse;
+    } catch (error) {
+      console.error('[Moq] Failed to execute response hook:', error);
+      return response; // Return original on error
+    }
+  }
+
+  /**
+   * Executes a response hook for XHR requests.
+   * Handles XHR-specific request body types.
+   */
+  private executeResponseHookForXHR(
+    hookCode: string,
+    response: string,
+    url: string,
+    method: string,
+    requestBody?: Document | XMLHttpRequestBodyInit | null
+  ): unknown {
+    try {
+      let parsedResponse: unknown = response;
+      try {
+        parsedResponse = JSON.parse(response);
+      } catch {
+        parsedResponse = response;
+      }
+
+      const helpers = {
+        randomId: (): string => Math.random().toString(36).substring(2, 11),
+        timestamp: (): number => Date.now(),
+        uuid: (): string => {
+          // Simple UUID v4 implementation
+          return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+            const r = (Math.random() * 16) | 0;
+            const v = c === 'x' ? r : (r & 0x3) | 0x8;
+            return v.toString(16);
+          });
+        },
+        randomNumber: (min: number = 0, max: number = 999999): number => {
+          return Math.floor(Math.random() * (max - min + 1)) + min;
+        },
+        randomString: (length: number = 8): string => {
+          const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+          let result = '';
+          for (let i = 0; i < length; i++) {
+            result += chars.charAt(Math.floor(Math.random() * chars.length));
+          }
+          return result;
+        },
+      };
+
+      const request = {
+        url,
+        method,
+        headers: {},
+        body: requestBody ? String(requestBody) : undefined,
+      };
+
+      const fn = new Function(
+        'response',
+        'request',
+        'helpers',
+        `
+        'use strict';
+        try {
+          ${hookCode}
+          return response;
+        } catch (error) {
+          console.error('[Moq] Response hook error:', error.message);
+          return response;
+        }
+      `
+      );
+
+      return fn(parsedResponse, request, helpers);
+    } catch (error) {
+      console.error('[Moq] XHR hook execution failed:', error);
+      return response;
+    }
   }
 
   private getValidStatusCode(statusCode: number): number {
@@ -150,7 +393,6 @@ class RequestInterceptor {
       'X-Moq': 'true',
     };
 
-    // Inject CORS headers if enabled
     if (this.settings.corsAutoFix) {
       headers['Access-Control-Allow-Origin'] = '*';
       headers['Access-Control-Allow-Methods'] = '*';
@@ -158,30 +400,12 @@ class RequestInterceptor {
       headers['Access-Control-Allow-Credentials'] = 'true';
     }
 
-    // Apply custom headers (can override CORS headers if needed)
     return { ...headers, ...(rule.headers || {}) };
   }
 
   private notifyInterception(url: string, method: string, ruleId: string, statusCode: number): void {
-    window.postMessage(
-      {
-        type: 'MOQ_INTERCEPTED',
-        url,
-        method,
-        ruleId,
-        statusCode,
-      },
-      '*'
-    );
-
-    // Increment rule counter
-    window.postMessage(
-      {
-        type: 'MOQ_INCREMENT_COUNTER',
-        ruleId,
-      },
-      '*'
-    );
+    window.postMessage({ type: 'MOQ_INTERCEPTED', url, method, ruleId, statusCode }, '*');
+    window.postMessage({ type: 'MOQ_INCREMENT_COUNTER', ruleId }, '*');
   }
 
   private captureResponseHeaders(response: Response): Record<string, string> {
@@ -200,7 +424,8 @@ class RequestInterceptor {
     body: string,
     headers: Record<string, string>
   ): void {
-    const truncatedBody = body.length > 100000 ? body.substring(0, 100000) + '...[truncated]' : body;
+    const truncatedBody =
+      body.length > MAX_RESPONSE_BODY_SIZE ? body.substring(0, MAX_RESPONSE_BODY_SIZE) + '...[truncated]' : body;
 
     window.postMessage(
       {
@@ -221,8 +446,6 @@ class RequestInterceptor {
       const clonedResponse = response.clone();
       const contentType = clonedResponse.headers.get('content-type') || '';
       const headers = this.captureResponseHeaders(response);
-
-      // Only capture text-based responses
       const isTextBased = contentType.includes('json') || contentType.includes('text') || contentType.includes('xml');
 
       if (isTextBased) {
@@ -231,12 +454,10 @@ class RequestInterceptor {
           .then((body) => {
             this.notifyResponseCaptured(url, method, response.status, contentType, body, headers);
           })
-          .catch(() => {
-            // Failed to read body - ignore silently
-          });
+          .catch(() => {});
       }
     } catch (e) {
-      // Failed to clone/read response - ignore silently
+      // Silently ignore clone/read errors
     }
   }
 
@@ -244,6 +465,7 @@ class RequestInterceptor {
     const originalFetch = this.originalFetch;
     const matchesRule = this.matchesRule.bind(this);
     const createMockResponse = this.createMockResponse.bind(this);
+    const createPassthroughResponse = this.createPassthroughResponse.bind(this);
     const captureResponse = this.captureResponse.bind(this);
     const notifyInterception = this.notifyInterception.bind(this);
 
@@ -263,7 +485,14 @@ class RequestInterceptor {
 
       if (rule) {
         notifyInterception(url, method, rule.id, rule.statusCode);
-        return createMockResponse(rule);
+
+        // Check if this is passthrough mode with a response hook
+        if (rule.responseMode === 'passthrough' && rule.responseHook) {
+          return createPassthroughResponse(rule, input, init, url, method, originalFetch);
+        }
+
+        // Default: mock mode
+        return createMockResponse(rule, url, method, init);
       }
 
       // Not mocked - proceed with real request and capture response for logging
@@ -377,19 +606,39 @@ class RequestInterceptor {
     url: string,
     method: string,
     applyDynamicVariables: (text: string) => string,
-    getStatusText: (code: number) => string
+    getStatusText: (code: number) => string,
+    requestBody?: Document | XMLHttpRequestBodyInit | null
   ): Promise<void> {
-    // Notify about interception
     this.notifyInterception(url, method, rule.id, rule.statusCode);
 
-    // Apply delay if specified
     const delay = typeof rule.delay === 'number' && !isNaN(rule.delay) ? rule.delay : 0;
     if (delay > 0) {
       await new Promise((resolve) => setTimeout(resolve, delay));
     }
 
-    // Prepare response body
+    if (rule.responseMode === 'passthrough' && rule.responseHook) {
+      await this.handleXHRPassthrough(xhr, rule, url, method, requestBody, getStatusText);
+      return;
+    }
+
     let responseBody = typeof rule.response === 'string' ? rule.response : JSON.stringify(rule.response);
+
+    const hookEnabled = rule.responseHookEnabled !== false; // Default to true
+    if (rule.responseHook && rule.responseHook.trim() !== '' && hookEnabled) {
+      try {
+        const modifiedResponse = this.executeResponseHookForXHR(
+          rule.responseHook,
+          responseBody,
+          url,
+          method,
+          requestBody
+        );
+        responseBody = typeof modifiedResponse === 'string' ? modifiedResponse : JSON.stringify(modifiedResponse);
+      } catch (error) {
+        console.error('[Moq] XHR hook failed:', error);
+      }
+    }
+
     responseBody = applyDynamicVariables(responseBody);
 
     // Setup XHR response
@@ -397,6 +646,67 @@ class RequestInterceptor {
 
     // Trigger events
     this.triggerXHREvents(xhr, responseBody);
+  }
+
+  private async handleXHRPassthrough(
+    mockXhr: XMLHttpRequest,
+    rule: MockRule,
+    url: string,
+    method: string,
+    requestBody: Document | XMLHttpRequestBodyInit | null | undefined,
+    getStatusText: (code: number) => string
+  ): Promise<void> {
+    try {
+      const realXhr = new this.originalXHR();
+      realXhr.open(method, url, true);
+
+      await new Promise<void>((resolve, reject) => {
+        realXhr.onload = () => resolve();
+        realXhr.onerror = () => reject(new Error('XHR request failed'));
+        realXhr.send(requestBody);
+      });
+
+      let realBody = realXhr.responseText;
+
+      const hookEnabled = rule.responseHookEnabled !== false; // Default to true
+      if (rule.responseHook && rule.responseHook.trim() !== '' && hookEnabled) {
+        try {
+          const modifiedResponse = this.executeResponseHookForXHR(
+            rule.responseHook,
+            realBody,
+            url,
+            method,
+            requestBody
+          );
+          realBody = typeof modifiedResponse === 'string' ? modifiedResponse : JSON.stringify(modifiedResponse);
+        } catch (error) {
+          console.error('[Moq] XHR passthrough hook failed:', error);
+        }
+      }
+
+      const statusCode = this.getValidStatusCode(rule.statusCode);
+      Object.defineProperty(mockXhr, 'readyState', { value: 4, writable: false, configurable: true });
+      Object.defineProperty(mockXhr, 'status', { value: statusCode, writable: false, configurable: true });
+      Object.defineProperty(mockXhr, 'statusText', {
+        value: getStatusText(statusCode),
+        writable: false,
+        configurable: true,
+      });
+      Object.defineProperty(mockXhr, 'responseText', { value: realBody, writable: false, configurable: true });
+      Object.defineProperty(mockXhr, 'response', { value: realBody, writable: false, configurable: true });
+      Object.defineProperty(mockXhr, 'responseType', { value: '', writable: false, configurable: true });
+
+      const headerHandlers = this.createXHRResponseHeaders(rule);
+      mockXhr.getResponseHeader = headerHandlers.getHeader;
+      mockXhr.getAllResponseHeaders = headerHandlers.getAllHeaders;
+
+      this.triggerXHREvents(mockXhr, realBody);
+    } catch (error) {
+      console.error('[Moq] XHR passthrough failed:', error);
+      const responseBody = typeof rule.response === 'string' ? rule.response : JSON.stringify(rule.response);
+      this.setupXHRResponse(mockXhr, rule, responseBody, getStatusText);
+      this.triggerXHREvents(mockXhr, responseBody);
+    }
   }
 
   private interceptXHR() {
@@ -414,39 +724,39 @@ class RequestInterceptor {
       let url: string;
       let method: string;
 
-      // Intercept open() to capture URL and method
-      xhr.open = function (...args: any[]) {
-        method = args[0].toUpperCase();
-        url = args[1];
-        return originalOpen.apply(this, args as any);
+      xhr.open = function (
+        httpMethod: string,
+        requestUrl: string | URL,
+        async?: boolean,
+        username?: string | null,
+        password?: string | null
+      ) {
+        method = httpMethod.toUpperCase();
+        url = requestUrl.toString();
+        return originalOpen.call(this, httpMethod, requestUrl, async ?? true, username, password);
       };
 
-      // Intercept send() to check for mock rules
       xhr.send = function (_body?: Document | XMLHttpRequestBodyInit | null) {
         const rule = matchesRule(url, method);
 
         if (rule) {
-          // Mock the request asynchronously
           setTimeout(() => {
-            handleXHRMock(xhr, rule, url, method, applyDynamicVariables, getStatusText);
+            handleXHRMock(xhr, rule, url, method, applyDynamicVariables, getStatusText, _body);
           }, 0);
           return;
         }
 
-        // Not mocked - proceed with real request
         return originalSend.call(this, _body);
       };
 
       return xhr;
     } as unknown as typeof XMLHttpRequest;
 
-    // Preserve prototype and static properties
     window.XMLHttpRequest.prototype = OriginalXHR.prototype;
     Object.setPrototypeOf(window.XMLHttpRequest, OriginalXHR);
   }
 
   private listenForRuleUpdates() {
-    // Listen for rule and settings updates from content script
     window.addEventListener('message', (event) => {
       if (event.source !== window) return;
       if (event.data.type === 'MOQ_UPDATE_RULES') {
@@ -462,7 +772,7 @@ class RequestInterceptor {
     return text
       .replace(/\{\{timestamp\}\}/g, Date.now().toString())
       .replace(/\{\{uuid\}\}/g, this.generateUUID())
-      .replace(/\{\{random_number\}\}/g, () => Math.floor(Math.random() * 1000000).toString())
+      .replace(/\{\{random_number\}\}/g, () => Math.floor(Math.random() * MAX_RANDOM_NUMBER).toString())
       .replace(/\{\{random_string\}\}/g, () => Math.random().toString(36).substring(7));
   }
 
@@ -498,8 +808,6 @@ class RequestInterceptor {
   }
 }
 
-// Initialize interceptor (singleton pattern)
-// TypeScript type augmentation for Window
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface Window {
   __MOQ_INTERCEPTOR__?: RequestInterceptor;

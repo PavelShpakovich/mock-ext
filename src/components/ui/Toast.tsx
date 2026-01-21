@@ -42,7 +42,7 @@ export const Toast: React.FC<ToastProps> = ({ type, message, onClose, duration =
         styles[type]
       )}
     >
-      <div className='shrink-0 mt-0.5'>{icons[type]}</div>
+      <div className='shrink-0'>{icons[type]}</div>
       <p className='flex-1 text-sm font-medium'>{message}</p>
       <button
         onClick={onClose}

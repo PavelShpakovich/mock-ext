@@ -27,16 +27,16 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   const { t } = useI18n();
 
   return (
-    <div className='fixed inset-0 bg-black/50 flex items-center justify-center z-50' onClick={onCancel}>
+    <div className='fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4' onClick={onCancel}>
       <div
-        className='bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md mx-4 flex flex-col gap-6'
+        className='bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md flex flex-col gap-6'
         onClick={(e) => e.stopPropagation()}
       >
         <DialogHeader title={title} onClose={onCancel} />
 
         {variant === ConfirmDialogVariant.Danger && (
           <div className='flex items-start gap-3 p-3 bg-red-500/10 border border-red-500/30 rounded-lg'>
-            <AlertTriangle className='w-5 h-5 text-red-600 dark:text-red-400 shrink-0 mt-0.5' />
+            <AlertTriangle className='w-5 h-5 text-red-600 dark:text-red-400 shrink-0' />
             <p className='text-sm text-red-700 dark:text-red-300'>{message}</p>
           </div>
         )}

@@ -1,5 +1,6 @@
 import { Folder, MockRule } from '../types';
 import { v4 as uuidv4 } from 'uuid';
+import { MAX_FOLDER_NAME_LENGTH } from '../constants';
 
 /**
  * Create a new folder
@@ -130,7 +131,7 @@ export function validateFolderName(name: string, existingFolders: Folder[], excl
     return 'validation.folderNameEmpty';
   }
 
-  if (trimmedName.length > 50) {
+  if (trimmedName.length > MAX_FOLDER_NAME_LENGTH) {
     return 'validation.folderNameTooLong';
   }
 

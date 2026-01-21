@@ -31,8 +31,8 @@ export const HeadersEditor: React.FC<HeadersEditorProps> = ({ headers, onChange 
   };
 
   return (
-    <div>
-      <label className='block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2'>
+    <div className='flex flex-col gap-2'>
+      <label className='block text-sm font-bold text-gray-700 dark:text-gray-300'>
         {t('editor.customHeaders')}{' '}
         <span className='text-gray-500 dark:text-gray-500 text-xs font-normal'>({t('editor.optional')})</span>
       </label>
@@ -66,10 +66,10 @@ export const HeadersEditor: React.FC<HeadersEditorProps> = ({ headers, onChange 
           type='button'
           variant={ButtonVariant.Secondary}
           size={ButtonSize.Small}
-          className='flex items-center w-fit'
+          className='flex items-center gap-2 w-fit'
           onClick={handleAddHeader}
         >
-          <Plus className='w-4 h-4 mr-2' />
+          <Plus className='w-4 h-4' />
           {t('editor.addHeader')}
         </Button>
       </div>

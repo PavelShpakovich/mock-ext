@@ -49,6 +49,11 @@ export enum ImportMode {
   Replace = 'replace',
 }
 
+export enum ResponseMode {
+  Mock = 'mock',
+  Passthrough = 'passthrough',
+}
+
 // ============================================================================
 // UI Component Enums
 // ============================================================================

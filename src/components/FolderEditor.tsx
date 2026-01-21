@@ -42,17 +42,17 @@ const FolderEditor: React.FC<FolderEditorProps> = ({ folder, existingFolders, on
   };
 
   return (
-    <div className='fixed inset-0 bg-black/50 flex items-center justify-center z-50' onClick={onCancel}>
+    <div className='fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4' onClick={onCancel}>
       <div
-        className='bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md mx-4'
+        className='bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md flex flex-col gap-4'
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className='text-xl font-bold text-gray-900 dark:text-white mb-4'>
+        <h2 className='text-xl font-bold text-gray-900 dark:text-white'>
           {folder ? t('folders.renameFolder') : t('folders.createFolder')}
         </h2>
 
-        <div className='mb-4'>
-          <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
+        <div className='flex flex-col gap-1'>
+          <label className='block text-sm font-medium text-gray-700 dark:text-gray-300'>
             {t('folders.folderName')}
           </label>
           <Input
@@ -66,7 +66,7 @@ const FolderEditor: React.FC<FolderEditorProps> = ({ folder, existingFolders, on
             fullWidth
             autoFocus
           />
-          {error && <div className='text-red-600 dark:text-red-400 text-sm mt-1'>{error}</div>}
+          {error && <div className='text-red-600 dark:text-red-400 text-sm'>{error}</div>}
         </div>
 
         <div className='flex justify-end gap-2'>

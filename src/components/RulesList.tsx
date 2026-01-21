@@ -71,7 +71,7 @@ export const RulesList: React.FC<RulesListProps> = ({
               onDisableAll={() => onDisableFolderRules(folder.id)}
             />
             {!folder.collapsed && (
-              <div className='ml-8 mt-2 flex flex-col gap-2'>
+              <div className='pl-8 pt-2 flex flex-col gap-2'>
                 {folderRules.map((rule) => (
                   <SelectableRuleItem
                     key={rule.id}
@@ -94,11 +94,9 @@ export const RulesList: React.FC<RulesListProps> = ({
       })}
 
       {(groupedRules.get(undefined) || []).length > 0 && (
-        <div>
+        <div className='flex flex-col gap-2'>
           {folders.length > 0 && (
-            <div className='text-sm font-medium text-gray-600 dark:text-gray-400 mb-2 px-2'>
-              {t('folders.ungrouped')}
-            </div>
+            <div className='text-sm font-medium text-gray-600 dark:text-gray-400 px-2'>{t('folders.ungrouped')}</div>
           )}
           <div className='flex flex-col gap-2'>
             {(groupedRules.get(undefined) || []).map((rule) => (

@@ -39,7 +39,7 @@ export const RulesToolbar: React.FC<RulesToolbarProps> = ({
   const { t } = useI18n();
 
   return (
-    <div className='mb-4 flex items-center justify-between'>
+    <div className='flex items-center justify-between'>
       <div className='flex items-center gap-2'>
         {selectionMode ? (
           <>

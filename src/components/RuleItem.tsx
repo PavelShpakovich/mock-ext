@@ -73,13 +73,13 @@ const RuleItem: React.FC<RuleItemProps> = ({
       )}
       hoverEffect={!disabled}
     >
-      <div className='flex items-start justify-between mb-2'>
-        <div className='flex-1 min-w-0'>
-          <div className='flex items-center gap-2 mb-2 flex-wrap'>
-            <h3 className='font-bold text-gray-900 dark:text-white text-base'>
+      <div className='flex items-start justify-between'>
+        <div className='flex-1 min-w-0 flex flex-col gap-2'>
+          <div className='flex items-center gap-2 flex-wrap'>
+            <h3 className='font-bold text-gray-900 dark:text-white text-base flex items-center gap-2'>
               {rule.name}
               {(rule.matchCount ?? 0) > 0 && (
-                <span className='ml-2 text-sm font-normal text-gray-500 dark:text-gray-400'>({rule.matchCount})</span>
+                <span className='text-sm font-normal text-gray-500 dark:text-gray-400'>({rule.matchCount})</span>
               )}
             </h3>
             {rule.method && <MethodBadge method={rule.method} />}
@@ -91,13 +91,13 @@ const RuleItem: React.FC<RuleItemProps> = ({
             </div>
           </div>
           {rule.delay > 0 && (
-            <div className='text-xs text-yellow-700 dark:text-yellow-500/80 mt-2 font-medium flex items-center gap-1'>
+            <div className='text-xs text-yellow-700 dark:text-yellow-500/80 font-medium flex items-center gap-1'>
               <Clock className='w-3 h-3' />
               {t('rules.delayMs', { delay: rule.delay })}
             </div>
           )}
           {rule.lastMatched && (
-            <div className='text-xs text-blue-700 dark:text-blue-400/80 mt-2 font-medium flex items-center gap-2'>
+            <div className='text-xs text-blue-700 dark:text-blue-400/80 font-medium flex items-center gap-2'>
               {t('rules.lastMatched')}: {formatRelativeTime(rule.lastMatched, t)}
               <IconButton
                 onClick={(e) => {
@@ -105,7 +105,7 @@ const RuleItem: React.FC<RuleItemProps> = ({
                   onResetHits();
                 }}
                 title={t('rules.resetHits')}
-                className='text-blue-600 dark:text-blue-400/60 hover:text-blue-700 dark:hover:text-blue-400 -my-1'
+                className='text-blue-600 dark:text-blue-400/60 hover:text-blue-700 dark:hover:text-blue-400'
                 variant={IconButtonVariant.Ghost}
               >
                 <RotateCcw className='w-3 h-3' />
@@ -114,7 +114,7 @@ const RuleItem: React.FC<RuleItemProps> = ({
           )}
 
           {warnings.length > 0 && (
-            <div className='mt-3 flex flex-col gap-2'>
+            <div className='flex flex-col gap-2'>
               {warnings.map((warning, index) => (
                 <div
                   key={index}
@@ -123,7 +123,7 @@ const RuleItem: React.FC<RuleItemProps> = ({
                     getWarningColor(warning.severity)
                   )}
                 >
-                  <span className='shrink-0 mt-0.5'>{getWarningIcon(warning.severity)}</span>
+                  <span className='shrink-0'>{getWarningIcon(warning.severity)}</span>
                   <span className='leading-relaxed'>{t(warning.messageKey, warning.messageParams)}</span>
                 </div>
               ))}
@@ -131,7 +131,7 @@ const RuleItem: React.FC<RuleItemProps> = ({
           )}
         </div>
 
-        <div className='flex flex-col items-end gap-2 ml-4 shrink-0'>
+        <div className='flex flex-col items-end gap-2 pl-4 shrink-0'>
           <div className='flex items-center gap-2'>
             <IconButton onClick={onDuplicate} title={t('rules.duplicate')}>
               <Copy className='w-5 h-5' />

@@ -5,6 +5,63 @@ All notable changes to Moq Extension will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.9.0] - 2026-01-21
+
+### Added
+- **Response Hook Enable/Disable Toggle**: Added toggle control to enable/disable response hooks without deleting code
+  - Toggle appears only when hook code exists (smart UI)
+  - Visual status indicator shows enabled/disabled state with color-coded badges
+  - Rules remember enable/disable state across sessions
+  - Hooks are only executed when explicitly enabled via toggle
+  - `responseHookEnabled` field added to rule interface (defaults to true for backward compatibility)
+
+### Changed
+- **Response Hook Validation**: Upgraded to comprehensive validation using eslint-scope
+  - Now catches undefined variables (e.g., `sdawdaws` is properly flagged as error)
+  - Correctly handles property accesses (e.g., `response.email` doesn't trigger false positives)
+  - Proper scope analysis for local variables, function parameters, and closures
+  - CSP-safe implementation using static analysis (no code execution)
+  - Available globals: `response`, `request`, `helpers`, and JavaScript built-ins
+  - Real-time validation with 500ms debounce for better UX
+- **UI Improvements**:
+  - Response hook validation error now displayed below textarea (was above)
+  - Error display area now reserves space (52px min-height) to prevent layout shift
+  - Passthrough mode note only shows when response hook is enabled
+  - Status Code and Content Type fields aligned horizontally using flexbox
+  - Select component gap changed from `gap-1` to `gap-2` for consistent height with Input
+
+### Fixed
+- Validation false positives for object property accesses in response hooks
+- Layout shift when validation errors appear/disappear in response hook editor
+- Passthrough mode note displaying even when response hook is disabled
+
+## [2.8.0] - 2026-01-20
+
+### Added
+- **Response Mode Selection**: Choose how response hooks modify responses
+  - **Mock Mode** (default): Apply hook to configured mock response body
+  - **Passthrough Mode**: Forward real request to server and apply hook to real response
+  - Mode selector only appears when response hook code exists (smart UI)
+  - Enables powerful use cases like modifying real API responses on-the-fly
+  - Uses atomic `RadioOption` component for consistent styling
+  - Supports both `fetch()` and `XMLHttpRequest` interception
+  - Backward compatible with existing rules (defaults to Mock mode)
+- **ResponseMode Enum**: Added to project enums following code standards
+  - Values: `ResponseMode.Mock` and `ResponseMode.Passthrough`
+  - Used throughout codebase instead of string literals
+
+### Changed
+- **UI Improvements**:
+  - Added close button (X icon) to Rule Editor header for better UX
+  - Response Hook section title now uses subtle styling matching `labelHint` pattern
+  - All components follow flexbox + gap layout pattern (no margin/space classes)
+- **Type Safety**: All response mode references now use enum instead of string literals
+- **Interceptor**: Enhanced to support both mock and passthrough response modes
+  - `createPassthroughResponse()` forwards requests and modifies real responses
+  - `handleXHRPassthrough()` handles XMLHttpRequest passthrough mode
+  - Preserves original status codes and headers in passthrough mode
+  - Applies CORS fixes when enabled in passthrough mode
+
 ## [2.7.3] - 2026-01-19
 
 ### Fixed

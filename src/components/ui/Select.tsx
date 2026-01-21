@@ -21,9 +21,9 @@ export const Select: React.FC<SelectProps> = ({
   const selectId = id || props.name || Math.random().toString(36).substr(2, 9);
 
   return (
-    <div className={clsx({ 'w-full': fullWidth }, className)}>
+    <div className={clsx('flex flex-col gap-2', { 'w-full': fullWidth }, className)}>
       {label && (
-        <label htmlFor={selectId} className='block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2'>
+        <label htmlFor={selectId} className='block text-sm font-bold text-gray-700 dark:text-gray-300'>
           {label}
         </label>
       )}
@@ -47,8 +47,8 @@ export const Select: React.FC<SelectProps> = ({
           </svg>
         </div>
       </div>
-      {description && <p className='text-gray-500 dark:text-gray-400 text-xs mt-1'>{description}</p>}
-      {error && <p className='text-red-400 text-sm mt-1'>{error}</p>}
+      {description && <p className='text-gray-500 dark:text-gray-400 text-xs'>{description}</p>}
+      {error && <p className='text-red-400 text-sm'>{error}</p>}
     </div>
   );
 };

@@ -94,7 +94,7 @@ const Header: React.FC<HeaderProps> = ({
               </span>
             </div>
 
-            <div className='w-px h-6 bg-gray-300 dark:bg-gray-700 mx-1'></div>
+            <div className='w-px h-6 bg-gray-300 dark:bg-gray-700'></div>
 
             <Button
               onClick={handleRecordingClick}
@@ -116,7 +116,7 @@ const Header: React.FC<HeaderProps> = ({
               )}
             </Button>
 
-            <div className='w-px h-6 bg-gray-300 dark:bg-gray-700 mx-1'></div>
+            <div className='w-px h-6 bg-gray-300 dark:bg-gray-700'></div>
 
             {showOpenWindowButton && (
               <>
@@ -128,7 +128,7 @@ const Header: React.FC<HeaderProps> = ({
                   <ExternalLink className='w-4 h-4' />
                 </IconButton>
 
-                <div className='w-px h-6 bg-gray-300 dark:bg-gray-700 mx-1'></div>
+                <div className='w-px h-6 bg-gray-300 dark:bg-gray-700'></div>
               </>
             )}
 

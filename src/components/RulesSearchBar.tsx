@@ -12,14 +12,14 @@ export const RulesSearchBar: React.FC<RulesSearchBarProps> = ({ value, onChange 
   const { t } = useI18n();
 
   return (
-    <div className='mb-3 relative'>
+    <div className='relative'>
       <Search className='absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500' />
       <Input
         placeholder={t('rules.search')}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         fullWidth
-        className='pl-10'
+        className='pl-8'
       />
     </div>
   );

@@ -50,8 +50,8 @@ const RequestsTab: React.FC<RequestsTabProps> = ({
   });
 
   return (
-    <div className='p-6'>
-      <div className='mb-4 flex gap-3 items-start'>
+    <div className='p-6 flex flex-col gap-4'>
+      <div className='flex gap-3 items-start'>
         <div className='relative flex-1'>
           <Search className='absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500' />
           <Input
@@ -59,7 +59,7 @@ const RequestsTab: React.FC<RequestsTabProps> = ({
             value={searchTerm}
             onChange={(e) => onSearchChange(e.target.value)}
             fullWidth
-            className='pl-10'
+            className='pl-8'
           />
         </div>
         {requests.length > 0 && (
@@ -91,33 +91,39 @@ const RequestsTab: React.FC<RequestsTabProps> = ({
       </div>
 
       {!logRequests && requests.length === 0 && (
-        <Card className='text-center py-16 border-2 border-dashed border-gray-300 dark:border-gray-700 shadow-sm mb-4'>
-          <Circle className='w-12 h-12 mx-auto mb-4 text-gray-400 dark:text-gray-600' />
-          <div className='text-gray-700 dark:text-gray-300 font-bold text-lg mb-2'>{t('requests.noRequests')}</div>
-          <div className='text-gray-500 dark:text-gray-500 text-sm'>{t('requests.noRequestsDesc')}</div>
+        <Card className='text-center py-16 border-2 border-dashed border-gray-300 dark:border-gray-700 shadow-sm flex flex-col items-center gap-4'>
+          <Circle className='w-12 h-12 text-gray-400 dark:text-gray-600' />
+          <div className='flex flex-col gap-2'>
+            <div className='text-gray-700 dark:text-gray-300 font-bold text-lg'>{t('requests.noRequests')}</div>
+            <div className='text-gray-500 dark:text-gray-500 text-sm'>{t('requests.noRequestsDesc')}</div>
+          </div>
         </Card>
       )}
 
       {logRequests && requests.length === 0 && (
-        <Card className='text-center py-16 border-2 border-dashed border-gray-300 dark:border-gray-700 shadow-sm animate-pulse'>
-          <Circle className='w-12 h-12 mx-auto mb-4 text-red-500' fill='currentColor' />
-          <div className='text-gray-700 dark:text-gray-300 font-bold text-lg mb-2'>
-            {t('header.recording', { tabTitle: '' })}
+        <Card className='text-center py-16 border-2 border-dashed border-gray-300 dark:border-gray-700 shadow-sm animate-pulse flex flex-col items-center gap-4'>
+          <Circle className='w-12 h-12 text-red-500' fill='currentColor' />
+          <div className='flex flex-col gap-2'>
+            <div className='text-gray-700 dark:text-gray-300 font-bold text-lg'>
+              {t('header.recording', { tabTitle: '' })}
+            </div>
+            <div className='text-gray-500 dark:text-gray-500 text-sm'>{t('requests.noRequestsDesc')}</div>
           </div>
-          <div className='text-gray-500 dark:text-gray-500 text-sm'>{t('requests.noRequestsDesc')}</div>
         </Card>
       )}
 
       {filteredRequests.length === 0 && requests.length > 0 ? (
-        <Card className='text-center py-16 border-2 border-dashed border-gray-300 dark:border-gray-700 shadow-sm'>
-          <Search className='w-12 h-12 mx-auto mb-4 text-gray-400 dark:text-gray-600' />
-          <div className='text-gray-700 dark:text-gray-300 font-bold text-lg mb-2'>{t('requests.noRequests')}</div>
-          <div className='text-gray-500 dark:text-gray-500 text-sm'>{t('requests.search')}</div>
+        <Card className='text-center py-16 border-2 border-dashed border-gray-300 dark:border-gray-700 shadow-sm flex flex-col items-center gap-4'>
+          <Search className='w-12 h-12 text-gray-400 dark:text-gray-600' />
+          <div className='flex flex-col gap-2'>
+            <div className='text-gray-700 dark:text-gray-300 font-bold text-lg'>{t('requests.noRequests')}</div>
+            <div className='text-gray-500 dark:text-gray-500 text-sm'>{t('requests.search')}</div>
+          </div>
         </Card>
       ) : (
         filteredRequests.length > 0 && (
           <div className='flex flex-col gap-2'>
-            <div className='text-xs text-gray-600 dark:text-gray-500 mb-2'>
+            <div className='text-xs text-gray-600 dark:text-gray-500'>
               {filteredRequests.length} request{filteredRequests.length !== 1 ? 's' : ''}
               {!logRequests && ' (recording stopped)'}
             </div>

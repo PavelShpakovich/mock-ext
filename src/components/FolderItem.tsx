@@ -43,7 +43,7 @@ const FolderItem: React.FC<FolderItemProps> = ({
 
   return (
     <div onMouseEnter={() => setShowActions(true)} onMouseLeave={() => setShowActions(false)}>
-      <Card className='mb-2 cursor-pointer' hoverEffect={true} onClick={onToggleCollapse}>
+      <Card className='cursor-pointer' hoverEffect={true} onClick={onToggleCollapse}>
         <div className='flex items-center justify-between'>
           <div className='flex items-center gap-2 flex-1'>
             <div className='p-1'>
@@ -60,9 +60,9 @@ const FolderItem: React.FC<FolderItemProps> = ({
               <FolderOpen className='w-5 h-5 text-blue-600 dark:text-blue-400' />
             )}
 
-            <h3 className='font-bold text-gray-900 dark:text-white text-base flex-1'>
+            <h3 className='font-bold text-gray-900 dark:text-white text-base flex-1 flex items-center gap-2'>
               {folder.name}
-              <span className='ml-2 text-sm font-normal text-gray-500 dark:text-gray-400'>({ruleCount})</span>
+              <span className='text-sm font-normal text-gray-500 dark:text-gray-400'>({ruleCount})</span>
             </h3>
           </div>
 

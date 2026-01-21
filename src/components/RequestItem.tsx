@@ -19,8 +19,8 @@ const RequestItem: React.FC<RequestItemProps> = ({ request, onMock }) => {
   return (
     <Card hoverEffect={true}>
       <div className='flex items-start justify-between'>
-        <div className='flex-1 min-w-0'>
-          <div className='flex items-center gap-2 mb-2 flex-wrap'>
+        <div className='flex-1 min-w-0 flex flex-col gap-2'>
+          <div className='flex items-center gap-2 flex-wrap'>
             <MethodBadge method={request.method} />
             {request.matched && <Badge variant={BadgeVariant.Success}>{t('requests.mocked')}</Badge>}
             {request.statusCode && <StatusCodeBadge code={request.statusCode} />}
@@ -34,7 +34,7 @@ const RequestItem: React.FC<RequestItemProps> = ({ request, onMock }) => {
           </div>
         </div>
 
-        <div className='flex items-center gap-2 ml-4 shrink-0'>
+        <div className='flex items-center gap-2 pl-4 shrink-0'>
           <Button
             size={ButtonSize.Small}
             onClick={onMock}

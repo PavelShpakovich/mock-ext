@@ -65,44 +65,52 @@ export const ImportDialog: React.FC<ImportDialogProps> = ({ importedRules, exist
 
           {mode === ImportMode.Merge && (
             <InfoPanel variant='info'>
-              <div className='font-medium text-gray-900 dark:text-white mb-3'>{t('import.mergePreview')}</div>
-              <StatItem
-                icon={CheckCircle}
-                iconColor='text-green-500'
-                label={t('import.newRules')}
-                value={newRules.length}
-              />
-              {duplicateRules.length > 0 && (
-                <StatItem
-                  icon={AlertCircle}
-                  iconColor='text-yellow-500'
-                  label={t('import.duplicatesSkipped')}
-                  value={duplicateRules.length}
-                />
-              )}
-              <div className='pt-2 border-t border-gray-300 dark:border-gray-700'>
-                <span className='font-medium text-gray-900 dark:text-white'>
-                  {t('import.totalAfterMerge')}: {currentStats.total}
-                </span>
+              <div className='flex flex-col gap-3'>
+                <div className='font-medium text-gray-900 dark:text-white'>{t('import.mergePreview')}</div>
+                <div className='flex flex-col gap-2'>
+                  <StatItem
+                    icon={CheckCircle}
+                    iconColor='text-green-500'
+                    label={t('import.newRules')}
+                    value={newRules.length}
+                  />
+                  {duplicateRules.length > 0 && (
+                    <StatItem
+                      icon={AlertCircle}
+                      iconColor='text-yellow-500'
+                      label={t('import.duplicatesSkipped')}
+                      value={duplicateRules.length}
+                    />
+                  )}
+                </div>
+                <div className='pt-2 border-t border-gray-300 dark:border-gray-700'>
+                  <span className='font-medium text-gray-900 dark:text-white'>
+                    {t('import.totalAfterMerge')}: {currentStats.total}
+                  </span>
+                </div>
               </div>
             </InfoPanel>
           )}
 
           {mode === ImportMode.Replace && (
             <InfoPanel variant='danger'>
-              <div className='font-medium text-red-900 dark:text-red-400 mb-3 flex items-center gap-2'>
-                <AlertCircle className='w-5 h-5' />
-                {t('import.replaceWarning')}
-              </div>
-              <div className='flex items-center gap-2 text-sm text-red-800 dark:text-red-300'>
-                <span>
-                  {t('import.willRemove')}: {mode === ImportMode.Replace ? preview.replace.removed : 0}
-                </span>
-              </div>
-              <div className='flex items-center gap-2 text-sm text-red-800 dark:text-red-300'>
-                <span>
-                  {t('import.willAdd')}: {importedRules.length}
-                </span>
+              <div className='flex flex-col gap-3'>
+                <div className='font-medium text-red-900 dark:text-red-400 flex items-center gap-2'>
+                  <AlertCircle className='w-5 h-5' />
+                  {t('import.replaceWarning')}
+                </div>
+                <div className='flex flex-col gap-2'>
+                  <div className='flex items-center gap-2 text-sm text-red-800 dark:text-red-300'>
+                    <span>
+                      {t('import.willRemove')}: {mode === ImportMode.Replace ? preview.replace.removed : 0}
+                    </span>
+                  </div>
+                  <div className='flex items-center gap-2 text-sm text-red-800 dark:text-red-300'>
+                    <span>
+                      {t('import.willAdd')}: {importedRules.length}
+                    </span>
+                  </div>
+                </div>
               </div>
             </InfoPanel>
           )}

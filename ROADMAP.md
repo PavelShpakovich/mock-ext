@@ -209,6 +209,54 @@ This document outlines potential features and improvements for future releases.
   - Better developer experience
   - Future-proof architecture for scaling
 
+### 11. Response Hook / Custom Modifier ✅
+
+**Estimated effort:** 3-4 hours  
+**Value:** High  
+**Status:** ✅ **COMPLETED in v2.8.0**
+
+- Allow custom JavaScript to modify mock responses before returning
+- **Use cases:**
+  - Dynamic data generation (timestamps, random IDs, UUIDs)
+  - Response templating with variables
+  - Computed fields based on request context
+  - Add request-specific data to responses
+- **Implementation:**
+  - ✅ Added optional `responseHook` field to `MockRule` (JavaScript code as string)
+  - ✅ Safe evaluation context with `response`, `request`, `helpers` objects
+  - ✅ Helper functions: `randomId()`, `uuid()`, `timestamp()`, `randomNumber(min, max)`, `randomString(length)`
+  - ✅ Executes before returning response in both fetch and XHR interceptors
+  - ✅ Error handling with fallback to original response
+  - ✅ Syntax validation with dangerous pattern detection
+  - ✅ Collapsible UI section in rule editor with code examples
+  - ✅ Hook validation integrated into form validation
+- **Security:**
+  - Sandboxed execution with Function constructor
+  - Dangerous pattern detection (eval, import, require, fetch, etc.)
+  - Isolated context (no window/document access)
+  - Timeout protection via synchronous execution
+  - Error catching with console logging
+- **Example:**
+
+  ```javascript
+  // Add current timestamp to response
+  response.timestamp = helpers.timestamp();
+
+  // Generate dynamic ID
+  response.id = helpers.uuid();
+
+  // Echo request data in response
+  response.requestedBy = request.headers['User-Agent'];
+
+  // Modify array items
+  if (response.items) {
+    response.items.forEach((item, index) => {
+      item.id = helpers.uuid();
+      item.position = index + 1;
+    });
+  }
+  ```
+
 ## Deferred Features
 
 These features are valuable but deprioritized for now:
@@ -243,44 +291,6 @@ These features are valuable but deprioritized for now:
 
 - Pre-built templates (404, 500, pagination, etc.)
 - **Reason for deferral:** Can be added as enhancement
-
-### Response Hook / Custom Modifier
-
-**Estimated effort:** 3-4 hours
-
-- Allow custom JavaScript to modify mock responses before returning
-- **Use cases:**
-  - Dynamic data generation (timestamps, random IDs, UUIDs)
-  - Response templating with variables
-  - Computed fields based on request context
-  - Add request-specific data to responses
-- **Implementation:**
-  - Add optional `responseHook` field to `MockRule` (JavaScript code as string)
-  - Provide safe evaluation context with:
-    - `response` - Current response body (parsed JSON)
-    - `request` - Request details (url, method, headers, body)
-    - `helpers` - Utility functions (randomId, timestamp, faker, etc.)
-  - Execute hook before returning response
-  - Support both sync and async hooks
-  - Error handling with fallback to original response
-- **Example:**
-
-  ```javascript
-  // Add current timestamp to response
-  response.timestamp = Date.now();
-
-  // Generate dynamic ID from request
-  response.id = helpers.randomId();
-
-  // Echo request data in response
-  response.requestedBy = request.headers['User-Agent'];
-  ```
-
-- **Security considerations:**
-  - Sandboxed execution environment
-  - Limited API access
-  - Timeout protection
-- **Reason for deferral:** Complex feature requiring careful security implementation
 
 ### GraphQL Support
 
@@ -338,373 +348,35 @@ These features are valuable but deprioritized for now:
 - Document rule structure, provide examples
 - **Reason for deferral:** README is sufficient for now
 
-## Contributing
+## Next Phase Considerations
 
-Suggestions for new features? Open an issue on GitHub with:
+With all active priorities completed, here are potential areas for future development:
 
-- Feature description
-- Use case / problem it solves
-- Proposed implementation (optional)
+### High-Value Features
 
----
+- **Request Body Matching**: Match rules based on POST/PUT body content (1-2 hours)
+- **Sequential Responses**: Return different responses on successive calls for testing pagination/state changes (2-3 hours)
+- **Response Templates Library**: Pre-built templates for common scenarios (404, 500, etc.) (2 hours)
 
-**Last Updated:** January 15, 2026  
-**Current Version:** 2.2.0  
-**Next Milestone:** 2.3.0 (Rule Validation & Warnings + Dark/Light Theme)
+### Advanced Capabilities
 
-### 1. Custom Response Headers
+- **GraphQL Support**: Parse queries and match by operation name (4-5 hours)
+- **Conditional Logic**: JavaScript expressions for advanced matching (5-6 hours)
+- ✅ **Response Hook/Custom Modifier**: Allow JavaScript to dynamically modify responses **COMPLETED in v2.8.0**
 
-**Estimated effort:** 30 minutes  
-**Value:** High
+### Developer Experience
 
-- Add custom headers to mocked responses
-- **Use cases:**
-  - CORS headers for cross-origin requests
-  - Authentication tokens in response headers
-  - Content-Disposition for file downloads
-  - Cache-Control directives
-- **Implementation:**
-  - Add `headers` field to `MockRule` interface
-  - Update interceptor to include custom headers in Response
-  - Add header editor UI in rule editor
+- **Keyboard Shortcuts**: Quick actions via keyboard (2-3 hours)
+- **Interactive Tutorial**: First-time user onboarding (4-5 hours)
+- **Performance Optimization**: Optimize for 100+ rules with virtual scrolling (3-4 hours)
 
-### 2. Request Body Matching (Skip as for now)
+### Specialized Use Cases
 
-**Estimated effort:** 1-2 hours  
-**Value:** High
+- **WebSocket Mocking**: Mock WebSocket connections (8-10 hours)
+- **Response Delay Ranges**: Random delays for realistic network simulation (1 hour)
+- **Request Headers Matching**: Match based on specific headers (2 hours)
 
-- Match rules based on POST/PUT request body content
-- **Use cases:**
-  - Different responses for different login credentials
-  - Conditional responses based on form data
-  - GraphQL query-specific mocking
-- **Implementation:**
-  - Add `bodyPattern` and `bodyMatchType` to rule criteria
-  - Support: exact match, contains, regex, JSON path
-  - Update interceptor to read request body
-
-### 3. Rule Hit Counter
-
-**Estimated effort:** 1 hour  
-**Value:** High
-
-- Track how many times each rule has been matched
-- Display "Last matched: X minutes ago" in UI
-- **Benefits:**
-  - Identify unused rules for cleanup
-  - Debug which rules are actually triggering
-  - Usage analytics
-- **Implementation:**
-  - Add `matchCount` and `lastMatched` to `MockRule`
-  - Increment counter on each match
-  - Display in rules list UI
-
-### 4. Import/Export Enhancement
-
-**Estimated effort:** 1 hour  
-**Value:** Medium
-
-- Improve current export functionality
-- **Features:**
-  - Import rules from JSON file (Should be implemented already, please check)
-  - Export selected rules (not just all)
-  - Import/export with merge or replace option
-  - Share rule collections with team members (Skip as for now)
-
-## Medium Priority (High Value)
-
-### 5. Sequential Responses (Skip as for now)
-
-**Estimated effort:** 2-3 hours  
-**Value:** High
-
-- Return different responses on successive calls to same URL
-- **Pattern:** `[response1, response2, response3]` → cycles or stops at last
-- **Use cases:**
-  - Testing pagination (different pages on each call)
-  - State changes (pending → processing → complete)
-  - Retry logic testing (error → error → success)
-- **Implementation:**
-  - Add `responseSequence` array to `MockRule`
-  - Add `sequenceMode`: 'cycle' | 'stop-at-last'
-  - Track current sequence position per rule
-
-### 6. Request Headers Matching (Skip as for now)
-
-**Estimated effort:** 2 hours  
-**Value:** Medium
-
-- Match rules based on request headers
-- **Use cases:**
-  - Different responses for different authorization levels
-  - Content negotiation (Accept header)
-  - API versioning (custom version headers)
-- **Implementation:**
-  - Add `headerMatchers` array to rule criteria
-  - Support: exact match, contains, regex
-  - Update interceptor to check headers
-
-### 7. Response Templates Library (Skip as for now)
-
-**Estimated effort:** 2 hours  
-**Value:** Medium
-
-- Pre-built templates for common scenarios
-- **Templates:**
-  - 404 Not Found
-  - 500 Internal Server Error
-  - Paginated list response
-  - Empty array/object
-  - Authentication error (401)
-  - Validation error (422)
-- **Implementation:**
-  - Create templates.ts with predefined responses
-  - Add "Use Template" button in rule editor
-  - Allow customization after template insertion
-
-### 8. Rule Groups/Folders
-
-**Estimated effort:** 3-4 hours  
-**Value:** High
-
-- Organize rules into folders
-- **Features:**
-  - Create folders (e.g., "User API", "Payment API", "Auth")
-  - Drag-and-drop rules between folders
-  - Bulk enable/disable entire folders
-  - Collapse/expand folders
-- **Implementation:**
-  - Add `folder` field to `MockRule`
-  - Update UI with folder tree view
-  - Add folder management (create, rename, delete)
-
-## Advanced Features
-
-### 9. GraphQL Support (Skip as for now)
-
-**Estimated effort:** 4-5 hours  
-**Value:** Medium (high for GraphQL projects)
-
-- Parse GraphQL queries
-- Match based on operation name or query structure
-- **Features:**
-  - Detect GraphQL requests automatically
-  - Match by operation name (query/mutation name)
-  - Match by fields requested
-  - Return typed responses
-- **Implementation:**
-  - Add GraphQL query parser
-  - New match type: 'graphql'
-  - Update interceptor to parse GraphQL from body
-
-### 10. Response Delay Ranges (Skip as for now)
-
-**Estimated effort:** 1 hour  
-**Value:** Medium
-
-- Random delay between min-max values
-- **Use case:** Simulate real-world network variance
-- **Example:** 100-500ms random delay
-- **Implementation:**
-  - Change `delay` to `{ min: number, max: number }` or keep single number
-  - Add toggle for "random delay"
-  - Calculate random value on each request
-
-### 11. Conditional Logic (Skip as for now)
-
-**Estimated effort:** 5-6 hours  
-**Value:** High (for advanced users)
-
-- JavaScript expressions for advanced matching
-- **Examples:**
-  - `request.headers['User-Agent'].includes('Mobile')`
-  - `request.url.includes('premium') && request.headers['Authorization']`
-  - `JSON.parse(request.body).userId === 123`
-- **Implementation:**
-  - Add `conditionalExpression` field (optional)
-  - Safe evaluation with limited scope
-  - Provide context object with request details
-
-### 12. CORS Auto-Fix
-
-**Estimated effort:** 1 hour  
-**Value:** Medium
-
-- Automatically inject CORS headers when needed
-- **Features:**
-  - Global toggle: "Enable CORS bypass for mocked responses"
-  - Auto-inject headers:
-    - `Access-Control-Allow-Origin: *`
-    - `Access-Control-Allow-Methods: *`
-    - `Access-Control-Allow-Headers: *`
-- **Implementation:**
-  - Add setting in Settings interface
-  - Inject headers in interceptor when enabled
-
-### 13. WebSocket Mocking (Skip as for now)
-
-**Estimated effort:** 8-10 hours  
-**Value:** Medium (high for real-time apps)
-
-- Mock WebSocket connections
-- **Features:**
-  - Match WebSocket URLs
-  - Send predefined messages at intervals
-  - Respond to incoming messages
-- **Implementation:**
-  - Intercept `new WebSocket()`
-  - Create mock WebSocket object
-  - Message sequence configuration
-
-### 14. Response Transformation (Remove)
-
-**Estimated effort:** 3-4 hours  
-**Value:** Medium
-
-- Modify real responses before they reach the page
-- **Use cases:**
-  - Add/remove fields from real API responses
-  - Change values in production API for testing
-  - Combine real + mock data
-- **Implementation:**
-  - New mode: 'passthrough-transform'
-  - JavaScript function to transform response
-  - Apply after real fetch completes
-
-## Quality of Life Improvements
-
-### 15. Dark/Light Theme
-
-**Estimated effort:** 2 hours  
-**Value:** Low-Medium
-
-- Theme toggle in settings
-- Respect system preference
-- Currently using dark theme only
-
-### 16. Keyboard Shortcuts (Skip as for now)
-
-**Estimated effort:** 2-3 hours  
-**Value:** Medium
-
-- Global shortcuts:
-  - `Cmd/Ctrl + K`: Quick add rule
-  - `Cmd/Ctrl + /`: Search rules
-  - `Cmd/Ctrl + E`: Enable/disable extension
-  - `Cmd/Ctrl + R`: Toggle recording
-- Rule editor shortcuts:
-  - `Cmd/Ctrl + S`: Save rule
-  - `Esc`: Cancel
-  - `Cmd/Ctrl + B`: Beautify JSON
-
-### 17. Rule Validation & Warnings
-
-**Estimated effort:** 2 hours  
-**Value:** Medium
-
-- Warn about:
-  - Overlapping rules (multiple rules match same URL)
-  - Invalid regex patterns
-  - Malformed JSON responses
-  - Unused rules (never matched in 30 days)
-- Display warnings in rules list
-
-### 18. Performance Optimization (Skip as for now)
-
-**Estimated effort:** 3-4 hours  
-**Value:** Medium
-
-- Optimize for large rule sets (100+ rules)
-- Features:
-  - Virtual scrolling for rules list
-  - Lazy loading of rule details
-  - Memoization of URL matching
-  - IndexedDB for storage (instead of chrome.storage for large data)
-
-## Documentation & Developer Experience
-
-### 19. Interactive Tutorial (Skip as for now)
-
-**Estimated effort:** 4-5 hours  
-**Value:** Medium
-
-- First-time user onboarding
-- Step-by-step guide:
-  1. Create your first rule
-  2. Test the rule
-  3. View request log
-  4. Export rules
-- Highlight UI elements during tutorial
-
-### 20. API Documentation (Skip as for now)
-
-**Estimated effort:** 3 hours  
-**Value:** Low-Medium
-
-- Document rule structure
-- Provide examples for common scenarios
-- Add to README or create docs site
-
-### 21. Feature Flag System
-
-**Estimated effort:** 4-5 hours  
-**Value:** High (for monetization)  
-**Priority:** Low (infrastructure for future)
-
-- Centralized feature flag management for monetization
-- **Use cases:**
-  - Freemium model: hide premium features for free users
-  - A/B testing: test feature adoption
-  - Gradual rollouts: enable for specific users
-  - Quick toggles: disable problematic features
-- **Implementation:**
-  - Create `FeatureFlags` enum for all features
-  - Add `featureFlags.ts` service:
-    ```typescript
-    enum Feature {
-      CUSTOM_HEADERS = 'custom_headers',
-      RULE_GROUPS = 'rule_groups',
-      GRAPHQL_SUPPORT = 'graphql_support',
-      CONDITIONAL_LOGIC = 'conditional_logic',
-      // ... etc
-    }
-    ```
-  - Add `isFeatureEnabled(feature: Feature): boolean` check
-  - Store user tier in settings (free/pro/enterprise)
-  - Feature gate UI components with flag checks
-  - Add visual indicators for premium features
-- **Benefits:**
-  - Clean separation of free vs paid features
-  - Easy to test monetization strategies
-  - No code changes needed to enable/disable features
-  - Foundation for subscription model
-
-## Recommended Implementation Order
-
-### Phase 1: Quick Wins (Week 1)
-
-1. Custom Response Headers
-2. Rule Hit Counter
-3. Import/Export Enhancement
-
-### Phase 2: High Value Features (Week 2-3)
-
-4. Request Body Matching
-5. Sequential Responses
-6. Rule Groups/Folders
-
-### Phase 3: Advanced Features (Week 4+)
-
-7. Conditional Logic
-8. Response Templates Library
-9. Request Headers Matching
-10. GraphQL Support
-
-### Phase 4: Quality of Life (Ongoing)
-
-- Keyboard Shortcuts
-- Rule Validation & Warnings
-- Performance Optimization
+These features will be considered based on user feedback and demand.
 
 ## Contributing
 
@@ -716,5 +388,6 @@ Suggestions for new features? Open an issue on GitHub with:
 
 ---
 
-**Last Updated:** January 14, 2026  
-**Current Version:** 2.0.3
+**Last Updated:** January 20, 2026  
+**Current Version:** 2.8.0  
+**Status:** ✅ All active priorities completed + Response Hook feature

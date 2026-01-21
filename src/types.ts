@@ -1,7 +1,7 @@
-import { MatchType, HttpMethod, Language, Theme } from './enums';
+import { MatchType, HttpMethod, Language, Theme, ResponseMode } from './enums';
 
 // Re-export enums for convenience
-export { MatchType, HttpMethod, Language, Theme };
+export { MatchType, HttpMethod, Language, Theme, ResponseMode };
 export type { ResolvedTheme } from './enums';
 
 export interface MockRule {
@@ -21,6 +21,9 @@ export interface MockRule {
   matchCount?: number;
   lastMatched?: number;
   folderId?: string;
+  responseHook?: string; // Optional JavaScript code to modify response before returning
+  responseHookEnabled?: boolean; // Whether the hook is active (default: true if hook exists)
+  responseMode?: ResponseMode; // Mock = use mock response + hook, Passthrough = forward real request + apply hook
 }
 
 export interface Folder {

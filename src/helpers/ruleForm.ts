@@ -1,6 +1,7 @@
-import { MockRule, RequestLog } from '../types';
+import { MockRule, RequestLog, ResponseMode } from '../types';
 import { HttpMethod, MatchType } from '../enums';
 import { convertHeadersToArray, extractCapturedHeaders, HeaderEntry } from './headers';
+import { DEFAULT_DELAY_MS } from '../constants';
 
 export interface RuleFormData {
   name: string;
@@ -13,6 +14,9 @@ export interface RuleFormData {
   delay: number;
   headers: HeaderEntry[];
   folderId?: string;
+  responseHook?: string;
+  responseHookEnabled?: boolean;
+  responseMode?: ResponseMode;
 }
 
 export function getInitialFormData(rule: MockRule | null, mockRequest: RequestLog | null | undefined): RuleFormData {
@@ -28,6 +32,9 @@ export function getInitialFormData(rule: MockRule | null, mockRequest: RequestLo
       delay: rule.delay,
       headers: convertHeadersToArray(rule.headers),
       folderId: rule.folderId,
+      responseHook: rule.responseHook,
+      responseHookEnabled: rule.responseHookEnabled !== false, // Default to true if hook exists
+      responseMode: (rule.responseMode as ResponseMode) || ResponseMode.Mock,
     };
   }
 
@@ -49,8 +56,10 @@ export function getInitialFormData(rule: MockRule | null, mockRequest: RequestLo
       statusCode: mockRequest.statusCode || 200,
       contentType: mockRequest.contentType || 'application/json',
       responseBody: mockRequest.responseBody || '{}',
-      delay: 0,
+      delay: DEFAULT_DELAY_MS,
       headers: extractCapturedHeaders(mockRequest),
+      responseMode: ResponseMode.Mock,
+      responseHookEnabled: false,
     };
   }
 
@@ -62,7 +71,9 @@ export function getInitialFormData(rule: MockRule | null, mockRequest: RequestLo
     statusCode: 200,
     contentType: 'application/json',
     responseBody: '',
-    delay: 0,
+    delay: DEFAULT_DELAY_MS,
     headers: [],
+    responseMode: ResponseMode.Mock,
+    responseHookEnabled: false,
   };
 }

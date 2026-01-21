@@ -1,22 +1,26 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import { MockRule, RequestLog, Folder } from '../types';
-import { ButtonVariant, ButtonSize } from '../enums';
+import * as prettier from 'prettier/standalone';
+import * as parserBabel from 'prettier/plugins/babel';
+import * as prettierPluginEstree from 'prettier/plugins/estree';
+import { MockRule, RequestLog, Folder, ResponseMode } from '../types';
+import { ButtonVariant } from '../enums';
 import { isValidJSON } from '../helpers/validation';
 import { convertArrayToHeaders, HeaderEntry } from '../helpers/headers';
 import { getInitialFormData, RuleFormData } from '../helpers/ruleForm';
 import { validateRuleForm, validateJSONDetailed, JSONValidation } from '../helpers/ruleValidation';
-import { Input } from './ui/Input';
-import { Select } from './ui/Select';
-import { TextArea } from './ui/TextArea';
+import { validateResponseHook } from '../helpers/responseHook';
+import { VALIDATION_DEBOUNCE_MS } from '../constants';
 import { Button } from './ui/Button';
-import { IconButton } from './ui/IconButton';
 import { Card } from './ui/Card';
-import { HeadersEditor } from './ui/HeadersEditor';
-import { Maximize2, X } from 'lucide-react';
-import clsx from 'clsx';
+import { IconButton } from './ui/IconButton';
+import { RuleBasicInfo } from './RuleEditor/RuleBasicInfo';
+import { RuleMatchingSection } from './RuleEditor/RuleMatchingSection';
+import { RuleResponseSection } from './RuleEditor/RuleResponseSection';
+import { ExpandedEditor } from './RuleEditor/ExpandedEditor';
 import { useI18n } from '../contexts/I18nContext';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
+import { X } from 'lucide-react';
 
 interface RuleEditorProps {
   rule: MockRule | null;
@@ -54,6 +58,9 @@ function buildMockRule(formData: RuleFormData, rule: MockRule | null): MockRule 
     modified: now,
     matchCount: rule?.matchCount,
     lastMatched: rule?.lastMatched,
+    responseHook: formData.responseHook,
+    responseHookEnabled: formData.responseHookEnabled,
+    responseMode: (formData.responseMode as ResponseMode) || ResponseMode.Mock,
   };
 }
 
@@ -62,26 +69,40 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, mockRequest, folders, onS
   const [formData, setFormData] = useState<RuleFormData>(() => getInitialFormData(rule, mockRequest));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isHookExpanded, setIsHookExpanded] = useState(false);
   const [jsonValidation, setJsonValidation] = useState<JSONValidation | null>(null);
   const validationTimeoutRef = useRef<number | null>(null);
+  const hookValidationTimeoutRef = useRef<number | null>(null);
 
-  useBodyScrollLock(isExpanded);
+  useBodyScrollLock(isExpanded || isHookExpanded);
 
   useEffect(() => {
     const newFormData = getInitialFormData(rule, mockRequest);
     setFormData(newFormData);
 
+    // Clear all errors when loading new rule
+    setErrors({});
+
     const contentType = rule?.contentType || mockRequest?.contentType;
     if (contentType === 'application/json') {
       validateJSONField(newFormData.responseBody);
     }
+
+    // Validate response hook if present
+    if (newFormData.responseHook && newFormData.responseHook.trim()) {
+      validateResponseHookField(newFormData.responseHook);
+    }
   }, [rule, mockRequest]);
 
-  const handleChange = (field: keyof RuleFormData, value: string | number | HeaderEntry[]) => {
+  const handleChange = (field: keyof RuleFormData, value: string | number | boolean | HeaderEntry[]) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
 
     if (field === 'responseBody' && formData.contentType === 'application/json') {
       validateJSONField(value as string);
+    }
+
+    if (field === 'responseHook') {
+      validateResponseHookField(value as string);
     }
 
     if (errors[field]) {
@@ -100,7 +121,26 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, mockRequest, folders, onS
 
     validationTimeoutRef.current = setTimeout(() => {
       setJsonValidation(validateJSONDetailed(jsonString));
-    }, 500);
+    }, VALIDATION_DEBOUNCE_MS);
+  };
+
+  const validateResponseHookField = (hookCode: string) => {
+    if (hookValidationTimeoutRef.current) {
+      clearTimeout(hookValidationTimeoutRef.current);
+    }
+
+    hookValidationTimeoutRef.current = setTimeout(() => {
+      const hookError = validateResponseHook(hookCode);
+      if (hookError) {
+        setErrors((prev) => ({ ...prev, responseHook: t('editor.validationError', { error: hookError }) }));
+      } else {
+        setErrors((prev) => {
+          const newErrors = { ...prev };
+          delete newErrors.responseHook;
+          return newErrors;
+        });
+      }
+    }, VALIDATION_DEBOUNCE_MS);
   };
 
   const validate = (): boolean => {
@@ -128,200 +168,118 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, mockRequest, folders, onS
     }
   };
 
+  const beautifyResponseHook = async () => {
+    if (formData.responseHook && formData.responseHook.trim()) {
+      try {
+        const formatted = await prettier.format(formData.responseHook, {
+          parser: 'babel',
+          plugins: [parserBabel, prettierPluginEstree],
+          semi: true,
+          singleQuote: true,
+          tabWidth: 2,
+          printWidth: 80,
+        });
+        handleChange('responseHook', formatted.trim());
+      } catch (error) {
+        console.error('Failed to format code:', error);
+        // If formatting fails, keep original
+      }
+    }
+  };
+
   return (
-    <Card className='p-8 shadow-2xl'>
-      <h2 className='text-2xl font-bold text-gray-900 dark:text-white mb-6 pb-3 border-b border-gray-300 dark:border-gray-700'>
-        {rule ? t('editor.updateRule') : t('editor.createRule')}
-      </h2>
+    <Card className='p-8 shadow-2xl flex flex-col gap-6'>
+      <div className='flex items-center justify-between pb-3 border-b border-gray-300 dark:border-gray-700'>
+        <h2 className='text-2xl font-bold text-gray-900 dark:text-white'>
+          {rule ? t('editor.updateRule') : t('editor.createRule')}
+        </h2>
+        <IconButton onClick={onCancel} title={t('common.cancel')}>
+          <X className='w-5 h-5' />
+        </IconButton>
+      </div>
 
       <form onSubmit={handleSubmit} className='flex flex-col gap-5'>
-        <Input
-          label={t('editor.ruleName')}
-          required
-          value={formData.name}
-          onChange={(e) => handleChange('name', e.target.value)}
-          error={errors.name}
-          placeholder={t('editor.ruleNamePlaceholder')}
+        <RuleBasicInfo
+          name={formData.name}
+          folderId={formData.folderId}
+          folders={folders}
+          errors={errors}
+          onNameChange={(value) => handleChange('name', value)}
+          onFolderChange={(value) => setFormData((prev) => ({ ...prev, folderId: value }))}
         />
 
-        <Select
-          label={`${t('editor.folder')} (${t('editor.optional')})`}
-          value={formData.folderId || ''}
-          onChange={(e) => {
-            const value = e.target.value;
-            setFormData((prev) => ({ ...prev, folderId: value || undefined }));
+        <RuleMatchingSection
+          urlPattern={formData.urlPattern}
+          matchType={formData.matchType}
+          method={formData.method}
+          errors={errors}
+          onUrlPatternChange={(value) => handleChange('urlPattern', value)}
+          onMatchTypeChange={(value) => handleChange('matchType', value)}
+          onMethodChange={(value) => handleChange('method', value)}
+        />
+
+        <RuleResponseSection
+          statusCode={formData.statusCode}
+          contentType={formData.contentType}
+          delay={formData.delay}
+          headers={formData.headers}
+          responseBody={formData.responseBody}
+          responseHook={formData.responseHook}
+          responseHookEnabled={formData.responseHookEnabled ?? false}
+          responseMode={formData.responseMode as ResponseMode | undefined}
+          jsonValidation={jsonValidation}
+          errors={errors}
+          onStatusCodeChange={(value) => handleChange('statusCode', value)}
+          onContentTypeChange={(value) => {
+            handleChange('contentType', value);
+            if (value === 'application/json') {
+              validateJSONField(formData.responseBody);
+            } else {
+              setJsonValidation(null);
+            }
           }}
-        >
-          <option value=''>{t('editor.noFolder')}</option>
-          {folders.map((folder) => (
-            <option key={folder.id} value={folder.id}>
-              {folder.name}
-            </option>
-          ))}
-        </Select>
-
-        <div className='border-l-4 border-gray-300 dark:border-blue-500 bg-gray-50 dark:bg-blue-500/5 rounded-r-lg pl-4 pr-4 py-4 flex flex-col gap-4'>
-          <Input
-            label={t('editor.urlPattern')}
-            required
-            value={formData.urlPattern}
-            onChange={(e) => handleChange('urlPattern', e.target.value)}
-            error={errors.urlPattern}
-            placeholder={t('editor.urlPatternPlaceholder')}
-            className='font-mono text-sm'
-          />
-
-          <div className='grid grid-cols-2 gap-4'>
-            <Select
-              label={t('editor.matchType')}
-              value={formData.matchType}
-              onChange={(e) => handleChange('matchType', e.target.value)}
-              description={
-                formData.matchType === 'wildcard'
-                  ? t('editor.wildcardDesc')
-                  : formData.matchType === 'exact'
-                    ? t('editor.exactDesc')
-                    : t('editor.regexDesc')
-              }
-            >
-              <option value='wildcard'>{t('editor.wildcard')}</option>
-              <option value='exact'>{t('editor.exact')}</option>
-              <option value='regex'>{t('editor.regex')}</option>
-            </Select>
-
-            <Select
-              label={t('editor.method')}
-              value={formData.method}
-              onChange={(e) => handleChange('method', e.target.value)}
-            >
-              <option value=''>{t('editor.anyMethod')}</option>
-              <option value='GET'>GET</option>
-              <option value='POST'>POST</option>
-              <option value='PUT'>PUT</option>
-              <option value='DELETE'>DELETE</option>
-              <option value='PATCH'>PATCH</option>
-              <option value='OPTIONS'>OPTIONS</option>
-              <option value='HEAD'>HEAD</option>
-            </Select>
-          </div>
-        </div>
-
-        <div className='border-l-4 border-gray-300 dark:border-green-500 bg-gray-50 dark:bg-green-500/5 rounded-r-lg pl-4 pr-4 py-4 flex flex-col gap-4'>
-          <div className='grid grid-cols-2 gap-4'>
-            <Input
-              label={t('editor.statusCode')}
-              type='number'
-              value={formData.statusCode}
-              onChange={(e) => handleChange('statusCode', parseInt(e.target.value))}
-              min='100'
-              max='599'
-            />
-
-            <Select
-              label={t('editor.contentType')}
-              value={formData.contentType}
-              onChange={(e) => {
-                const newContentType = e.target.value;
-                handleChange('contentType', newContentType);
-                if (newContentType === 'application/json') {
-                  validateJSONField(formData.responseBody);
-                } else {
-                  setJsonValidation(null);
-                }
-              }}
-            >
-              <option value='application/json'>{t('editor.json')}</option>
-              <option value='text/plain'>{t('editor.text')}</option>
-            </Select>
-          </div>
-
-          <Input
-            label={t('editor.delay')}
-            type='number'
-            value={formData.delay}
-            onChange={(e) => handleChange('delay', parseInt(e.target.value) || 0)}
-            min='0'
-            step='100'
-            placeholder={t('editor.delayPlaceholder')}
-          />
-
-          <HeadersEditor headers={formData.headers} onChange={(headers) => handleChange('headers', headers)} />
-
-          <div>
-            <TextArea
-              label={t('editor.responseBody')}
-              labelHint={t('editor.variables')}
-              value={formData.responseBody}
-              onChange={(e) => handleChange('responseBody', e.target.value)}
-              rows={8}
-              placeholder={t('editor.responseBodyPlaceholder')}
-              className='font-mono text-sm custom-scrollbar'
-              action={
-                <div className='flex items-center gap-3'>
-                  {formData.contentType === 'application/json' && (
-                    <Button type='button' onClick={formatJSON} size={ButtonSize.Small} variant={ButtonVariant.Primary}>
-                      {t('editor.beautify')}
-                    </Button>
-                  )}
-                  <IconButton type='button' onClick={() => setIsExpanded(true)} title={t('common.expandEditor')}>
-                    <Maximize2 className='w-4 h-4' />
-                  </IconButton>
-                </div>
-              }
-            />
-            {formData.contentType === 'application/json' && jsonValidation && (
-              <p
-                className={clsx('text-xs mt-1 italic', {
-                  'text-gray-400': jsonValidation.isValid,
-                  'text-red-400 font-medium': !jsonValidation.isValid,
-                })}
-              >
-                {jsonValidation.message}
-              </p>
-            )}
-          </div>
-        </div>
+          onDelayChange={(value) => handleChange('delay', value)}
+          onHeadersChange={(value) => handleChange('headers', value)}
+          onResponseBodyChange={(value) => handleChange('responseBody', value)}
+          onResponseHookChange={(value) => handleChange('responseHook', value)}
+          onResponseHookEnabledChange={(value) => handleChange('responseHookEnabled', value)}
+          onResponseModeChange={(value) => handleChange('responseMode', value)}
+          onBeautifyJSON={formatJSON}
+          onBeautifyHook={beautifyResponseHook}
+          onExpandBody={() => setIsExpanded(true)}
+          onExpandHook={() => setIsHookExpanded(true)}
+        />
 
         {isExpanded && (
-          <div className='fixed inset-0 z-50 bg-white/95 dark:bg-black/95 flex flex-col m-0'>
-            <div className='flex items-center justify-between p-4 border-b border-gray-300 dark:border-gray-700 shrink-0'>
-              <h3 className='text-lg font-bold text-gray-900 dark:text-white'>{t('editor.responseBody')}</h3>
-              <div className='flex items-center gap-3'>
-                {formData.contentType === 'application/json' && (
-                  <Button type='button' onClick={formatJSON} size={ButtonSize.Small} variant={ButtonVariant.Primary}>
-                    {t('editor.beautify')}
-                  </Button>
-                )}
-                <IconButton type='button' onClick={() => setIsExpanded(false)}>
-                  <X className='w-5 h-5' />
-                </IconButton>
-              </div>
-            </div>
-            <div className='flex-1 p-6 overflow-hidden'>
-              <textarea
-                value={formData.responseBody}
-                onChange={(e) => handleChange('responseBody', e.target.value)}
-                placeholder={t('editor.responseBodyPlaceholder')}
-                className='w-full h-full bg-white dark:bg-gray-950 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-700 rounded px-4 py-3 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-green-600 dark:focus:ring-green-500 resize-none custom-scrollbar'
-              />
-            </div>
-            {formData.contentType === 'application/json' && jsonValidation && (
-              <div className='px-6 pb-2 shrink-0'>
-                <p
-                  className={clsx('text-xs italic', {
-                    'text-gray-400': jsonValidation.isValid,
-                    'text-red-400 font-medium': !jsonValidation.isValid,
-                  })}
-                >
-                  {jsonValidation.message}
-                </p>
-              </div>
-            )}
-          </div>
+          <ExpandedEditor
+            title={t('editor.responseBody')}
+            value={formData.responseBody}
+            placeholder={t('editor.responseBodyPlaceholder')}
+            onChange={(value) => handleChange('responseBody', value)}
+            onClose={() => setIsExpanded(false)}
+            onBeautify={formData.contentType === 'application/json' ? formatJSON : undefined}
+            validation={formData.contentType === 'application/json' && jsonValidation ? jsonValidation : undefined}
+          />
+        )}
+
+        {isHookExpanded && (
+          <ExpandedEditor
+            title={t('editor.responseHook')}
+            value={formData.responseHook || ''}
+            placeholder={t('editor.responseHookPlaceholder')}
+            onChange={(value) => handleChange('responseHook', value)}
+            onClose={() => setIsHookExpanded(false)}
+            onBeautify={beautifyResponseHook}
+            error={errors.responseHook}
+          />
         )}
 
         <div className='flex gap-3 pt-4'>
-          <Button type='submit' className='flex-1 w-full'>
+          <Button
+            type='submit'
+            className='flex-1 w-full'
+            disabled={formData.responseHookEnabled && !!errors.responseHook}
+          >
             {rule ? t('editor.updateRule') : t('editor.createRule')}
           </Button>
           <Button type='button' variant={ButtonVariant.Secondary} onClick={onCancel} className='flex-1 w-full'>

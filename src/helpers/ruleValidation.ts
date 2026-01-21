@@ -2,6 +2,8 @@ import { MockRule } from '../types';
 import { ValidationWarningType, ValidationSeverity } from '../enums';
 import { matchURL } from './urlMatching';
 import { isValidJSON } from './validation';
+import { validateResponseHook } from './responseHook';
+import { UNUSED_RULE_DAYS_THRESHOLD } from '../constants';
 
 export interface ValidationWarning {
   type: ValidationWarningType;
@@ -77,6 +79,7 @@ export function validateRuleForm(
     matchType: string;
     contentType: string;
     responseBody: string;
+    responseHook?: string;
   },
   jsonValidation: JSONValidation | null,
   t: (key: string, params?: Record<string, string>) => string
@@ -104,13 +107,21 @@ export function validateRuleForm(
     }
   }
 
+  // Validate response hook if provided
+  if (formData.responseHook && formData.responseHook.trim()) {
+    const hookError = validateResponseHook(formData.responseHook);
+    if (hookError) {
+      errors.responseHook = t('editor.validationError', { error: hookError });
+    }
+  }
+
   return errors;
 }
 
 /**
  * Check if a rule hasn't been matched in X days
  */
-export function isRuleUnused(rule: MockRule, daysThreshold: number = 30): boolean {
+export function isRuleUnused(rule: MockRule, daysThreshold: number = UNUSED_RULE_DAYS_THRESHOLD): boolean {
   if (!rule.lastMatched) {
     const daysSinceCreated = (Date.now() - rule.created) / (1000 * 60 * 60 * 24);
     return daysSinceCreated > daysThreshold;
