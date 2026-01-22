@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Moq",
+  "name": "Moq - Mock API Requests",
   "version": "2.9.3",
   "description": "Mock HTTP requests with custom responses, status codes, delays, and headers. Perfect for development, testing, and debugging.",
   "privacy_policy": "https://github.com/PavelShpakovich/mock-ext/blob/main/PRIVACY.md",
