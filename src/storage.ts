@@ -11,7 +11,7 @@ const MAX_LOG_ENTRIES = 1000;
 
 const DEFAULT_SETTINGS: Settings = {
   enabled: true,
-  logRequests: true,
+  logRequests: false,
   showNotifications: false,
   corsAutoFix: false,
   theme: Theme.System,
