@@ -2,45 +2,22 @@
 
 A powerful Chrome DevTools extension for mocking API requests during development and testing. Intercepts HTTP requests at the JavaScript level and responds with custom data, status codes, and delays without modifying your application code.
 
-## ✨ What's New in v2.7
-
-**🚀 View Mode Switcher**: Open Moq in a standalone window for multi-monitor setups
-
-- Switch between DevTools panel and standalone window
-- Full state synchronization across all contexts
-- Single instance enforcement with overlay
-
-**♻️ Architecture Improvements**: Major code refactoring for better maintainability
-
-- Custom hooks for feature separation
-- Improved performance and testability
-- Cleaner, more readable code structure
-
-## What's New in v2.0
-
-**🚀 Complete Architecture Redesign**: Moq now uses client-side JavaScript interception instead of Chrome's declarativeNetRequest API, unlocking full control over:
-
-- ✅ **Custom Status Codes** - Finally works! Return 404, 500, or any status code
-- ✅ **Response Delays** - Accurately simulate network latency
-- ✅ **Better Reliability** - Intercepts at JavaScript level before network calls
-- ✅ **Enhanced Debugging** - Comprehensive console logging for troubleshooting
-
 ## Features
 
-### 🎯 Request Interception
+### Request Interception
 
 - **URL Pattern Matching**: Use wildcards (`*`), exact match, or regex patterns to match URLs
 - **HTTP Method Filtering**: Mock specific methods (GET, POST, PUT, DELETE, PATCH, OPTIONS, HEAD) or all methods
 - **Custom Responses**: Define JSON or text responses
-- **✨ Status Code Control**: Set any HTTP status code (200, 404, 500, etc.) - **Now fully functional!**
-- **✨ Response Delay**: Simulate network latency for testing loading states - **Now fully functional!**
-- **✨ Custom Response Headers**: Add custom HTTP headers to mock responses (NEW in v2.1)
+- **Status Code Control**: Set any HTTP status code (200, 404, 500, etc.)
+- **Response Delay**: Simulate network latency for testing loading states
+- **Custom Response Headers**: Add custom HTTP headers to mock responses
   - Define multiple key-value header pairs
   - Auto-populates from captured real responses
   - Perfect for testing CORS, authentication, caching behaviors
 - **Client-Side Interception**: Intercepts fetch() and XMLHttpRequest before they reach the network
 
-### 🔄 Dynamic Variables
+### Dynamic Variables
 
 Generate dynamic data in responses using built-in variables:
 
@@ -58,7 +35,7 @@ Example:
 }
 ```
 
-### 📊 Request Logging & Filtering
+### Request Logging & Filtering
 
 - **Page-Specific Recording**: Record XMLHttpRequest/fetch requests from a specific browser tab
 - **Manual Control**: Start/stop recording with button controls
@@ -67,14 +44,14 @@ Example:
   - Status code filters: 2xx Success, 3xx Redirect, 4xx Client Error, 5xx Server Error
 - **Search & Filter**: Quickly find requests with text search and multiple filters
 - **Request Details**: View URL, method, status code, content type, and timestamp
-- **Response Headers Capture**: All response headers captured and stored with logged requests (NEW in v2.1)
+- **Response Headers Capture**: All response headers captured and stored with logged requests
 - **Up to 1000 Requests**: Automatic log rotation keeps recent requests
 - **Quick Mocking**: Create mock rules directly from logged requests with "Mock This" button
   - Auto-populates all fields including captured response headers
 
-### 🛠️ Rule Management
+### Rule Management
 
-- **Rule Groups/Folders**: Organize rules into logical groups (NEW in v2.6.0)
+- **Rule Groups/Folders**: Organize rules into logical groups
   - Create folders to organize rules (e.g., "User API", "Payment API", "Auth")
   - Rename and delete folders with validation
   - Collapse/expand folders to save screen space
@@ -82,7 +59,7 @@ Example:
   - Visual badges showing rule count and enabled count per folder
   - Search works seamlessly across all folders
   - Ungrouped rules section for rules without folders
-- **Rule Hit Counter**: Track rule usage in real-time (NEW in v2.1.1)
+- **Rule Hit Counter**: Track rule usage in real-time
   - See how many times each rule has been matched
   - View "Last matched: X minutes ago" timestamps
   - Identify unused rules for cleanup
@@ -95,14 +72,14 @@ Example:
 - **Enable/Disable**: Toggle rules on/off without deleting them
 - **Search Rules**: Find rules by name or URL pattern
 
-### 🛠️ DevTools Integration
+### DevTools Integration
 
 - **Native DevTools Panel**: Integrated as a dedicated panel in Chrome DevTools
 - **Developer-Focused**: Designed for seamless integration into your development workflow
 - **Keyboard Shortcut Access**: Quick access via Cmd+Option+I (Mac) or Ctrl+Shift+I (Windows/Linux)
 - **Visual Prompt**: Helpful notification when extension icon is clicked, guiding you to open DevTools
 
-### 💡 User Interface
+### User Interface
 
 - **Clean Dark Theme**: Modern, minimalist design optimized for developer workflows
 - **Two Tabs**: "Rules" for managing mocks, "Requests" for viewing captured requests
@@ -369,7 +346,7 @@ mock-ext/
 - **Client-Side Interception**: MAIN world interceptor for fetch/XHR before network
 - **Service Worker**: Background script for cross-tab messaging and storage
 - **Chrome Storage**: Persistent data storage for rules and logs
-- **Comprehensive Testing**: 194 unit tests with Jest and Testing Library (76% coverage)
+- **Comprehensive Testing**: 214 unit tests with Jest and Testing Library
 
 ### Performance Optimizations
 
@@ -395,13 +372,9 @@ mock-ext/
 
 ### Permissions
 
-- `declarativeNetRequest`: Modify network requests
-- `declarativeNetRequestFeedback`: Access request modification feedback
-- `webRequest`: Monitor network activity (fetch/XHR only)
 - `storage`: Save rules and settings
 - `activeTab`: Access current tab information
 - `tabs`: Access tab information for recording
-- `scripting`: Script injection for DevTools prompt
 - `contextMenus`: Right-click menu integration
 - `host_permissions`: `<all_urls>` - Access to all URLs for interception
 
@@ -432,41 +405,47 @@ npm run dev        # Development build with watch mode
 
 ### Recent Architectural Changes
 
-#### v1.2.0 - Performance & Reliability (Current)
+#### v2.9.x - Performance & UX Improvements (Current)
 
-Major improvements to logging performance and extension reliability:
+Major performance optimizations and user experience enhancements:
 
-- **Session Storage Logging**: Switched from persistent local storage to in-memory session storage for request logs
-- **Batched Writes**: Request logs are batch written every 500ms instead of per-request, reducing I/O by up to 99%
-- **Context Invalidation Handling**: Added graceful handling for service worker termination and extension reloads
-- **Fallback Values**: Chrome API calls now have fallback values to prevent crashes
-- **Simplified URL Matching**: Removed internal `RuleMatcher` class - URL matching is now handled natively by declarativeNetRequest
-- **Fixed Regex Support**: Regex patterns now correctly use `regexFilter` instead of `urlFilter`
-- **Fixed HTTP Methods**: Rules now correctly filter by HTTP method instead of matching all methods
+- **Bundle Size Optimization**: Reduced initial bundle by 65% (1.04 MB → 364 KB)
+  - Lazy loading for Prettier and validation dependencies
+  - On-demand loading of heavy dependencies
+- **Response Hook Toggle**: Enable/disable response hooks without deleting code
+  - Smart UI that only shows toggle when hook code exists
+  - Visual status indicators with color-coded badges
+- **Enhanced Validation**: Comprehensive response hook validation using eslint-scope
+  - Catches undefined variables and proper scope analysis
+  - CSP-safe static analysis
+- **UI Polish**: Theme-aware icons, quick save button, improved accessibility
+  - Focus rings only for keyboard navigation
+  - Standardized error message styling
 
-#### v1.1.0 - DevTools Integration
+#### v2.8.x - Response Modes & Custom Hooks
 
-The extension now operates exclusively as a DevTools panel:
+Powerful response modification capabilities:
 
-- **Native DevTools Panel**: Integrated as "Moq" tab in Chrome DevTools
-- **Removed Floating Window**: Simplified architecture with single UI mode
-- **DevTools Prompt**: Lightweight notification guides users to open DevTools when clicking extension icon
-- **Improved Workflow**: Better integration with existing developer tools
-- **Reduced Complexity**: Eliminated window management and multi-mode support
+- **Response Mode Selection**: Choose between Mock and Passthrough modes
+  - Mock Mode: Apply hooks to configured mock responses
+  - Passthrough Mode: Forward real requests and modify actual responses
+- **Response Hooks**: JavaScript code to dynamically modify responses
+  - Access to `response`, `request`, and `helpers` objects
+  - Built-in helper functions for IDs, timestamps, and random data
+  - Sandboxed execution with dangerous pattern detection
 
-#### v1.0.0 - Performance Optimization
+#### v2.7.x - Multi-Context Support
 
-Previously attempted to capture response bodies using content scripts running in MAIN and ISOLATED worlds. This approach caused:
+Flexible viewing modes and architecture improvements:
 
-- Severe page load performance degradation
-- Request timeouts
-- Complex dual-script architecture
-
-**Decision Made**: Removed all response capture content scripts in favor of:
-
-- Pure webRequest API for logging (fast, non-intrusive)
-- Manual response body entry by users
-- Dramatically improved performance with minimal page load impact
+- **Standalone Window Mode**: Open Moq in a separate 800×600 window
+  - Perfect for multi-monitor setups
+  - Full state synchronization across DevTools and window
+  - Single instance enforcement
+- **Code Architecture Refactoring**: Major cleanup for maintainability
+  - Extracted 5 custom hooks for feature separation
+  - Reduced App.tsx from 570 to 350 lines
+  - Improved performance with proper memoization
 
 ## Troubleshooting
 
@@ -525,7 +504,7 @@ Moq has comprehensive test coverage for critical business logic:
 
 ### Test Suites
 
-- **78 unit tests** covering URL matching, storage, utilities, context handling, and translations
+- **214 unit tests** covering URL matching, storage, utilities, context handling, translations, folder management, and more
 - **Coverage highlights**:
   - URL matching logic: 100%
   - Context handler: 100%
@@ -546,23 +525,9 @@ npm run test:coverage   # Coverage report
 - `src/__tests__/storage.test.ts` - Storage operations
 - `src/__tests__/contextHandler.test.ts` - Extension context handling
 - `src/__tests__/urlMatching.test.ts` - URL pattern matching (exact, wildcard, regex)
+- `src/__tests__/folderManagement.test.ts` - Folder management operations
+- `src/__tests__/ruleValidation.test.ts` - Rule and response hook validation
 - `src/__tests__/i18n.test.ts` - Translation validation
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## License
-
-MIT License - feel free to use this extension for personal or commercial projects.
-
-## Support
-
-For issues, questions, or feature requests, please open an issue on GitHub:
-https://github.com/PavelShpakovich/mock-ext/issues
-
-- Recording status should show the page URL
-- Only HTTP/HTTPS requests are logged
 
 ### Mock Not Applied
 
@@ -586,7 +551,7 @@ A: Yes, the extension has host_permissions for all URLs.
 A: Open Chrome DevTools (Cmd+Option+I or Ctrl+Shift+I) and look for the "Moq" tab. Click the extension icon for a helpful prompt.
 
 **Q: Are my mock rules shared across devices?**  
-A: No, rules are stored locally in Chrome storage. Export/import features coming soon.
+A: No, rules are stored locally in Chrome storage. Use the export/import feature to transfer rules between devices.
 
 **Q: Can I mock WebSocket connections?**  
 A: No, currently only HTTP/HTTPS requests are supported.
