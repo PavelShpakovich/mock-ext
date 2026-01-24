@@ -185,6 +185,21 @@ export const useRecording = (): UseRecordingReturn => {
     return undefined;
   }, [settings.logRequests, loadRequestLog]);
 
+  // Listen for recording tab title updates
+  useEffect(() => {
+    const messageListener = (message: any) => {
+      if (message.action === 'recordingTabUpdated' && message.tabTitle) {
+        setActiveTabTitle(message.tabTitle);
+      }
+    };
+
+    chrome.runtime.onMessage.addListener(messageListener);
+
+    return () => {
+      chrome.runtime.onMessage.removeListener(messageListener);
+    };
+  }, []);
+
   return {
     settings,
     requestLog,

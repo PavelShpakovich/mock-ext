@@ -275,6 +275,22 @@ chrome.tabs.onRemoved.addListener((tabId) => {
   }
 });
 
+// Update tab title when the recording tab navigates
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  // Only process if this is the recording tab and the title has changed
+  if (tabId === recordingTabId && changeInfo.title && tab.title) {
+    // Notify all extension contexts about the title change
+    chrome.runtime
+      .sendMessage({
+        action: 'recordingTabUpdated',
+        tabTitle: tab.title,
+      })
+      .catch(() => {
+        // Silent fail - no listeners
+      });
+  }
+});
+
 // Install/update handler
 chrome.runtime.onInstalled.addListener(async (details) => {
   if (details.reason === 'install') {

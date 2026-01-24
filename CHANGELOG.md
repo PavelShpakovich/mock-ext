@@ -5,6 +5,15 @@ All notable changes to Moq Extension will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.9.4] - 2026-01-24
+
+### Fixed
+- **Recording Tab Title Update**: Tab title now dynamically updates when navigating to different websites during recording
+  - Added `chrome.tabs.onUpdated` listener in background script to detect tab navigation
+  - Extension now broadcasts `recordingTabUpdated` message when recording tab title changes
+  - Frontend automatically updates displayed tab title without requiring recording restart
+  - Fixes issue where stale website title remained visible after navigation
+
 ## [2.9.3] - 2026-01-22
 
 ### Performance

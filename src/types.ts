@@ -84,6 +84,7 @@ export interface MessageAction {
     | 'settingsUpdated'
     | 'foldersUpdated'
     | 'requestLogUpdated'
+    | 'recordingTabUpdated'
     | 'openDevTools'
     | 'updateFolders'
     | 'openStandaloneWindow'
@@ -92,6 +93,7 @@ export interface MessageAction {
   settings?: Settings;
   enabled?: boolean;
   tabId?: number;
+  tabTitle?: string;
   data?: any;
   isRecording?: boolean;
   url?: string;
