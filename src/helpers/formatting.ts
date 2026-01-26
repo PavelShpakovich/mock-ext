@@ -14,60 +14,66 @@ export function formatTime(timestamp: number): string {
 }
 
 /**
- * Detects the content type from response body if server-provided type is missing or incorrect
- * @param serverContentType - Content-Type header from server response
- * @param responseBody - Response body text
- * @returns Detected or normalized content-type
+ * Normalizes content-type by removing charset and other parameters
+ * @param contentType - Content-Type header value
+ * @returns Normalized content-type
  */
-export function detectContentType(serverContentType: string | undefined, responseBody: string | undefined): string {
-  let detectedContentType = serverContentType || 'application/json';
+export function normalizeContentType(contentType: string | undefined): string {
+  if (!contentType) return 'application/json';
 
-  // Normalize content-type (remove charset and other params)
-  if (detectedContentType.includes(';')) {
-    detectedContentType = detectedContentType.split(';')[0].trim();
+  // Remove charset and other params (e.g., "application/json; charset=utf-8" -> "application/json")
+  if (contentType.includes(';')) {
+    return contentType.split(';')[0].trim();
   }
 
-  // Always try to infer from response body for better accuracy
-  if (responseBody && responseBody.trim()) {
+  return contentType;
+}
+
+/**
+ * Checks if content type is text-based (not binary)
+ * @param contentType - Content-Type header value
+ * @returns true if text-based, false if binary
+ */
+export function isTextBasedContentType(contentType: string | undefined): boolean {
+  if (!contentType) return true; // Default to text
+
+  const normalized = normalizeContentType(contentType).toLowerCase();
+
+  return (
+    normalized.includes('json') ||
+    normalized.includes('text') ||
+    normalized.includes('csv') ||
+    normalized.includes('form-urlencoded')
+  );
+}
+
+/**
+ * Detects the content type from response body
+ * Simplified to only distinguish between JSON and plain text
+ * @param serverContentType - Content-Type header from server response
+ * @param responseBody - Response body text
+ * @returns Detected content-type (application/json or text/plain)
+ */
+export function detectContentType(serverContentType: string | undefined, responseBody: string | undefined): string {
+  const normalized = normalizeContentType(serverContentType);
+
+  // Try to detect from response body
+  if (responseBody?.trim()) {
     const body = responseBody.trim();
 
     // Avoid detection on truncated responses
-    const isTruncated = responseBody.includes('...[truncated]');
-
-    if (!isTruncated) {
-      // Try JSON detection (most common API format)
-      // Handle Google's )]}' prefix and chunked format (e.g., ")]}'144\n[...]")
-      if (body.startsWith('{') || body.startsWith('[') || body.startsWith(")]}'") || /^\)\]\}'\s*\d+\n/.test(body)) {
+    if (!responseBody.includes('...[truncated]')) {
+      // JSON detection (including Google's )]}' XSSI protection prefix)
+      if (body.startsWith('{') || body.startsWith('[') || body.startsWith(")]}'\n")) {
         return 'application/json';
-      }
-      // HTML detection
-      if (
-        body.toLowerCase().startsWith('<!doctype html') ||
-        body.toLowerCase().startsWith('<html') ||
-        (body.startsWith('<') && (body.includes('</html>') || body.includes('<head>') || body.includes('<body>')))
-      ) {
-        return 'text/html';
-      }
-      // XML detection (but not HTML)
-      if (body.startsWith('<?xml') || (body.startsWith('<') && body.includes('</') && !body.includes('<html'))) {
-        return 'application/xml';
-      }
-      // JavaScript detection
-      if (
-        body.startsWith('(function') ||
-        body.startsWith('function ') ||
-        body.startsWith('var ') ||
-        body.startsWith('const ') ||
-        body.startsWith('let ')
-      ) {
-        return 'application/javascript';
-      }
-      // Default to plain text if unknown
-      if (detectedContentType === 'application/octet-stream' || detectedContentType === '') {
-        return 'text/plain';
       }
     }
   }
 
-  return detectedContentType;
+  // Default logic: if it looks like JSON, return JSON, otherwise plain text
+  if (normalized.includes('json')) {
+    return 'application/json';
+  }
+
+  return 'text/plain';
 }

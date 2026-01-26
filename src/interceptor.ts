@@ -260,14 +260,6 @@ class RequestInterceptor {
           }
           return result;
         },
-        parseXML: (xmlString: string): Document => {
-          const parser = new DOMParser();
-          return parser.parseFromString(xmlString, 'text/xml');
-        },
-        serializeXML: (xmlDoc: Document): string => {
-          const serializer = new XMLSerializer();
-          return serializer.serializeToString(xmlDoc);
-        },
         stripGooglePrefix: (responseBody: string): string => {
           return responseBody.replace(/^[\s\S]*?\)\n/, '');
         },
@@ -369,14 +361,6 @@ class RequestInterceptor {
             result += chars.charAt(Math.floor(Math.random() * chars.length));
           }
           return result;
-        },
-        parseXML: (xmlString: string): Document => {
-          const parser = new DOMParser();
-          return parser.parseFromString(xmlString, 'text/xml');
-        },
-        serializeXML: (xmlDoc: Document): string => {
-          const serializer = new XMLSerializer();
-          return serializer.serializeToString(xmlDoc);
         },
         stripGooglePrefix: (responseBody: string): string => {
           // Remove )]}' prefix (Google's XSSI protection)
@@ -517,12 +501,7 @@ class RequestInterceptor {
       const clonedResponse = response.clone();
       const contentType = clonedResponse.headers.get('content-type') || '';
       const headers = this.captureResponseHeaders(response);
-      const isTextBased =
-        contentType.includes('json') ||
-        contentType.includes('text') ||
-        contentType.includes('xml') ||
-        contentType.includes('javascript') ||
-        contentType.includes('form-urlencoded');
+      const isTextBased = contentType.includes('json') || contentType.includes('text');
 
       if (isTextBased) {
         clonedResponse
@@ -559,12 +538,7 @@ class RequestInterceptor {
         });
       }
 
-      const isTextBased =
-        contentType.includes('json') ||
-        contentType.includes('text') ||
-        contentType.includes('xml') ||
-        contentType.includes('javascript') ||
-        contentType.includes('form-urlencoded');
+      const isTextBased = contentType.includes('json') || contentType.includes('text');
 
       let responseBody = '[Binary Data]';
 

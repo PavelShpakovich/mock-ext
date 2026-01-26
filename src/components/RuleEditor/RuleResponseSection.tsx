@@ -87,10 +87,7 @@ export const RuleResponseSection: React.FC<RuleResponseSectionProps> = ({
           onChange={(e) => onContentTypeChange(e.target.value)}
         >
           <option value='application/json'>{t('editor.json')}</option>
-          <option value='application/xml'>{t('editor.xml')}</option>
-          <option value='text/html'>{t('editor.html')}</option>
           <option value='text/plain'>{t('editor.text')}</option>
-          <option value='application/javascript'>JS</option>
         </Select>
       </div>
 

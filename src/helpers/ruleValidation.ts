@@ -4,6 +4,8 @@ import { matchURL } from './urlMatching';
 import { isValidJSON } from './validation';
 import { UNUSED_RULE_DAYS_THRESHOLD } from '../constants';
 
+const REGEX_TIMEOUT_MS = 100;
+
 export interface ValidationWarning {
   type: ValidationWarningType;
   severity: ValidationSeverity;
@@ -22,12 +24,63 @@ export interface JSONValidation {
 }
 
 /**
- * Validate a regex pattern
+ * Validate a regex pattern with ReDoS protection
  */
 export function validateRegexPattern(pattern: string): boolean {
   try {
+    // 1. Basic syntax check
     new RegExp(pattern);
+
+    // 2. Strict ReDoS checks
+    if (hasReDoSRisk(pattern)) {
+      console.warn('[Moq] Potential ReDoS pattern detected:', pattern);
+      return false;
+    }
+
     return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Check if regex pattern has ReDoS risks
+ */
+function hasReDoSRisk(pattern: string): boolean {
+  // Detect nested quantifiers: (a+)+, (a*)*, (a+)*
+  // Looks for group closing ')' followed by *, +, or {
+  // inside a group that likely contains quantifiers
+  const nestedQuantifiers = /(\([^)]*[*+]\)[*+])|(\([^)]*[*+]\)\{)/;
+  if (nestedQuantifiers.test(pattern)) {
+    return true;
+  }
+
+  // Detect alternation with overlapping patterns: (a|a)*
+  // This is a rough heuristic
+  const overlappingAlternation = /\([^|)]*\|[^)]*\)[*+]/;
+  if (overlappingAlternation.test(pattern)) {
+    return true;
+  }
+
+  // 3. Runtime Timeout Stress Test
+  return !testRegexWithTimeout(pattern);
+}
+
+/**
+ * Execute regex against a stress string with timeout
+ */
+function testRegexWithTimeout(pattern: string): boolean {
+  // Create a long repetitive string that triggers backtracking in bad regexes
+  // 'a' repeated 50-100 times is usually enough to hang bad regexes for >100ms
+  const testString = 'a'.repeat(100) + 'b';
+  const startTime = Date.now();
+
+  try {
+    const regex = new RegExp(pattern);
+    regex.test(testString);
+
+    const elapsed = Date.now() - startTime;
+    return elapsed < REGEX_TIMEOUT_MS;
   } catch {
     return false;
   }
@@ -126,33 +179,6 @@ export function validateJSONDetailed(jsonString: string): JSONValidation {
 }
 
 /**
- * Validate XML string
- */
-export function validateXMLDetailed(xmlString: string): JSONValidation {
-  if (!xmlString.trim()) {
-    return { isValid: true, message: 'Empty XML is valid' };
-  }
-
-  try {
-    const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(xmlString, 'text/xml');
-    const parseError = xmlDoc.getElementsByTagName('parsererror');
-    if (parseError.length > 0) {
-      return {
-        isValid: false,
-        message: `Invalid XML: ${parseError[0].textContent?.split('\n')[0]}`,
-      };
-    }
-    return { isValid: true, message: 'Valid XML ✓' };
-  } catch (e) {
-    return {
-      isValid: false,
-      message: `Invalid XML: ${(e as Error).message}`,
-    };
-  }
-}
-
-/**
  * Validate rule editor form data
  */
 export async function validateRuleForm(
@@ -194,9 +220,9 @@ export async function validateRuleForm(
   if (formData.responseHook && formData.responseHook.trim()) {
     // Lazy load validation
     const { validateResponseHookLazy } = await import('./lazyValidation');
-    const hookError = await validateResponseHookLazy(formData.responseHook);
+    const hookError = await validateResponseHookLazy(formData.responseHook, t);
     if (hookError) {
-      errors.responseHook = t('editor.validationError', { error: hookError });
+      errors.responseHook = hookError;
     }
   }
 

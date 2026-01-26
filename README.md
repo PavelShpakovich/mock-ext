@@ -2,36 +2,20 @@
 
 A powerful Chrome DevTools extension for mocking API requests during development and testing. Intercepts HTTP requests at the JavaScript level and responds with custom data, status codes, and delays without modifying your application code.
 
-## What's New in v2.10.0
+## What's New in v2.10.1
 
-🎉 **Major Feature Release** - Enhanced response format support and improved user experience:
+🛡️ **Security & Stability Release**
 
-- **Google Response Support**: Full handling of Google's specialized response formats
-  - Automatic `)]}'` XSSI protection prefix removal
-  - Chunked transfer encoding with size indicators
-  - JavaScript code validation (not pure JSON)
-  - New helpers: `parseGoogleJSON()`, `stripGooglePrefix()`
-- **Multi-Format Content Support**: Beyond JSON
-  - **XML**: Full validation, parsing, and serialization helpers
-  - **HTML**: Mock HTML pages and fragments
-  - **JavaScript**: JSONP callbacks, dynamic scripts, modules
-  - Smart auto-detection with intelligent content-type inference
-- **Seamless Recording**: No more manual page reloads
-  - Automatic reload when starting recording
-  - Interceptor scripts inject seamlessly
-  - User feedback via toast notification
-- **Enhanced XHR Logging**: Complete request capture
-  - All XHR requests logged (mocked and unmocked)
-  - Proper responseType handling for binary data
-  - Improved error resilience
-- **Code Quality**: Better maintainability
-  - Extracted content-type detection helper
-  - Strengthened validation (no false positives)
-  - Robust Google format parsing
-- **UX Improvements**:
-  - Toast notifications auto-dismiss after 3 seconds
-  - Clear validation messages for complex formats
-  - Better error handling throughout
+- **Security Hardening**:
+  - **ReDoS Protection**: Defense-in-depth regex validation (static analysis + runtime checks).
+  - **Safe Response Hooks**: Strict sandboxing for custom JavaScript hooks (blocked dangerous globals).
+  - **XSS Prevention**: Enhanced content script security.
+- **Google Response Support**:
+  - Full handling of Google's specialized response formats (`)]}'` XSSI prefix).
+  - Intelligent chunked response parsing.
+- **Focused Content-Types**:
+  - Optimized for **JSON** and **Plain Text** mocking.
+  - Removed experimental XML/HTML support to ensure stability.
 
 For complete details, see [CHANGELOG.md](CHANGELOG.md).
 
@@ -41,7 +25,7 @@ For complete details, see [CHANGELOG.md](CHANGELOG.md).
 
 - **URL Pattern Matching**: Use wildcards (`*`), exact match, or regex patterns to match URLs
 - **HTTP Method Filtering**: Mock specific methods (GET, POST, PUT, DELETE, PATCH, OPTIONS, HEAD) or all methods
-- **Custom Responses**: Define JSON, XML, HTML, JavaScript, or text responses
+- **Custom Responses**: Define JSON or plain text responses
 - **Status Code Control**: Set any HTTP status code (200, 404, 500, etc.)
 - **Response Delay**: Simulate network latency for testing loading states
 - **Custom Response Headers**: Add custom HTTP headers to mock responses
@@ -64,25 +48,20 @@ Full support for Google's specialized response formats:
   - `stripGooglePrefix(responseBody)` - Removes `)]}'` prefix
 - **Examples**: Works perfectly with Google Translate, Gmail API, Google Maps, etc.
 
-### Enhanced Content-Type Support
+### Focused Content-Type Support
 
-Beyond JSON - handle multiple response formats:
+Optimized for modern API development:
 
-- **XML Responses**: Full XML validation and manipulation
+- **JSON Responses** (Primary): Full validation and beautification
   - Real-time validation with detailed error messages
-  - Response hook helpers: `parseXML()`, `serializeXML()`
-  - Perfect for SOAP APIs and RSS feeds
-- **HTML Responses**: Mock HTML pages or fragments
-  - Useful for testing SSR applications
-  - Validate HTML structure in editor
-- **JavaScript Responses**: Handle script responses
-  - JSONP callbacks
-  - Dynamic script loading
-  - Module responses
+  - One-click JSON formatting
+  - Google's )]}' XSSI prefix support
+  - Response hook helpers: `parseGoogleJSON()`, `stripGooglePrefix()`
+- **Plain Text Responses**: Simple text responses for non-JSON APIs
 - **Auto-Detection**: Smart content-type detection from response body
-  - Recognizes JSON, XML, HTML, JavaScript formats
+  - Automatically detects JSON (including Google's special format)
+  - Falls back to plain text for all other content
   - Handles truncated responses intelligently
-  - Fallback logic for ambiguous content
 
 ### Dynamic Variables
 
@@ -229,7 +208,7 @@ npm run dev
      ```json
      {
        "id": "{{uuid}}",
-       "name": "Test User",
+       "name": "Test User", (recommended for 99% of APIs)
        "email": "test@example.com"
      }
      ```
@@ -505,7 +484,6 @@ Powerful response modification capabilities:
 - **Response Hooks**: JavaScript code to dynamically modify responses
   - Access to `response`, `request`, and `helpers` objects
   - Built-in helper functions for IDs, timestamps, and random data
-  - **XML Helpers**: `parseXML()`, `serializeXML()` for XML manipulation
   - **Google Helpers**: `parseGoogleJSON()`, `stripGooglePrefix()` for Google responses
   - Sandboxed execution with dangerous pattern detection
 
@@ -579,10 +557,11 @@ Moq has comprehensive test coverage for critical business logic:
 
 ### Test Suites
 
-- **214 unit tests** covering URL matching, storage, utilities, context handling, translations, folder management, and more
+- **229 unit tests** covering URL matching, storage, utilities, context handling, translations, folder management, background worker, and more
 - **Coverage highlights**:
   - URL matching logic: 100%
   - Context handler: 100%
+  - Mobile/Service Worker: 95%
   - Utils: 100%
   - Storage: 85%
 

@@ -7,11 +7,17 @@ let validationModule: typeof import('acorn') | null = null;
 let eslintModule: typeof import('eslint-scope') | null = null;
 
 /**
+ * Translation function type
+ */
+type TranslateFn = (key: string, params?: Record<string, any>) => string;
+
+/**
  * Validates response hook code for safety and syntax with lazy-loaded dependencies
  * @param hookCode - JavaScript code to validate
+ * @param t - Translation function for error messages
  * @returns Error message or null if valid
  */
-export async function validateResponseHookLazy(hookCode: string): Promise<string | null> {
+export async function validateResponseHookLazy(hookCode: string, t: TranslateFn): Promise<string | null> {
   // Empty hook is valid (no modification)
   if (!hookCode || hookCode.trim() === '') {
     return null;
@@ -19,17 +25,37 @@ export async function validateResponseHookLazy(hookCode: string): Promise<string
 
   // Check for dangerous patterns (lightweight, no dependencies)
   const dangerousPatterns = [
-    { pattern: /\beval\b/i, message: 'eval() is not allowed' },
-    { pattern: /\bimport\b/i, message: 'import statements are not allowed' },
-    { pattern: /\brequire\b/i, message: 'require() is not allowed' },
-    { pattern: /\bprocess\b/i, message: 'process object is not allowed' },
-    { pattern: /\bwindow\b/i, message: 'window object is not allowed' },
-    { pattern: /\bdocument\b/i, message: 'document object is not allowed' },
+    // Original patterns
+    { pattern: /\beval\b/i, key: 'editor.validationErrors.evalNotAllowed' },
+    { pattern: /\bimport\b/i, key: 'editor.validationErrors.importNotAllowed' },
+    { pattern: /\brequire\b/i, key: 'editor.validationErrors.requireNotAllowed' },
+    { pattern: /\bprocess\b/i, key: 'editor.validationErrors.processNotAllowed' },
+    { pattern: /\bwindow\b/i, key: 'editor.validationErrors.windowNotAllowed' },
+    { pattern: /\bdocument\b/i, key: 'editor.validationErrors.documentNotAllowed' },
+
+    // Enhanced security patterns
+    { pattern: /\blocation\b/i, key: 'editor.validationErrors.locationNotAllowed' },
+    { pattern: /\bcookie\b/i, key: 'editor.validationErrors.cookieNotAllowed' },
+    { pattern: /localStorage|sessionStorage/i, key: 'editor.validationErrors.storageNotAllowed' },
+    { pattern: /this\[/i, key: 'editor.validationErrors.dynamicThisNotAllowed' },
+    { pattern: /\bfetch\b/i, key: 'editor.validationErrors.fetchNotAllowed' },
+    { pattern: /XMLHttpRequest/i, key: 'editor.validationErrors.xhrNotAllowed' },
+    { pattern: /new\s+Image/i, key: 'editor.validationErrors.imageNotAllowed' },
+    { pattern: /\.src\s*=/i, key: 'editor.validationErrors.srcNotAllowed' },
+    { pattern: /\.innerHTML\b/i, key: 'editor.validationErrors.innerHTMLNotAllowed' },
+    { pattern: /\.outerHTML\b/i, key: 'editor.validationErrors.outerHTMLNotAllowed' },
+    { pattern: /\bFunction\b/i, key: 'editor.validationErrors.functionNotAllowed' },
+    { pattern: /globalThis/i, key: 'editor.validationErrors.globalThisNotAllowed' },
+    { pattern: /self\[/i, key: 'editor.validationErrors.dynamicSelfNotAllowed' },
+    {
+      pattern: /__proto__|constructor\s*\[|prototype\s*\[/i,
+      key: 'editor.validationErrors.prototypePollutionNotAllowed',
+    },
   ];
 
-  for (const { pattern, message } of dangerousPatterns) {
+  for (const { pattern, key } of dangerousPatterns) {
     if (pattern.test(hookCode)) {
-      return message;
+      return t(key);
     }
   }
 
@@ -39,7 +65,7 @@ export async function validateResponseHookLazy(hookCode: string): Promise<string
       [validationModule, eslintModule] = await Promise.all([import('acorn'), import('eslint-scope')]);
     } catch (error) {
       console.error('Failed to load validation dependencies:', error);
-      return 'Validation unavailable';
+      return t('editor.validationErrors.validationUnavailable');
     }
   }
 
@@ -53,12 +79,12 @@ export async function validateResponseHookLazy(hookCode: string): Promise<string
     });
   } catch (error: unknown) {
     if (error instanceof SyntaxError) {
-      return `Syntax error: ${error.message}`;
+      return t('editor.validationErrors.syntaxError', { message: error.message });
     }
     if (error && typeof error === 'object' && 'message' in error) {
-      return `Syntax error: ${(error as { message: string }).message}`;
+      return t('editor.validationErrors.syntaxError', { message: (error as { message: string }).message });
     }
-    return 'Invalid JavaScript code';
+    return t('editor.validationErrors.invalidJavaScript');
   }
 
   // Analyze scopes to find undefined variables
@@ -106,7 +132,7 @@ export async function validateResponseHookLazy(hookCode: string): Promise<string
         // ref.resolved is null if the variable is not defined in any scope
         // ref.identifier.name is the variable name
         if (!ref.resolved && !allowedGlobals.has(ref.identifier.name)) {
-          return `'${ref.identifier.name}' is not defined. Available: response, request, helpers`;
+          return t('editor.validationErrors.undefinedVariable', { name: ref.identifier.name });
         }
       }
     }

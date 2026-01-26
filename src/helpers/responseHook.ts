@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
  * Context provided to response hooks
  */
 export interface ResponseHookContext {
-  response: any; // Parsed response body (can be modified)
+  response: unknown; // Parsed response body (can be modified by hook)
   request: {
     url: string;
     method: string;
@@ -61,9 +61,9 @@ const createHelpers = () => ({
  */
 export function executeResponseHook(
   hookCode: string,
-  response: any,
+  response: unknown,
   request: { url: string; method: string; headers?: Record<string, string>; body?: string }
-): any {
+): unknown {
   // Empty hook means no modification
   if (!hookCode || hookCode.trim() === '') {
     return response;
@@ -101,13 +101,32 @@ export function executeResponseHook(
       'helpers',
       `
       'use strict';
-      try {
-        ${hookCode}
-        return response;
-      } catch (error) {
-        console.error('[Moq] Response hook error:', error.message);
-        return response;
-      }
+      
+      // Runtime security: Block access to dangerous globals
+      const restrictedGlobals = ['window', 'document', 'location', 'eval', 'Function', 'globalThis', 'self'];
+      const globalProxy = new Proxy({}, {
+        get(target, prop) {
+          if (restrictedGlobals.includes(prop)) {
+            throw new Error('Access to ' + prop + ' is not allowed in response hooks');
+          }
+          return undefined;
+        },
+        has(target, prop) {
+          // Prevent 'prop in this' checks from succeeding for restricted globals
+          return !restrictedGlobals.includes(prop);
+        }
+      });
+      
+      // Wrap execution with security proxy
+      return (function() {
+        try {
+          ${hookCode}
+          return response;
+        } catch (error) {
+          console.error('[Moq] Response hook error:', error.message);
+          return response;
+        }
+      }).call(globalProxy);
     `
     );
 
@@ -127,9 +146,13 @@ export function executeResponseHook(
  * Returns an error message if invalid, or null if valid
  *
  * @param hookCode - JavaScript code to validate
+ * @param t - Translation function for error messages
  * @returns Promise that resolves to error message or null if valid
  */
-export async function validateResponseHook(hookCode: string): Promise<string | null> {
+export async function validateResponseHook(
+  hookCode: string,
+  t: (key: string, params?: Record<string, any>) => string
+): Promise<string | null> {
   // Empty hook is valid (no modification)
   if (!hookCode || hookCode.trim() === '') {
     return null;
@@ -137,7 +160,7 @@ export async function validateResponseHook(hookCode: string): Promise<string | n
 
   // Lazy load validation module
   const { validateResponseHookLazy } = await import('./lazyValidation');
-  return validateResponseHookLazy(hookCode);
+  return validateResponseHookLazy(hookCode, t);
 }
 
 /**

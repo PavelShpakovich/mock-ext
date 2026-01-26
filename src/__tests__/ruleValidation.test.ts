@@ -41,6 +41,17 @@ describe('Rule Validation', () => {
       expect(validateRegexPattern('(?invalid')).toBe(false);
       expect(validateRegexPattern('*')).toBe(false);
     });
+
+    it('should reject potential ReDoS patterns', () => {
+      // Nested quantifiers should be caught by heuristics
+      expect(validateRegexPattern('(a+)+')).toBe(false);
+      expect(validateRegexPattern('(a*)*')).toBe(false);
+      expect(validateRegexPattern('([a-z]+)+')).toBe(false);
+
+      // This is a valid complex regex but shouldn't trigger ReDoS unless tested aggressively
+      // Just creating it is fine, but if our heuristic is too aggressive it might fail
+      expect(validateRegexPattern('^https?:\\/\\/(www\\.)?example\\.com\\/.*$')).toBe(true);
+    });
   });
 
   describe('validateJSON', () => {

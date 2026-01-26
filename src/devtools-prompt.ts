@@ -67,44 +67,74 @@ function showDevToolsPrompt(language: string = 'en', theme: string = 'system') {
   const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
   const shortcut = isMac ? '⌥⌘I' : 'Ctrl+Shift+I';
 
-  overlay.innerHTML = `
-    <div style="display: flex; align-items: start; gap: 12px;">
-      <div style="flex: 1;">
-        <div style="font-weight: 600; margin-bottom: 8px; font-size: 15px; color: ${titleColor};">
-          ${t.title}
-        </div>
-        <div style="opacity: 0.95; margin-bottom: 12px;">
-          <span style="margin-right: 4px;">${
-            language === 'ru' ? 'Нажмите' : 'Press'
-          }</span><strong style="background: ${shortcutBg}; padding: 2px 8px; border-radius: 4px; font-family: monospace; color: ${shortcutColor};">${shortcut}</strong><span style="margin-left: 4px;">${
-            t.message
-          }</span>
-        </div>
-        <button id="moq-prompt-close" style="
-          background: #10b981;
-          border: none;
-          color: white;
-          padding: 6px 16px;
-          border-radius: 6px;
-          cursor: pointer;
-          font-size: 13px;
-          font-weight: 500;
-          transition: background 0.2s;
-        ">${t.gotIt}</button>
-      </div>
-      <button id="moq-prompt-dismiss" style="
-        background: none;
-        border: none;
-        color: ${dismissColor};
-        cursor: pointer;
-        font-size: 20px;
-        padding: 0;
-        line-height: 1;
-        opacity: 0.7;
-        transition: opacity 0.2s;
-      ">×</button>
-    </div>
+  // Create DOM structure safely (prevents XSS)
+  const container = document.createElement('div');
+  container.style.cssText = 'display: flex; align-items: start; gap: 12px;';
+
+  const contentDiv = document.createElement('div');
+  contentDiv.style.cssText = 'flex: 1;';
+
+  const titleDiv = document.createElement('div');
+  titleDiv.style.cssText = `font-weight: 600; margin-bottom: 8px; font-size: 15px; color: ${titleColor};`;
+  titleDiv.textContent = t.title;
+
+  const messageDiv = document.createElement('div');
+  messageDiv.style.cssText = 'opacity: 0.95; margin-bottom: 12px;';
+
+  const pressSpan = document.createElement('span');
+  pressSpan.style.cssText = 'margin-right: 4px;';
+  pressSpan.textContent = language === 'ru' ? 'Нажмите' : 'Press';
+
+  const shortcutStrong = document.createElement('strong');
+  shortcutStrong.style.cssText = `background: ${shortcutBg}; padding: 2px 8px; border-radius: 4px; font-family: monospace; color: ${shortcutColor};`;
+  shortcutStrong.textContent = shortcut;
+
+  const messageSpan = document.createElement('span');
+  messageSpan.style.cssText = 'margin-left: 4px;';
+  messageSpan.textContent = t.message;
+
+  messageDiv.appendChild(pressSpan);
+  messageDiv.appendChild(shortcutStrong);
+  messageDiv.appendChild(messageSpan);
+
+  const closeBtn = document.createElement('button');
+  closeBtn.id = 'moq-prompt-close';
+  closeBtn.style.cssText = `
+    background: #10b981;
+    border: none;
+    outline: none;
+    color: white;
+    padding: 6px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    transition: background 0.2s;
   `;
+  closeBtn.textContent = t.gotIt;
+
+  const dismissBtn = document.createElement('button');
+  dismissBtn.id = 'moq-prompt-dismiss';
+  dismissBtn.style.cssText = `
+    background: none;
+    border: none;
+    outline: none;
+    color: ${dismissColor};
+    cursor: pointer;
+    font-size: 20px;
+    padding: 0;
+    line-height: 1;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+  `;
+  dismissBtn.textContent = '×';
+
+  contentDiv.appendChild(titleDiv);
+  contentDiv.appendChild(messageDiv);
+  contentDiv.appendChild(closeBtn);
+  container.appendChild(contentDiv);
+  container.appendChild(dismissBtn);
+  overlay.appendChild(container);
 
   // Add animation keyframes
   const style = document.createElement('style');
@@ -125,9 +155,6 @@ function showDevToolsPrompt(language: string = 'en', theme: string = 'system') {
   document.body.appendChild(overlay);
 
   // Add hover effect to buttons
-  const closeBtn = overlay.querySelector('#moq-prompt-close') as HTMLElement;
-  const dismissBtn = overlay.querySelector('#moq-prompt-dismiss') as HTMLElement;
-
   closeBtn.addEventListener('mouseenter', () => {
     closeBtn.style.background = '#059669';
   });

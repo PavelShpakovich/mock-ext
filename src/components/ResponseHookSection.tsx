@@ -3,7 +3,7 @@ import { TextArea } from './ui/TextArea';
 import { IconButton } from './ui/IconButton';
 import { RadioOption } from './ui/RadioOption';
 import { Toggle } from './ui/Toggle';
-import { Maximize2, Wand2 } from 'lucide-react';
+import { Maximize2, Wand2, AlertTriangle } from 'lucide-react';
 import { useI18n } from '../contexts/I18nContext';
 import { ResponseMode } from '../enums';
 
@@ -67,6 +67,16 @@ const ResponseHookSection: React.FC<ResponseHookSectionProps> = ({
         </summary>
 
         <div className='flex flex-col gap-2 pt-2'>
+          <div className='bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3 flex items-start gap-3'>
+            <AlertTriangle className='w-5 h-5 text-amber-600 dark:text-amber-500 shrink-0 mt-0.5' />
+            <div className='flex-1'>
+              <p className='text-xs font-semibold text-amber-900 dark:text-amber-200 mb-1'>
+                {t('editor.securityWarning') || 'Security Warning'}
+              </p>
+              <p className='text-xs text-amber-800 dark:text-amber-300'>{t('editor.securityWarningMessage')}</p>
+            </div>
+          </div>
+
           <TextArea
             label=''
             value={value || ''}

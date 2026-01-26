@@ -63,53 +63,52 @@ export interface StorageData {
   folders?: Folder[];
 }
 
-export interface MessageAction {
-  action:
-    | 'updateRules'
-    | 'updateSettings'
-    | 'toggleMocking'
-    | 'getRules'
-    | 'getSettings'
-    | 'exportRules'
-    | 'startRecording'
-    | 'stopRecording'
-    | 'getRecordingStatus'
-    | 'captureResponse'
-    | 'setRecordingState'
-    | 'updateRulesInPage'
-    | 'logMockedRequest'
-    | 'logCapturedResponse'
-    | 'incrementRuleCounter'
-    | 'rulesUpdated'
-    | 'settingsUpdated'
-    | 'foldersUpdated'
-    | 'requestLogUpdated'
-    | 'recordingTabUpdated'
-    | 'openDevTools'
-    | 'updateFolders'
-    | 'openStandaloneWindow'
-    | 'getStandaloneWindowStatus';
-  rules?: MockRule[];
-  settings?: Settings;
-  enabled?: boolean;
-  tabId?: number;
-  tabTitle?: string;
-  data?: any;
-  isRecording?: boolean;
-  url?: string;
-  method?: string;
-  statusCode?: number;
-  contentType?: string;
-  responseBody?: string;
-  responseHeaders?: Record<string, string>;
-  ruleId?: string;
-  language?: Language;
-  folders?: Folder[];
-  timestamp?: number;
-}
+// ============================================================================
+// Message Types (Discriminated Unions)
+// ============================================================================
 
-export interface MessageResponse {
-  success: boolean;
-  data?: any;
-  error?: string;
-}
+export type MessageAction =
+  | { action: 'updateRules'; rules: MockRule[] }
+  | { action: 'updateSettings'; settings: Settings }
+  | { action: 'toggleMocking'; enabled: boolean }
+  | { action: 'getRules' }
+  | { action: 'getSettings' }
+  | { action: 'exportRules' }
+  | { action: 'startRecording'; tabId: number; tabTitle: string }
+  | { action: 'stopRecording' }
+  | { action: 'getRecordingStatus' }
+  | {
+      action: 'captureResponse';
+      url: string;
+      method: string;
+      statusCode: number;
+      contentType: string;
+      responseBody: string;
+      responseHeaders: Record<string, string>;
+    }
+  | { action: 'setRecordingState'; isRecording: boolean; tabId?: number; tabTitle?: string }
+  | { action: 'updateRulesInPage'; rules: MockRule[]; settings: Settings }
+  | { action: 'logMockedRequest'; url: string; method: string; ruleId: string; timestamp: number }
+  | {
+      action: 'logCapturedResponse';
+      url: string;
+      method: string;
+      statusCode: number;
+      contentType: string;
+      responseBody: string;
+      responseHeaders: Record<string, string>;
+      timestamp: number;
+    }
+  | { action: 'incrementRuleCounter'; ruleId: string }
+  | { action: 'rulesUpdated' }
+  | { action: 'settingsUpdated' }
+  | { action: 'foldersUpdated' }
+  | { action: 'requestLogUpdated' }
+  | { action: 'recordingTabUpdated'; tabId: number; tabTitle: string }
+  | { action: 'openDevTools'; language: Language; theme: string }
+  | { action: 'updateFolders'; folders: Folder[] }
+  | { action: 'openStandaloneWindow' }
+  | { action: 'getStandaloneWindowStatus' }
+  | { action: 'ping' };
+
+export type MessageResponse<T = unknown> = { success: true; data?: T } | { success: false; error: string };

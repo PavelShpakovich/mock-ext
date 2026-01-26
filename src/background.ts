@@ -280,6 +280,10 @@ async function handleMessage(message: MessageAction, sender?: chrome.runtime.Mes
 
 // Helper: Handle captured response logging
 async function handleCapturedResponse(message: MessageAction, sender?: chrome.runtime.MessageSender): Promise<void> {
+  if (message.action !== 'logCapturedResponse') {
+    return;
+  }
+
   const { url, method, statusCode, contentType, responseBody, responseHeaders } = message;
 
   // Only log if from recording tab
@@ -310,7 +314,11 @@ async function handleCapturedResponse(message: MessageAction, sender?: chrome.ru
 
 // Helper: Handle mocked request logging
 async function handleMockedRequest(message: MessageAction, sender?: chrome.runtime.MessageSender): Promise<void> {
-  const { url, method, statusCode, ruleId, timestamp } = message;
+  if (message.action !== 'logMockedRequest') {
+    return;
+  }
+
+  const { url, method, ruleId, timestamp } = message;
 
   // Only log if from recording tab
   if (!url || !method || recordingTabId === null || sender?.tab?.id !== recordingTabId) {
@@ -326,7 +334,7 @@ async function handleMockedRequest(message: MessageAction, sender?: chrome.runti
     timestamp: timestamp || Date.now(),
     matched: true,
     ruleId,
-    statusCode: statusCode || 200,
+    statusCode: matchedRule?.statusCode || 200,
     contentType: matchedRule?.contentType || '',
   });
 }

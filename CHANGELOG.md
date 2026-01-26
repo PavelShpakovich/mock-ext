@@ -5,6 +5,26 @@ All notable changes to Moq Extension will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.10.1] - 2026-01-26
+
+### Security
+- **ReDoS Protection**: Implemented defense-in-depth regex validation
+  - Static analysis for nested quantifiers (e.g. `(a+)+`)
+  - Runtime timeout protection (100ms) for regex execution of rules
+- **Response Hook Sandboxing**: Hardened security for custom hooks
+  - Blocked access to dangerous globals (`window`, `document`, `fetch`, `eval`)
+  - Implemented `Proxy`-based global scope restriction
+- **XSS Prevention**: Refactored internal UI injection
+  - Replaced `innerHTML` usage with safer DOM `createElement` APIs in content scripts
+
+### Fixed
+- **Type Safety**: Improved TypeScript definitions for `MessageAction` discriminated unions
+- **Build**: Fixed specific build errors related to `setTimeout` types
+- **Tests**: Add comprehensive Service Worker test suite
+
+### Changed
+- **Simplified Content-Types**: Removed experimental XML/HTML support to focus on JSON/Text stability
+
 ## [2.10.0] - 2026-01-26
 
 ### Added

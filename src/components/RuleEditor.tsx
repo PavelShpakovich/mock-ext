@@ -5,7 +5,7 @@ import { ButtonVariant } from '../enums';
 import { isValidJSON } from '../helpers/validation';
 import { convertArrayToHeaders, HeaderEntry } from '../helpers/headers';
 import { getInitialFormData, RuleFormData } from '../helpers/ruleForm';
-import { validateJSONDetailed, validateXMLDetailed, JSONValidation, validateRuleForm } from '../helpers/ruleValidation';
+import { validateJSONDetailed, JSONValidation, validateRuleForm } from '../helpers/ruleValidation';
 import { VALIDATION_DEBOUNCE_MS } from '../constants';
 import { Button } from './ui/Button';
 import { Card } from './ui/Card';
@@ -80,7 +80,7 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, mockRequest, folders, onS
     setErrors({});
 
     const contentType = rule?.contentType || mockRequest?.contentType || newFormData.contentType;
-    if (contentType === 'application/json' || contentType.includes('xml')) {
+    if (contentType === 'application/json') {
       validateBodyField(newFormData.responseBody, contentType);
     }
 
@@ -122,8 +122,6 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, mockRequest, folders, onS
     validationTimeoutRef.current = window.setTimeout(() => {
       if (contentType === 'application/json') {
         setJsonValidation(validateJSONDetailed(body));
-      } else if (contentType.includes('xml')) {
-        setJsonValidation(validateXMLDetailed(body));
       } else {
         setJsonValidation(null);
       }
@@ -135,12 +133,12 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, mockRequest, folders, onS
       clearTimeout(hookValidationTimeoutRef.current);
     }
 
-    hookValidationTimeoutRef.current = setTimeout(async () => {
+    hookValidationTimeoutRef.current = window.setTimeout(async () => {
       // Lazy load validation
       const { validateResponseHookLazy } = await import('../helpers/lazyValidation');
-      const hookError = await validateResponseHookLazy(hookCode);
+      const hookError = await validateResponseHookLazy(hookCode, t);
       if (hookError) {
-        setErrors((prev) => ({ ...prev, responseHook: t('editor.validationError', { error: hookError }) }));
+        setErrors((prev) => ({ ...prev, responseHook: hookError }));
       } else {
         setErrors((prev) => {
           const newErrors = { ...prev };
@@ -282,11 +280,7 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, mockRequest, folders, onS
             onChange={(value) => handleChange('responseBody', value)}
             onClose={() => setIsExpanded(false)}
             onBeautify={formData.contentType === 'application/json' ? formatJSON : undefined}
-            validation={
-              (formData.contentType === 'application/json' || formData.contentType.includes('xml')) && jsonValidation
-                ? jsonValidation
-                : undefined
-            }
+            validation={formData.contentType === 'application/json' && jsonValidation ? jsonValidation : undefined}
           />
         )}
 

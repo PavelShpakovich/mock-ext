@@ -199,53 +199,77 @@ class ContentScriptBridge {
     `;
   }
 
-  private getPromptHTML(t: { title: string; message: string; gotIt: string }): string {
-    return `
-      <style>
-        @keyframes slideIn {
-          from {
-            opacity: 0;
-            transform: translateX(100px);
-          }
-          to {
-            opacity: 1;
-            transform: translateX(0);
-          }
-        }
-      </style>
-      <div style="display: flex; align-items: start; gap: 16px;">
-        <div style="font-size: 28px; flex-shrink: 0;">🛠️</div>
-        <div style="flex: 1;">
-          <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600; color: #10b981;">
-            ${t.title}
-          </h3>
-          <p style="margin: 0 0 16px 0; font-size: 14px; line-height: 1.5; color: #d1d5db;">
-            Press <strong style="color: #10b981; font-family: monospace;">Cmd+Option+I</strong> (Mac) or 
-            <strong style="color: #10b981; font-family: monospace;">Ctrl+Shift+I</strong> (Win) 
-            ${t.message}
-          </p>
-          <button 
-            id="moq-prompt-close"
-            style="
-              background: #10b981;
-              color: white;
-              border: none;
-              padding: 8px 16px;
-              border-radius: 6px;
-              font-size: 14px;
-              font-weight: 500;
-              cursor: pointer;
-              transition: background 0.2s;
-              width: 100%;
-            "
-            onmouseover="this.style.background='#059669'"
-            onmouseout="this.style.background='#10b981'"
-          >
-            ${t.gotIt}
-          </button>
-        </div>
-      </div>
+  private createPromptElement(t: { title: string; message: string; gotIt: string }): HTMLElement {
+    // Create DOM structure safely (prevents XSS)
+    const container = document.createElement('div');
+    container.style.cssText = 'display: flex; align-items: start; gap: 16px;';
+
+    const iconDiv = document.createElement('div');
+    iconDiv.style.cssText = 'font-size: 28px; flex-shrink: 0;';
+    iconDiv.textContent = '🛠️';
+
+    const contentDiv = document.createElement('div');
+    contentDiv.style.cssText = 'flex: 1;';
+
+    const title = document.createElement('h3');
+    title.style.cssText = 'margin: 0 0 8px 0; font-size: 16px; font-weight: 600; color: #10b981;';
+    title.textContent = t.title;
+
+    const message = document.createElement('p');
+    message.style.cssText = 'margin: 0 0 16px 0; font-size: 14px; line-height: 1.5; color: #d1d5db;';
+    message.textContent = 'Press ';
+
+    const macShortcut = document.createElement('strong');
+    macShortcut.style.cssText = 'color: #10b981; font-family: monospace;';
+    macShortcut.textContent = 'Cmd+Option+I';
+
+    const orText = document.createTextNode(' (Mac) or ');
+
+    const winShortcut = document.createElement('strong');
+    winShortcut.style.cssText = 'color: #10b981; font-family: monospace;';
+    winShortcut.textContent = 'Ctrl+Shift+I';
+
+    const winText = document.createTextNode(' (Win) ');
+    const messageText = document.createTextNode(t.message);
+
+    message.appendChild(macShortcut);
+    message.appendChild(orText);
+    message.appendChild(winShortcut);
+    message.appendChild(winText);
+    message.appendChild(messageText);
+
+    const button = document.createElement('button');
+    button.id = 'moq-prompt-close';
+    button.style.cssText = `
+      background: #10b981;
+      color: white;
+      border: none;
+      outline: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s;
+      width: 100%;
     `;
+    button.textContent = t.gotIt;
+
+    // Add hover effects via event listeners (safer than inline)
+    button.addEventListener('mouseenter', () => {
+      button.style.background = '#059669';
+    });
+    button.addEventListener('mouseleave', () => {
+      button.style.background = '#10b981';
+    });
+
+    contentDiv.appendChild(title);
+    contentDiv.appendChild(message);
+    contentDiv.appendChild(button);
+    container.appendChild(iconDiv);
+    container.appendChild(contentDiv);
+
+    return container;
   }
 
   private setupPromptDismissal(overlay: HTMLElement): void {
@@ -277,7 +301,25 @@ class ContentScriptBridge {
     const overlay = document.createElement('div');
     overlay.id = 'moq-devtools-prompt';
     overlay.style.cssText = this.getPromptStyles();
-    overlay.innerHTML = this.getPromptHTML(t);
+
+    // Add animation styles
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes slideIn {
+        from {
+          opacity: 0;
+          transform: translateX(100px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(0);
+        }
+      }
+    `;
+    document.head.appendChild(style);
+
+    // Append safely created content (prevents XSS)
+    overlay.appendChild(this.createPromptElement(t));
 
     document.body.appendChild(overlay);
     this.setupPromptDismissal(overlay);
