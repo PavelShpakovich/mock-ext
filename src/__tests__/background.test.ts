@@ -1,5 +1,5 @@
 import '../__tests__/setup';
-import { MessageAction, MessageResponse } from '../types';
+import { MessageAction, MessageResponse, Language } from '../types';
 
 // Helper to access the chrome mock with types
 const mockChrome = (globalThis as any).chrome;
@@ -290,6 +290,18 @@ describe('Background Script', () => {
       expect(mockChrome.windows.create).toHaveBeenCalledWith(
         expect.objectContaining({
           url: 'window.html',
+          type: 'popup',
+        })
+      );
+    });
+
+    test('should pass language param to window URL', async () => {
+      const response: any = await sendMessage({ action: 'openStandaloneWindow', language: Language.English });
+
+      expect(response.success).toBe(true);
+      expect(mockChrome.windows.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: 'window.html?lang=en',
           type: 'popup',
         })
       );

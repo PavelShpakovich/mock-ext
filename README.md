@@ -2,10 +2,11 @@
 
 A powerful Chrome DevTools extension for mocking API requests during development and testing. Intercepts HTTP requests at the JavaScript level and responds with custom data, status codes, and delays without modifying your application code.
 
-## What's New in v2.10.1
+## What's New in v2.10.2
 
 🛡️ **Security & Stability Release**
 
+- **Fixed**: Standalone Window language synchronization - settings now sync instantly between contexts.
 - **Security Hardening**:
   - **ReDoS Protection**: Defense-in-depth regex validation (static analysis + runtime checks).
   - **Safe Response Hooks**: Strict sandboxing for custom JavaScript hooks (blocked dangerous globals).

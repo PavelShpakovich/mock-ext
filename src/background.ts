@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { Storage } from './storage';
 import { MockRule, Settings, MessageAction, MessageResponse } from './types';
-import { MatchType, HttpMethod } from './enums';
+import { MatchType, HttpMethod, Language } from './enums';
 import { findMatchingRule } from './helpers/urlMatching';
 
 let mockRules: MockRule[] = [];
@@ -267,7 +267,7 @@ async function handleMessage(message: MessageAction, sender?: chrome.runtime.Mes
       return { success: true };
 
     case 'openStandaloneWindow':
-      await openStandaloneWindow();
+      await openStandaloneWindow(message.language);
       return { success: true };
 
     case 'getStandaloneWindowStatus':
@@ -417,7 +417,7 @@ async function createExampleRule(): Promise<void> {
 // Helper: Open standalone window
 let standaloneWindowId: number | null = null;
 
-async function openStandaloneWindow(): Promise<void> {
+async function openStandaloneWindow(language?: Language): Promise<void> {
   // Check if window already exists
   if (standaloneWindowId !== null) {
     try {
@@ -433,9 +433,13 @@ async function openStandaloneWindow(): Promise<void> {
     }
   }
 
+  // Preserve language preference from caller or settings
+  const lang = language || settings.language;
+  const url = lang ? `window.html?lang=${lang}` : 'window.html';
+
   // Create new window
   const window = await chrome.windows.create({
-    url: 'window.html',
+    url,
     type: 'popup',
     width: 800,
     height: 600,

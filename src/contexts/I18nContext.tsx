@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { Storage } from '../storage';
+import { Settings } from '../types';
 import enTranslations from '../locales/en.json';
 import ruTranslations from '../locales/ru.json';
 import { Language } from '../enums';
@@ -27,6 +28,16 @@ export const I18nProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     // Load saved language preference
     const loadLanguage = async () => {
+      // Check URL params first (for standalone window context injection)
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlLang = urlParams.get('lang') as Language | null;
+
+      // Check if the URL param matches a valid language
+      if (urlLang && Object.values(Language).includes(urlLang)) {
+        setLanguageState(urlLang);
+        return; // Prioritize URL param and skip storage/browser detection
+      }
+
       const settings = await Storage.getSettings();
       if (settings.language) {
         setLanguageState(settings.language);
@@ -39,6 +50,21 @@ export const I18nProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     };
     loadLanguage();
+
+    // Listen for storage changes to sync language across contexts
+    const handleStorageChange = (changes: { [key: string]: chrome.storage.StorageChange }) => {
+      if (changes.settings && changes.settings.newValue) {
+        const newSettings = changes.settings.newValue as Settings;
+        if (newSettings.language && newSettings.language !== language) {
+          setLanguageState(newSettings.language);
+        }
+      }
+    };
+
+    chrome.storage.onChanged.addListener(handleStorageChange);
+    return () => {
+      chrome.storage.onChanged.removeListener(handleStorageChange);
+    };
   }, []);
 
   const setLanguage = useCallback(async (lang: Language) => {

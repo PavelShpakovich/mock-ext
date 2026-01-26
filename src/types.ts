@@ -77,16 +77,6 @@ export type MessageAction =
   | { action: 'startRecording'; tabId: number; tabTitle: string }
   | { action: 'stopRecording' }
   | { action: 'getRecordingStatus' }
-  | {
-      action: 'captureResponse';
-      url: string;
-      method: string;
-      statusCode: number;
-      contentType: string;
-      responseBody: string;
-      responseHeaders: Record<string, string>;
-    }
-  | { action: 'setRecordingState'; isRecording: boolean; tabId?: number; tabTitle?: string }
   | { action: 'updateRulesInPage'; rules: MockRule[]; settings: Settings }
   | { action: 'logMockedRequest'; url: string; method: string; ruleId: string; timestamp: number }
   | {
@@ -107,7 +97,7 @@ export type MessageAction =
   | { action: 'recordingTabUpdated'; tabId: number; tabTitle: string }
   | { action: 'openDevTools'; language: Language; theme: string }
   | { action: 'updateFolders'; folders: Folder[] }
-  | { action: 'openStandaloneWindow' }
+  | { action: 'openStandaloneWindow'; language?: Language }
   | { action: 'getStandaloneWindowStatus' }
   | { action: 'ping' };
 

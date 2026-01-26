@@ -2,6 +2,8 @@
  * Helper functions to detect the extension context (DevTools, Standalone Window, or Popup)
  */
 
+import { Language } from '../enums';
+
 export type ExtensionContext = 'devtools' | 'window' | 'popup';
 
 /**
@@ -48,9 +50,9 @@ export function isPopup(): boolean {
 /**
  * Open standalone window from any context
  */
-export async function openStandaloneWindow(): Promise<void> {
+export async function openStandaloneWindow(language?: Language): Promise<void> {
   try {
-    await chrome.runtime.sendMessage({ action: 'openStandaloneWindow' });
+    await chrome.runtime.sendMessage({ action: 'openStandaloneWindow', language });
   } catch (error) {
     console.error('[Moq] Failed to open standalone window:', error);
   }

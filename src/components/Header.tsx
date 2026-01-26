@@ -47,7 +47,7 @@ const Header: React.FC<HeaderProps> = ({
   };
 
   const handleOpenWindow = () => {
-    openStandaloneWindow();
+    openStandaloneWindow(language);
   };
 
   const iconSrc = resolvedTheme === ResolvedTheme.Light ? '/icons/icon128light.png' : '/icons/icon128.png';
