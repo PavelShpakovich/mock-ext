@@ -20,8 +20,45 @@ async function initialize(): Promise<void> {
     mockRules = await Storage.getRules();
     settings = await Storage.getSettings();
     await updateRulesInAllTabs();
+    await injectScriptsToExistingTabs();
   } catch (error) {
     console.error('[Moq] Initialization error:', error);
+  }
+}
+
+// Helper: Inject scripts into existing tabs (e.g., after extension install/reload)
+async function injectScriptsToExistingTabs(): Promise<void> {
+  const tabs = await chrome.tabs.query({ url: ['http://*/*', 'https://*/*'] });
+
+  for (const tab of tabs) {
+    if (!tab.id) continue;
+
+    try {
+      // Check if content script is already there
+      const isAlive = await chrome.tabs
+        .sendMessage(tab.id, { action: 'ping' })
+        .then(() => true)
+        .catch(() => false);
+
+      if (!isAlive) {
+        // Inject content script
+        await chrome.scripting.executeScript({
+          target: { tabId: tab.id, allFrames: true },
+          files: ['content-script.js'],
+        });
+
+        // Inject interceptor into MAIN world
+        await chrome.scripting.executeScript({
+          target: { tabId: tab.id, allFrames: true },
+          files: ['interceptor.js'],
+          world: 'MAIN',
+        });
+
+        console.log(`[Moq] Scripts force-injected into tab ${tab.id}`);
+      }
+    } catch {
+      // Ignore errors for restricted tabs (e.g., chrome://)
+    }
   }
 }
 
@@ -31,7 +68,31 @@ function isValidTab(tab: chrome.tabs.Tab): boolean {
 }
 
 // Helper: Send rules to a single tab
-async function sendRulesToTab(tabId: number, rules: MockRule[]): Promise<void> {
+// Returns true if scripts were already present, false if they needed injection
+async function sendRulesToTab(tabId: number, rules: MockRule[]): Promise<boolean> {
+  const isAlive = await chrome.tabs
+    .sendMessage(tabId, { action: 'ping' })
+    .then(() => true)
+    .catch(() => false);
+
+  if (!isAlive) {
+    try {
+      await chrome.scripting.executeScript({
+        target: { tabId, allFrames: true },
+        files: ['content-script.js'],
+      });
+      await chrome.scripting.executeScript({
+        target: { tabId, allFrames: true },
+        files: ['interceptor.js'],
+        world: 'MAIN',
+      });
+    } catch {
+      // restricted tab
+      return false;
+    }
+    return false;
+  }
+
   try {
     await chrome.tabs.sendMessage(tabId, {
       action: 'updateRulesInPage',
@@ -41,6 +102,7 @@ async function sendRulesToTab(tabId: number, rules: MockRule[]): Promise<void> {
   } catch {
     // Silent fail - content script may not be injected yet
   }
+  return true;
 }
 
 // Helper: Get enabled rules
@@ -168,8 +230,24 @@ async function handleMessage(message: MessageAction, sender?: chrome.runtime.Mes
 
     case 'startRecording':
       if (message.tabId !== undefined) {
+        // Check if scripts are already present
+        const scriptsPresent = await sendRulesToTab(message.tabId, getEnabledRules());
+
+        if (!scriptsPresent) {
+          // Scripts weren't present - reload the tab to properly inject them
+          try {
+            await chrome.tabs.reload(message.tabId);
+            // Set recording tab AFTER reload to catch requests on page load
+            recordingTabId = message.tabId;
+            return { success: true, data: { tabId: recordingTabId, reloaded: true } };
+          } catch {
+            return { success: false, error: 'Failed to reload tab' };
+          }
+        }
+
+        // Scripts were already present, start recording immediately
         recordingTabId = message.tabId;
-        return { success: true, data: { tabId: recordingTabId } };
+        return { success: true, data: { tabId: recordingTabId, reloaded: false } };
       }
       return { success: false, error: 'No tab ID provided' };
 
@@ -185,11 +263,8 @@ async function handleMessage(message: MessageAction, sender?: chrome.runtime.Mes
       return { success: true };
 
     case 'logMockedRequest':
-      if (message.data) {
-        await handleMockedRequest(message.data);
-        return { success: true };
-      }
-      return { success: false, error: 'No request data provided' };
+      await handleMockedRequest(message, sender);
+      return { success: true };
 
     case 'openStandaloneWindow':
       await openStandaloneWindow();
@@ -227,25 +302,31 @@ async function handleCapturedResponse(message: MessageAction, sender?: chrome.ru
     matched: !!matchedRule,
     ruleId: matchedRule?.id,
     statusCode: statusCode || 200,
-    contentType: contentType || '',
+    contentType: contentType || 'application/octet-stream',
     responseBody: responseBody || '',
     responseHeaders,
   });
 }
 
 // Helper: Handle mocked request logging
-async function handleMockedRequest(data: any): Promise<void> {
-  const { url, method, statusCode, ruleId, timestamp } = data;
+async function handleMockedRequest(message: MessageAction, sender?: chrome.runtime.MessageSender): Promise<void> {
+  const { url, method, statusCode, ruleId, timestamp } = message;
+
+  // Only log if from recording tab
+  if (!url || !method || recordingTabId === null || sender?.tab?.id !== recordingTabId) {
+    return;
+  }
+
   const matchedRule = mockRules.find((r) => r.id === ruleId);
 
   await Storage.addToRequestLog({
     id: uuidv4(),
     url,
     method,
-    timestamp,
+    timestamp: timestamp || Date.now(),
     matched: true,
     ruleId,
-    statusCode,
+    statusCode: statusCode || 200,
     contentType: matchedRule?.contentType || '',
   });
 }

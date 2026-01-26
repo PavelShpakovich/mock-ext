@@ -114,13 +114,20 @@ const App: React.FC = () => {
 
   const handleRecordingToggle = useCallback(
     async (logRequests: boolean) => {
-      await recording.handleRecordingToggle(logRequests);
+      const result = await recording.handleRecordingToggle(logRequests);
       // Switch to Requests tab when starting recording
       if (logRequests) {
         setActiveTab(Tab.Requests);
+        // Show info message if page was reloaded
+        if (result?.reloaded) {
+          setToast({
+            type: ToastType.Info,
+            message: t('recording.pageReloaded'),
+          });
+        }
       }
     },
-    [recording]
+    [recording, t]
   );
 
   // ===========================
@@ -238,7 +245,9 @@ const App: React.FC = () => {
     },
     [foldersManager, rulesManager, t]
   );
-
+  const handleCloseToast = useCallback(() => {
+    setToast(null);
+  }, []);
   const handleEnableFolderRules = useCallback(
     async (folderId: string) => {
       const updatedRules = await foldersManager.enableFolderRules(rulesManager.rules, folderId);
@@ -345,7 +354,7 @@ const App: React.FC = () => {
         />
       )}
 
-      {toast && <Toast type={toast.type} message={toast.message} onClose={() => setToast(null)} />}
+      {toast && <Toast type={toast.type} message={toast.message} onClose={handleCloseToast} />}
     </div>
   );
 };

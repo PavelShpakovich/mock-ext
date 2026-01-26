@@ -16,7 +16,9 @@ export async function findValidWebTab(): Promise<chrome.tabs.Tab | undefined> {
   return tabs.find(isValidRecordingTab);
 }
 
-export async function sendStartRecordingMessage(tabId: number): Promise<{ success: boolean }> {
+export async function sendStartRecordingMessage(
+  tabId: number
+): Promise<{ success: boolean; data?: { reloaded: boolean } }> {
   try {
     const response = await chrome.runtime.sendMessage({
       action: 'startRecording',

@@ -260,6 +260,25 @@ class RequestInterceptor {
           }
           return result;
         },
+        parseXML: (xmlString: string): Document => {
+          const parser = new DOMParser();
+          return parser.parseFromString(xmlString, 'text/xml');
+        },
+        serializeXML: (xmlDoc: Document): string => {
+          const serializer = new XMLSerializer();
+          return serializer.serializeToString(xmlDoc);
+        },
+        stripGooglePrefix: (responseBody: string): string => {
+          return responseBody.replace(/^[\s\S]*?\)\n/, '');
+        },
+        parseGoogleJSON: (responseBody: string): any => {
+          const stripped = responseBody.replace(/^[\s\S]*?\)\n/, '');
+          try {
+            return JSON.parse(stripped);
+          } catch (e) {
+            return stripped;
+          }
+        },
       };
 
       const requestHeaders: Record<string, string> = {};
@@ -351,6 +370,55 @@ class RequestInterceptor {
           }
           return result;
         },
+        parseXML: (xmlString: string): Document => {
+          const parser = new DOMParser();
+          return parser.parseFromString(xmlString, 'text/xml');
+        },
+        serializeXML: (xmlDoc: Document): string => {
+          const serializer = new XMLSerializer();
+          return serializer.serializeToString(xmlDoc);
+        },
+        stripGooglePrefix: (responseBody: string): string => {
+          // Remove )]}' prefix (Google's XSSI protection)
+          let stripped = responseBody.replace(/^\)\]\}'\s*/, '');
+
+          // Handle chunked responses: remove chunk size indicators (numbers on separate lines)
+          // Format: "144\n[...json...]\n25\n[...json...]" -> "[...json...][...json...]"
+          stripped = stripped.replace(/^\d+\n/gm, '');
+
+          return stripped;
+        },
+        parseGoogleJSON: (responseBody: string): any => {
+          // Remove )]}' prefix
+          let stripped = responseBody.replace(/^\)\]\}'\s*/, '');
+
+          // Handle chunked responses by removing size indicators
+          stripped = stripped.replace(/^\d+\n/gm, '');
+
+          try {
+            // Try parsing as single JSON
+            return JSON.parse(stripped);
+          } catch (e) {
+            // If it fails, try parsing line by line (each line might be a JSON chunk)
+            try {
+              const lines = stripped.split('\n').filter((line) => line.trim());
+              if (lines.length > 1) {
+                const parsed = [];
+                for (const line of lines) {
+                  try {
+                    parsed.push(JSON.parse(line));
+                  } catch {
+                    // Skip unparseable lines
+                  }
+                }
+                return parsed.length > 0 ? parsed : stripped;
+              }
+            } catch (e2) {
+              // Return stripped string if all parsing attempts fail
+            }
+            return stripped;
+          }
+        },
       };
 
       const request = {
@@ -404,7 +472,7 @@ class RequestInterceptor {
   }
 
   private notifyInterception(url: string, method: string, ruleId: string, statusCode: number): void {
-    window.postMessage({ type: 'MOQ_INTERCEPTED', url, method, ruleId, statusCode }, '*');
+    window.postMessage({ type: 'MOQ_INTERCEPTED', url, method, ruleId, statusCode, timestamp: Date.now() }, '*');
     window.postMessage({ type: 'MOQ_INCREMENT_COUNTER', ruleId }, '*');
   }
 
@@ -421,11 +489,14 @@ class RequestInterceptor {
     method: string,
     statusCode: number,
     contentType: string,
-    body: string,
+    body: any,
     headers: Record<string, string>
   ): void {
+    const safeBody = typeof body === 'string' ? body : String(body || '');
     const truncatedBody =
-      body.length > MAX_RESPONSE_BODY_SIZE ? body.substring(0, MAX_RESPONSE_BODY_SIZE) + '...[truncated]' : body;
+      safeBody.length > MAX_RESPONSE_BODY_SIZE
+        ? safeBody.substring(0, MAX_RESPONSE_BODY_SIZE) + '...[truncated]'
+        : safeBody;
 
     window.postMessage(
       {
@@ -433,7 +504,7 @@ class RequestInterceptor {
         url,
         method,
         statusCode,
-        contentType: contentType.split(';')[0].trim(),
+        contentType: contentType ? contentType.split(';')[0].trim() : '',
         responseBody: truncatedBody,
         responseHeaders: headers,
       },
@@ -446,7 +517,12 @@ class RequestInterceptor {
       const clonedResponse = response.clone();
       const contentType = clonedResponse.headers.get('content-type') || '';
       const headers = this.captureResponseHeaders(response);
-      const isTextBased = contentType.includes('json') || contentType.includes('text') || contentType.includes('xml');
+      const isTextBased =
+        contentType.includes('json') ||
+        contentType.includes('text') ||
+        contentType.includes('xml') ||
+        contentType.includes('javascript') ||
+        contentType.includes('form-urlencoded');
 
       if (isTextBased) {
         clonedResponse
@@ -454,10 +530,60 @@ class RequestInterceptor {
           .then((body) => {
             this.notifyResponseCaptured(url, method, response.status, contentType, body, headers);
           })
-          .catch(() => {});
+          .catch(() => {
+            this.notifyResponseCaptured(url, method, response.status, contentType, '[Error reading body]', headers);
+          });
+      } else {
+        this.notifyResponseCaptured(url, method, response.status, contentType, '[Binary Data]', headers);
       }
     } catch (e) {
       // Silently ignore clone/read errors
+    }
+  }
+
+  private captureXHRResponse(
+    xhr: XMLHttpRequest,
+    url: string,
+    method: string,
+    _requestHeaders: Record<string, string>,
+    _requestBody?: string
+  ): void {
+    try {
+      const contentType = xhr.getResponseHeader('content-type') || '';
+      const headers: Record<string, string> = {};
+      const headersString = xhr.getAllResponseHeaders();
+      if (headersString) {
+        headersString.split('\r\n').forEach((line) => {
+          const [key, ...value] = line.split(': ');
+          if (key) headers[key.toLowerCase()] = value.join(': ');
+        });
+      }
+
+      const isTextBased =
+        contentType.includes('json') ||
+        contentType.includes('text') ||
+        contentType.includes('xml') ||
+        contentType.includes('javascript') ||
+        contentType.includes('form-urlencoded');
+
+      let responseBody = '[Binary Data]';
+
+      if (isTextBased) {
+        try {
+          // Access responseText only if responseType is "" or "text"
+          if (xhr.responseType === '' || xhr.responseType === 'text') {
+            responseBody = xhr.responseText;
+          } else {
+            responseBody = `[Data: ${xhr.responseType}]`;
+          }
+        } catch (e) {
+          responseBody = '[Error reading responseText]';
+        }
+      }
+
+      this.notifyResponseCaptured(url, method, xhr.status, contentType, responseBody, headers);
+    } catch (e) {
+      // Silently ignore
     }
   }
 
@@ -607,7 +733,8 @@ class RequestInterceptor {
     method: string,
     applyDynamicVariables: (text: string) => string,
     getStatusText: (code: number) => string,
-    requestBody?: Document | XMLHttpRequestBodyInit | null
+    requestBody?: Document | XMLHttpRequestBodyInit | null,
+    requestHeaders?: Record<string, string>
   ): Promise<void> {
     this.notifyInterception(url, method, rule.id, rule.statusCode);
 
@@ -617,7 +744,7 @@ class RequestInterceptor {
     }
 
     if (rule.responseMode === 'passthrough' && rule.responseHook) {
-      await this.handleXHRPassthrough(xhr, rule, url, method, requestBody, getStatusText);
+      await this.handleXHRPassthrough(xhr, rule, url, method, requestBody, getStatusText, requestHeaders);
       return;
     }
 
@@ -654,11 +781,19 @@ class RequestInterceptor {
     url: string,
     method: string,
     requestBody: Document | XMLHttpRequestBodyInit | null | undefined,
-    getStatusText: (code: number) => string
+    getStatusText: (code: number) => string,
+    requestHeaders?: Record<string, string>
   ): Promise<void> {
     try {
       const realXhr = new this.originalXHR();
       realXhr.open(method, url, true);
+
+      // Set original request headers
+      if (requestHeaders) {
+        for (const [header, value] of Object.entries(requestHeaders)) {
+          realXhr.setRequestHeader(header, value);
+        }
+      }
 
       await new Promise<void>((resolve, reject) => {
         realXhr.onload = () => resolve();
@@ -714,15 +849,18 @@ class RequestInterceptor {
     const applyDynamicVariables = this.applyDynamicVariables.bind(this);
     const getStatusText = this.getStatusText.bind(this);
     const handleXHRMock = this.handleXHRMock.bind(this);
+    const captureXHRResponse = this.captureXHRResponse.bind(this);
     const OriginalXHR = this.originalXHR;
 
     window.XMLHttpRequest = function () {
       const xhr = new OriginalXHR();
       const originalOpen = xhr.open;
       const originalSend = xhr.send;
+      const originalSetRequestHeader = xhr.setRequestHeader;
 
       let url: string;
       let method: string;
+      const requestHeaders: Record<string, string> = {};
 
       xhr.open = function (
         httpMethod: string,
@@ -736,15 +874,25 @@ class RequestInterceptor {
         return originalOpen.call(this, httpMethod, requestUrl, async ?? true, username, password);
       };
 
+      xhr.setRequestHeader = function (header: string, value: string) {
+        requestHeaders[header] = value;
+        return originalSetRequestHeader.call(this, header, value);
+      };
+
       xhr.send = function (_body?: Document | XMLHttpRequestBodyInit | null) {
         const rule = matchesRule(url, method);
 
         if (rule) {
           setTimeout(() => {
-            handleXHRMock(xhr, rule, url, method, applyDynamicVariables, getStatusText, _body);
+            handleXHRMock(xhr, rule, url, method, applyDynamicVariables, getStatusText, _body, requestHeaders);
           }, 0);
           return;
         }
+
+        // Add listener to capture response for logging if not mocked
+        xhr.addEventListener('load', () => {
+          captureXHRResponse(xhr, url, method, requestHeaders, _body ? String(_body) : undefined);
+        });
 
         return originalSend.call(this, _body);
       };

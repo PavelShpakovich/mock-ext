@@ -128,7 +128,9 @@
     "delayPlaceholder": "E.g., 0, 1000, 3000",
     "contentType": "Content Type",
     "json": "JSON",
-    "text": "Text",
+    "xml": "XML",
+    "html": "HTML",
+    "text": "Plain Text",
     "responseBody": "Response Body",
     "responseBodyPlaceholder": "Enter response data (JSON or text)",
     "beautify": "Beautify",
@@ -176,6 +178,9 @@
     "title": "Open DevTools",
     "message": "Press <strong>{{shortcut}}</strong> to open DevTools and access Moq panel",
     "gotIt": "Got it"
+  },
+  "recording": {
+    "pageReloaded": "Page reloaded to activate request interceptor"
   },
   "common": {
     "ok": "OK",

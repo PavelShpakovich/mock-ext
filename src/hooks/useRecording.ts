@@ -16,10 +16,10 @@ interface UseRecordingReturn {
   activeTabTitle: string;
   loadSettings: () => Promise<void>;
   loadRequestLog: () => Promise<void>;
-  startRecording: (tab: chrome.tabs.Tab) => Promise<boolean>;
+  startRecording: (tab: chrome.tabs.Tab) => Promise<{ success: boolean; reloaded?: boolean }>;
   stopRecording: () => Promise<void>;
   handleGlobalToggle: (enabled: boolean) => Promise<void>;
-  handleRecordingToggle: (logRequests: boolean) => Promise<void>;
+  handleRecordingToggle: (logRequests: boolean) => Promise<{ reloaded?: boolean }>;
   handleCorsToggle: (corsAutoFix: boolean) => Promise<void>;
   clearLog: () => Promise<void>;
   setSettingsDirectly: (settings: Settings) => void;
@@ -53,7 +53,7 @@ export const useRecording = (): UseRecordingReturn => {
   }, []);
 
   const startRecording = useCallback(
-    async (tab: chrome.tabs.Tab): Promise<boolean> => {
+    async (tab: chrome.tabs.Tab): Promise<{ success: boolean; reloaded?: boolean }> => {
       const response = await withContextCheck(() => sendStartRecordingMessage(tab.id!), { success: false });
 
       if (response?.success) {
@@ -65,10 +65,10 @@ export const useRecording = (): UseRecordingReturn => {
         // Notify other contexts about recording state change
         chrome.runtime.sendMessage({ action: 'settingsUpdated' }).catch(() => {});
 
-        return true;
+        return { success: true, reloaded: response.data?.reloaded };
       }
 
-      return false;
+      return { success: false };
     },
     [settings]
   );
@@ -103,16 +103,17 @@ export const useRecording = (): UseRecordingReturn => {
   );
 
   const handleRecordingToggle = useCallback(
-    async (logRequests: boolean) => {
+    async (logRequests: boolean): Promise<{ reloaded?: boolean }> => {
       if (logRequests && !settings.enabled) {
-        return;
+        return {};
       }
 
       try {
         if (logRequests) {
           const webTab = await findValidWebTab();
           if (webTab?.id) {
-            await startRecording(webTab);
+            const result = await startRecording(webTab);
+            return { reloaded: result.reloaded };
           }
         } else {
           await stopRecording();
@@ -120,6 +121,7 @@ export const useRecording = (): UseRecordingReturn => {
       } catch (error) {
         console.error('Recording toggle error:', error);
       }
+      return {};
     },
     [settings.enabled, startRecording, stopRecording]
   );

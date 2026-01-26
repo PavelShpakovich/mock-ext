@@ -1,6 +1,7 @@
 import { MockRule, RequestLog, ResponseMode } from '../types';
 import { HttpMethod, MatchType } from '../enums';
 import { convertHeadersToArray, extractCapturedHeaders, HeaderEntry } from './headers';
+import { detectContentType } from './formatting';
 import { DEFAULT_DELAY_MS } from '../constants';
 
 export interface RuleFormData {
@@ -54,7 +55,7 @@ export function getInitialFormData(rule: MockRule | null, mockRequest: RequestLo
       matchType: MatchType.Exact,
       method: mockRequest.method as HttpMethod,
       statusCode: mockRequest.statusCode || 200,
-      contentType: mockRequest.contentType || 'application/json',
+      contentType: detectContentType(mockRequest.contentType, mockRequest.responseBody),
       responseBody: mockRequest.responseBody || '{}',
       delay: DEFAULT_DELAY_MS,
       headers: extractCapturedHeaders(mockRequest),

@@ -86,6 +86,8 @@ export async function validateResponseHookLazy(hookCode: string): Promise<string
       'Object',
       'RegExp',
       'Error',
+      'DOMParser',
+      'XMLSerializer',
       'parseInt',
       'parseFloat',
       'isNaN',

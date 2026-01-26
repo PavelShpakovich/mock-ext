@@ -105,6 +105,7 @@ export interface MessageAction {
   ruleId?: string;
   language?: Language;
   folders?: Folder[];
+  timestamp?: number;
 }
 
 export interface MessageResponse {

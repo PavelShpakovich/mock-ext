@@ -290,6 +290,37 @@ describe('Rule Validation', () => {
       expect(validateJSONDetailed('123').isValid).toBe(true);
       expect(validateJSONDetailed('"string"').isValid).toBe(true);
     });
+
+    it('should handle Google JSON protection prefix', () => {
+      const googleJson = ')]}\'\n{"data": "test"}';
+      const result = validateJSONDetailed(googleJson);
+      expect(result.isValid).toBe(true);
+    });
+
+    it('should handle Google chunked responses', () => {
+      const chunkedResponse = `)]}'
+144
+[["wrb.fr","rPsWke",[null,"Hello worlds","en","ru"],i],null,null,"generic"],["di",61]]
+25
+[["e",4,null,null,180]]`;
+      const result = validateJSONDetailed(chunkedResponse);
+      expect(result.isValid).toBe(true);
+      expect(result.message).toContain('Google');
+    });
+
+    it('should handle simple Google chunked array', () => {
+      const chunkedResponse = ")]}'\n144\n[1,2,3]\n25\n[4,5,6]";
+      const result = validateJSONDetailed(chunkedResponse);
+      expect(result.isValid).toBe(true);
+    });
+
+    it('should not mistake regular JSON for Google chunked format', () => {
+      // JSON that happens to start with a number shouldn't be treated as Google format
+      const regularJson = '{"144": [1,2,3]}';
+      const result = validateJSONDetailed(regularJson);
+      expect(result.isValid).toBe(true);
+      expect(result.message).not.toContain('Google');
+    });
   });
 
   describe('validateRuleForm', () => {

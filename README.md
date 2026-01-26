@@ -2,13 +2,46 @@
 
 A powerful Chrome DevTools extension for mocking API requests during development and testing. Intercepts HTTP requests at the JavaScript level and responds with custom data, status codes, and delays without modifying your application code.
 
+## What's New in v2.10.0
+
+🎉 **Major Feature Release** - Enhanced response format support and improved user experience:
+
+- **Google Response Support**: Full handling of Google's specialized response formats
+  - Automatic `)]}'` XSSI protection prefix removal
+  - Chunked transfer encoding with size indicators
+  - JavaScript code validation (not pure JSON)
+  - New helpers: `parseGoogleJSON()`, `stripGooglePrefix()`
+- **Multi-Format Content Support**: Beyond JSON
+  - **XML**: Full validation, parsing, and serialization helpers
+  - **HTML**: Mock HTML pages and fragments
+  - **JavaScript**: JSONP callbacks, dynamic scripts, modules
+  - Smart auto-detection with intelligent content-type inference
+- **Seamless Recording**: No more manual page reloads
+  - Automatic reload when starting recording
+  - Interceptor scripts inject seamlessly
+  - User feedback via toast notification
+- **Enhanced XHR Logging**: Complete request capture
+  - All XHR requests logged (mocked and unmocked)
+  - Proper responseType handling for binary data
+  - Improved error resilience
+- **Code Quality**: Better maintainability
+  - Extracted content-type detection helper
+  - Strengthened validation (no false positives)
+  - Robust Google format parsing
+- **UX Improvements**:
+  - Toast notifications auto-dismiss after 3 seconds
+  - Clear validation messages for complex formats
+  - Better error handling throughout
+
+For complete details, see [CHANGELOG.md](CHANGELOG.md).
+
 ## Features
 
 ### Request Interception
 
 - **URL Pattern Matching**: Use wildcards (`*`), exact match, or regex patterns to match URLs
 - **HTTP Method Filtering**: Mock specific methods (GET, POST, PUT, DELETE, PATCH, OPTIONS, HEAD) or all methods
-- **Custom Responses**: Define JSON or text responses
+- **Custom Responses**: Define JSON, XML, HTML, JavaScript, or text responses
 - **Status Code Control**: Set any HTTP status code (200, 404, 500, etc.)
 - **Response Delay**: Simulate network latency for testing loading states
 - **Custom Response Headers**: Add custom HTTP headers to mock responses
@@ -16,6 +49,40 @@ A powerful Chrome DevTools extension for mocking API requests during development
   - Auto-populates from captured real responses
   - Perfect for testing CORS, authentication, caching behaviors
 - **Client-Side Interception**: Intercepts fetch() and XMLHttpRequest before they reach the network
+
+### Google Response Support
+
+Full support for Google's specialized response formats:
+
+- **XSSI Protection Handling**: Automatically strips `)]}'` security prefix
+- **Chunked Response Format**: Handles Google's chunked transfer encoding
+  - Automatically removes chunk size indicators (e.g., `144\n`, `25\n`)
+  - Validates JavaScript code responses (not pure JSON)
+  - Shows clear validation: "Valid Google response format (JavaScript) ✓"
+- **Response Hook Helpers**: Built-in utilities for Google responses
+  - `parseGoogleJSON(responseBody)` - Strips prefix and parses chunks
+  - `stripGooglePrefix(responseBody)` - Removes `)]}'` prefix
+- **Examples**: Works perfectly with Google Translate, Gmail API, Google Maps, etc.
+
+### Enhanced Content-Type Support
+
+Beyond JSON - handle multiple response formats:
+
+- **XML Responses**: Full XML validation and manipulation
+  - Real-time validation with detailed error messages
+  - Response hook helpers: `parseXML()`, `serializeXML()`
+  - Perfect for SOAP APIs and RSS feeds
+- **HTML Responses**: Mock HTML pages or fragments
+  - Useful for testing SSR applications
+  - Validate HTML structure in editor
+- **JavaScript Responses**: Handle script responses
+  - JSONP callbacks
+  - Dynamic script loading
+  - Module responses
+- **Auto-Detection**: Smart content-type detection from response body
+  - Recognizes JSON, XML, HTML, JavaScript formats
+  - Handles truncated responses intelligently
+  - Fallback logic for ambiguous content
 
 ### Dynamic Variables
 
@@ -38,6 +105,10 @@ Example:
 ### Request Logging & Filtering
 
 - **Page-Specific Recording**: Record XMLHttpRequest/fetch requests from a specific browser tab
+- **Automatic Reload**: Page automatically reloads when starting recording to ensure all requests are captured
+  - Interceptor scripts inject seamlessly
+  - User feedback via toast notification
+  - No manual refresh needed
 - **Manual Control**: Start/stop recording with button controls
 - **Advanced Filtering**: Filter logged requests by HTTP method and status code range
   - Method filters: GET, POST, PUT, DELETE, PATCH, OPTIONS
@@ -45,9 +116,11 @@ Example:
 - **Search & Filter**: Quickly find requests with text search and multiple filters
 - **Request Details**: View URL, method, status code, content type, and timestamp
 - **Response Headers Capture**: All response headers captured and stored with logged requests
+- **XHR Support**: Complete XMLHttpRequest logging including non-mocked requests
 - **Up to 1000 Requests**: Automatic log rotation keeps recent requests
 - **Quick Mocking**: Create mock rules directly from logged requests with "Mock This" button
   - Auto-populates all fields including captured response headers
+  - Smart content-type detection from response body
 
 ### Rule Management
 
@@ -432,6 +505,8 @@ Powerful response modification capabilities:
 - **Response Hooks**: JavaScript code to dynamically modify responses
   - Access to `response`, `request`, and `helpers` objects
   - Built-in helper functions for IDs, timestamps, and random data
+  - **XML Helpers**: `parseXML()`, `serializeXML()` for XML manipulation
+  - **Google Helpers**: `parseGoogleJSON()`, `stripGooglePrefix()` for Google responses
   - Sandboxed execution with dangerous pattern detection
 
 #### v2.7.x - Multi-Context Support

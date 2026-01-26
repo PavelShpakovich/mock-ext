@@ -93,29 +93,23 @@ export class Storage {
 
   private static async flushLogBuffer(): Promise<void> {
     if (logBuffer.length === 0) {
-      flushTimeout = null;
+      this.cancelLogFlush();
       return;
     }
 
+    // Capture current buffer and clear it to avoid race conditions
+    const currentBuffer = [...logBuffer];
+    logBuffer = [];
+    this.cancelLogFlush();
+
     try {
-      const existingLog = await this.getStoredLog();
-      const combinedLog = this.combineAndLimitLog(logBuffer, existingLog);
+      const result = await chrome.storage.session.get(this.LOG_KEY);
+      const existingLog = result[this.LOG_KEY] || [];
+      const combinedLog = [...currentBuffer, ...existingLog].slice(0, MAX_LOG_ENTRIES);
       await chrome.storage.session.set({ [this.LOG_KEY]: combinedLog });
     } catch (error) {
       console.error('[Moq] Error flushing log buffer:', error);
-    } finally {
-      logBuffer = [];
-      flushTimeout = null;
     }
-  }
-
-  private static async getStoredLog(): Promise<RequestLog[]> {
-    const result = await chrome.storage.session.get(this.LOG_KEY);
-    return result[this.LOG_KEY] || [];
-  }
-
-  private static combineAndLimitLog(buffer: RequestLog[], existing: RequestLog[]): RequestLog[] {
-    return [...buffer, ...existing].slice(0, MAX_LOG_ENTRIES);
   }
 
   // Import/Export operations

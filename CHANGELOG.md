@@ -5,6 +5,80 @@ All notable changes to Moq Extension will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.10.0] - 2026-01-26
+
+### Added
+- **Google Chunked Response Support**: Full support for Google's chunked transfer format
+  - Handles `)]}'` XSSI protection prefix automatically
+  - Strips chunk size indicators (e.g., `144\n`, `25\n`) for proper parsing
+  - Supports JavaScript code in responses (bare identifiers like `i` that aren't valid JSON)
+  - New validation message: "Valid Google response format (JavaScript) ✓"
+  - Added `parseGoogleJSON()` helper in response hooks for automatic chunk parsing
+  - Added `stripGooglePrefix()` helper to clean XSSI-protected responses
+- **Enhanced Content-Type Support**: Extended beyond JSON to handle multiple response formats
+  - Added XML validation with `validateXMLDetailed()` using DOMParser
+  - Added HTML content-type option in editor dropdown
+  - Added JavaScript content-type option for script responses
+  - Content-type auto-detection now recognizes XML, HTML, and JavaScript
+  - Response editor validates both JSON and XML with detailed error messages
+- **XML Response Hook Helpers**: New helpers for XML manipulation in response hooks
+  - `parseXML(xmlString)` - Parse XML strings into DOM Document
+  - `serializeXML(xmlDoc)` - Convert XML Document back to string
+  - `DOMParser` and `XMLSerializer` now allowed in response hook validation
+- **Automatic Page Reload on Recording Start**: Seamless recording initialization
+  - Extension automatically reloads page if interceptor scripts aren't detected
+  - Ensures all requests are captured from page load, including early network calls
+  - User feedback via toast: "Page reloaded to activate request interceptor"
+  - No manual refresh needed when starting recording on already-loaded pages
+- **Content-Type Detection Helper**: Centralized and improved detection logic
+  - New `detectContentType()` helper in `formatting.ts`
+  - Detects Google chunked format: `/^\)\]\}'\s*\d+\n/`
+  - Handles truncated responses intelligently
+  - Smart fallback from `application/octet-stream` to `text/plain`
+  - Reduced code duplication by ~55 lines
+
+### Improved
+- **XHR Logging Enhancements**: Complete XHR request capture
+  - Added `captureXHRResponse()` method with proper `responseType` handling
+  - XHR responses now logged even when not mocked
+  - Request headers tracked and forwarded in passthrough mode
+  - Fixed `responseText` access for different `responseType` values
+  - Added support for `javascript` and `form-urlencoded` content types
+- **Recording Infrastructure**: More robust script injection
+  - Added `ping` handler for script presence detection
+  - Improved `sendRulesToTab()` to return boolean status
+  - Background service injects scripts to existing tabs on extension reload
+  - Better error handling for restricted tabs (chrome://, extensions)
+- **Validation Improvements**: More accurate and helpful feedback
+  - Strengthened Google format detection (requires prefix + chunk sizes + array start)
+  - Prevents false positives on regular JSON containing numbers
+  - Line-by-line parsing for nested arrays in chunked responses
+  - Handles partially valid chunked responses (shows X/Y valid chunks)
+- **Toast Notifications**: Better UX with auto-dismiss
+  - Toast messages now auto-close after 3 seconds
+  - Stable `onClose` callback prevents timer resets
+  - Clean animation and fade-out
+
+### Fixed
+- **Storage Race Condition**: Fixed log buffer flush timing
+  - Captured buffer snapshot before clearing to prevent data loss
+  - Eliminated race condition when multiple logs arrive simultaneously
+- **Timestamp Tracking**: Accurate request timing
+  - Added `timestamp` field to all intercepted requests
+  - Mocked requests now include exact interception time
+  - Improved chronological ordering in request log
+- **Nested Array Parsing**: Robust Google response handling
+  - Replaced fragile regex with line-by-line parsing
+  - Correctly handles deeply nested arrays like `[[1,[2,3]]]`
+  - Skips unparseable lines gracefully
+
+### Developer Experience
+- **Code Organization**: Better maintainability
+  - Extracted content-type detection to reusable helper
+  - Added comprehensive test coverage (43 tests passing)
+  - Tests for Google prefix, chunked responses, false positive prevention
+  - All builds successful with no errors
+
 ## [2.9.4] - 2026-01-24
 
 ### Fixed

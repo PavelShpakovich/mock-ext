@@ -56,14 +56,98 @@ export function validateJSONDetailed(jsonString: string): JSONValidation {
     return { isValid: true, message: 'Empty JSON is valid' };
   }
 
+  // Handle Google's JSON protection prefix and chunked responses
+  let bodyToValidate = jsonString;
+  const hasGooglePrefix = jsonString.trim().startsWith(")]}'");
+
+  if (hasGooglePrefix) {
+    // Remove )]}' prefix
+    bodyToValidate = jsonString.replace(/^\)\]\}'\s*/, '');
+
+    // Check if this is a chunked response (has size indicators)
+    const hasChunkSizes = /^\d+\s*\n/.test(bodyToValidate);
+
+    // Remove chunk size indicators (numbers on separate lines)
+    bodyToValidate = bodyToValidate.replace(/^\d+\n/gm, '');
+
+    // Try parsing the body after stripping prefix/chunks
+    try {
+      JSON.parse(bodyToValidate);
+      // Valid JSON after stripping - it's a valid Google response
+      return {
+        isValid: true,
+        message: hasChunkSizes ? 'Valid Google chunked response ✓' : 'Valid Google response ✓',
+      };
+    } catch (e) {
+      // Not valid JSON - might be JavaScript code (e.g., with bare identifiers)
+      // This is acceptable for Google responses with chunk sizes
+      if (hasChunkSizes && bodyToValidate.trim().startsWith('[')) {
+        return { isValid: true, message: 'Valid Google response format (JavaScript) ✓' };
+      }
+      // Otherwise fall through to normal validation
+    }
+  }
+
   try {
-    JSON.parse(jsonString);
+    JSON.parse(bodyToValidate);
     return { isValid: true, message: 'Valid JSON ✓' };
   } catch (e) {
+    // Try parsing as chunked JSON (multiple arrays)
+    try {
+      const chunks = bodyToValidate.match(/\[[\s\S]*?\](?=\s*(?:\[|$))/g);
+      if (chunks && chunks.length > 0) {
+        // Try to parse each chunk
+        const validChunks = chunks.filter((chunk) => {
+          try {
+            JSON.parse(chunk);
+            return true;
+          } catch {
+            return false;
+          }
+        });
+
+        if (validChunks.length > 0) {
+          return {
+            isValid: true,
+            message: `Valid chunked response (${validChunks.length}/${chunks.length} valid chunks) ✓`,
+          };
+        }
+      }
+    } catch (e2) {
+      // Fall through to return original error
+    }
+
     const error = e as Error;
     return {
       isValid: false,
       message: `Invalid JSON: ${error.message}`,
+    };
+  }
+}
+
+/**
+ * Validate XML string
+ */
+export function validateXMLDetailed(xmlString: string): JSONValidation {
+  if (!xmlString.trim()) {
+    return { isValid: true, message: 'Empty XML is valid' };
+  }
+
+  try {
+    const parser = new DOMParser();
+    const xmlDoc = parser.parseFromString(xmlString, 'text/xml');
+    const parseError = xmlDoc.getElementsByTagName('parsererror');
+    if (parseError.length > 0) {
+      return {
+        isValid: false,
+        message: `Invalid XML: ${parseError[0].textContent?.split('\n')[0]}`,
+      };
+    }
+    return { isValid: true, message: 'Valid XML ✓' };
+  } catch (e) {
+    return {
+      isValid: false,
+      message: `Invalid XML: ${(e as Error).message}`,
     };
   }
 }

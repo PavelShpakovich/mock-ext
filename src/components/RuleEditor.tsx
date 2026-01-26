@@ -5,7 +5,7 @@ import { ButtonVariant } from '../enums';
 import { isValidJSON } from '../helpers/validation';
 import { convertArrayToHeaders, HeaderEntry } from '../helpers/headers';
 import { getInitialFormData, RuleFormData } from '../helpers/ruleForm';
-import { validateJSONDetailed, JSONValidation, validateRuleForm } from '../helpers/ruleValidation';
+import { validateJSONDetailed, validateXMLDetailed, JSONValidation, validateRuleForm } from '../helpers/ruleValidation';
 import { VALIDATION_DEBOUNCE_MS } from '../constants';
 import { Button } from './ui/Button';
 import { Card } from './ui/Card';
@@ -79,9 +79,9 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, mockRequest, folders, onS
     // Clear all errors when loading new rule
     setErrors({});
 
-    const contentType = rule?.contentType || mockRequest?.contentType;
-    if (contentType === 'application/json') {
-      validateJSONField(newFormData.responseBody);
+    const contentType = rule?.contentType || mockRequest?.contentType || newFormData.contentType;
+    if (contentType === 'application/json' || contentType.includes('xml')) {
+      validateBodyField(newFormData.responseBody, contentType);
     }
 
     // Validate response hook if present
@@ -91,11 +91,15 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, mockRequest, folders, onS
   }, [rule, mockRequest]);
 
   const handleChange = (field: keyof RuleFormData, value: string | number | boolean | HeaderEntry[]) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    setFormData((prev) => {
+      const updated = { ...prev, [field]: value };
 
-    if (field === 'responseBody' && formData.contentType === 'application/json') {
-      validateJSONField(value as string);
-    }
+      if (field === 'responseBody' || field === 'contentType') {
+        validateBodyField(updated.responseBody, updated.contentType);
+      }
+
+      return updated;
+    });
 
     if (field === 'responseHook') {
       validateResponseHookField(value as string);
@@ -110,13 +114,19 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, mockRequest, folders, onS
     }
   };
 
-  const validateJSONField = (jsonString: string) => {
+  const validateBodyField = (body: string, contentType: string) => {
     if (validationTimeoutRef.current) {
       clearTimeout(validationTimeoutRef.current);
     }
 
-    validationTimeoutRef.current = setTimeout(() => {
-      setJsonValidation(validateJSONDetailed(jsonString));
+    validationTimeoutRef.current = window.setTimeout(() => {
+      if (contentType === 'application/json') {
+        setJsonValidation(validateJSONDetailed(body));
+      } else if (contentType.includes('xml')) {
+        setJsonValidation(validateXMLDetailed(body));
+      } else {
+        setJsonValidation(null);
+      }
     }, VALIDATION_DEBOUNCE_MS);
   };
 
@@ -251,14 +261,7 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, mockRequest, folders, onS
           jsonValidation={jsonValidation}
           errors={errors}
           onStatusCodeChange={(value) => handleChange('statusCode', value)}
-          onContentTypeChange={(value) => {
-            handleChange('contentType', value);
-            if (value === 'application/json') {
-              validateJSONField(formData.responseBody);
-            } else {
-              setJsonValidation(null);
-            }
-          }}
+          onContentTypeChange={(value) => handleChange('contentType', value)}
           onDelayChange={(value) => handleChange('delay', value)}
           onHeadersChange={(value) => handleChange('headers', value)}
           onResponseBodyChange={(value) => handleChange('responseBody', value)}
@@ -279,7 +282,11 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, mockRequest, folders, onS
             onChange={(value) => handleChange('responseBody', value)}
             onClose={() => setIsExpanded(false)}
             onBeautify={formData.contentType === 'application/json' ? formatJSON : undefined}
-            validation={formData.contentType === 'application/json' && jsonValidation ? jsonValidation : undefined}
+            validation={
+              (formData.contentType === 'application/json' || formData.contentType.includes('xml')) && jsonValidation
+                ? jsonValidation
+                : undefined
+            }
           />
         )}
 

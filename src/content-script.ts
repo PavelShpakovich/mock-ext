@@ -24,6 +24,7 @@ interface PageMessageData {
   contentType?: string;
   responseBody?: string;
   responseHeaders?: Record<string, string>;
+  timestamp?: number;
 }
 class ContentScriptBridge {
   async initialize() {
@@ -45,6 +46,11 @@ class ContentScriptBridge {
     _sender: chrome.runtime.MessageSender,
     sendResponse: (response: MessageResponse) => void
   ): boolean {
+    if (message.action === ('ping' as any)) {
+      sendResponse({ success: true } as any);
+      return true;
+    }
+
     if (message.action === 'updateRulesInPage') {
       this.updatePageRules(message.rules ?? [], message.settings);
       sendResponse({ success: true });
@@ -107,6 +113,7 @@ class ContentScriptBridge {
         method: data.method,
         ruleId: data.ruleId,
         statusCode: data.statusCode,
+        timestamp: data.timestamp || Date.now(),
       })
       .catch(() => {
         // Extension context might be invalidated, ignore silently

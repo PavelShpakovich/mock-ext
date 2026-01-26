@@ -128,7 +128,9 @@
     "delayPlaceholder": "Например, 0, 1000, 3000",
     "contentType": "Тип контента",
     "json": "JSON",
-    "text": "Текст",
+    "xml": "XML",
+    "html": "HTML",
+    "text": "Простой текст",
     "responseBody": "Тело ответа",
     "responseBodyPlaceholder": "Введите данные ответа (JSON или текст)",
     "beautify": "Форматировать",
@@ -176,6 +178,9 @@
     "title": "Открыть DevTools",
     "message": "Нажмите <strong>{{shortcut}}</strong> чтобы открыть DevTools и получить доступ к панели Moq",
     "gotIt": "Понятно"
+  },
+  "recording": {
+    "pageReloaded": "Страница перезагружена для активации перехватчика запросов"
   },
   "common": {
     "ok": "ОК",
