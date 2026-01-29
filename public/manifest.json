@@ -1,10 +1,10 @@
 {
   "manifest_version": 3,
   "name": "Moq - Mock API Requests",
-  "version": "2.10.2",
+  "version": "2.10.3",
   "description": "Mock HTTP requests with custom responses, status codes, delays, and headers. Perfect for development, testing, and debugging.",
   "privacy_policy": "https://github.com/PavelShpakovich/mock-ext/blob/main/PRIVACY.md",
-  "permissions": ["storage", "activeTab", "tabs", "contextMenus"],
+  "permissions": ["storage", "activeTab", "tabs", "contextMenus", "declarativeNetRequest"],
   "host_permissions": ["<all_urls>"],
   "devtools_page": "devtools.html",
   "content_scripts": [
@@ -43,5 +43,14 @@
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
+  },
+  "declarative_net_request": {
+    "rule_resources": [
+      {
+        "id": "cors_rules",
+        "enabled": false,
+        "path": "cors-rules.json"
+      }
+    ]
   }
 }

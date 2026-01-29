@@ -2,21 +2,15 @@
 
 A powerful Chrome DevTools extension for mocking API requests during development and testing. Intercepts HTTP requests at the JavaScript level and responds with custom data, status codes, and delays without modifying your application code.
 
-## What's New in v2.10.2
+## What's New in v2.10.3
 
-🛡️ **Security & Stability Release**
+🚀 **Enhanced CORS Auto Fix - Now Works Properly!**
 
-- **Fixed**: Standalone Window language synchronization - settings now sync instantly between contexts.
-- **Security Hardening**:
-  - **ReDoS Protection**: Defense-in-depth regex validation (static analysis + runtime checks).
-  - **Safe Response Hooks**: Strict sandboxing for custom JavaScript hooks (blocked dangerous globals).
-  - **XSS Prevention**: Enhanced content script security.
-- **Google Response Support**:
-  - Full handling of Google's specialized response formats (`)]}'` XSSI prefix).
-  - Intelligent chunked response parsing.
-- **Focused Content-Types**:
-  - Optimized for **JSON** and **Plain Text** mocking.
-  - Removed experimental XML/HTML support to ensure stability.
+- **Network-Level CORS Resolution**: Uses Chrome's `declarativeNetRequest` API for true CORS bypass
+- **Visible in Network Tab**: CORS headers now appear in browser developer tools (not just JavaScript)
+- **Zero Configuration**: Works instantly for both `fetch()` and `XMLHttpRequest` across any website
+- **No More CORS Errors**: Test third-party APIs and cross-origin requests without issues
+- **One-Click Enable**: Toggle CORS auto fix in the extension header for immediate effect
 
 For complete details, see [CHANGELOG.md](CHANGELOG.md).
 
@@ -34,6 +28,23 @@ For complete details, see [CHANGELOG.md](CHANGELOG.md).
   - Auto-populates from captured real responses
   - Perfect for testing CORS, authentication, caching behaviors
 - **Client-Side Interception**: Intercepts fetch() and XMLHttpRequest before they reach the network
+
+### CORS Auto Fix
+
+Automatically resolve CORS (Cross-Origin Resource Sharing) issues during development and testing:
+
+- **Network-Level CORS Resolution**: Uses Chrome's `declarativeNetRequest` API to modify HTTP response headers at the network level before browser CORS checks
+  - Works for both `fetch()` and `XMLHttpRequest` calls
+  - No configuration required - just toggle it on
+  - Headers are visible in browser Network tab
+- **Complete Header Set**: Adds all necessary CORS headers:
+  - `Access-Control-Allow-Origin: *`
+  - `Access-Control-Allow-Methods: *`
+  - `Access-Control-Allow-Headers: *`
+  - `Access-Control-Allow-Credentials: true`
+- **Zero Setup**: No need to create mock rules for CORS-restricted endpoints
+- **Development Focused**: Perfect for testing third-party APIs, microservices, and cross-origin requests
+- **Toggle Control**: Enable/disable with a single click in the extension header
 
 ### Google Response Support
 

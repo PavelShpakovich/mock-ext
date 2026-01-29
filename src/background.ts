@@ -21,6 +21,21 @@ async function initialize(): Promise<void> {
     settings = await Storage.getSettings();
     await updateRulesInAllTabs();
     await injectScriptsToExistingTabs();
+
+    // Initialize CORS auto fix rules
+    try {
+      if (settings.corsAutoFix) {
+        console.log('[Moq] Initializing CORS auto fix rules (enabled)');
+        await chrome.declarativeNetRequest.updateEnabledRulesets({
+          enableRulesetIds: ['cors_rules'],
+        });
+        console.log('[Moq] CORS auto fix rules initialized successfully');
+      } else {
+        console.log('[Moq] CORS auto fix disabled, skipping rule initialization');
+      }
+    } catch (error) {
+      console.error('[Moq] Failed to initialize CORS rules:', error);
+    }
   } catch (error) {
     console.error('[Moq] Initialization error:', error);
   }
@@ -195,9 +210,32 @@ async function handleMessage(message: MessageAction, sender?: chrome.runtime.Mes
 
     case 'updateSettings':
       if (message.settings) {
+        const oldCorsAutoFix = settings.corsAutoFix;
         settings = message.settings;
         await Storage.saveSettings(settings);
         await updateRulesInAllTabs();
+
+        // Handle CORS auto fix toggle
+        if (oldCorsAutoFix !== settings.corsAutoFix) {
+          try {
+            if (settings.corsAutoFix) {
+              console.log('[Moq] Enabling CORS auto fix rules');
+              await chrome.declarativeNetRequest.updateEnabledRulesets({
+                enableRulesetIds: ['cors_rules'],
+              });
+              console.log('[Moq] CORS auto fix rules enabled successfully');
+            } else {
+              console.log('[Moq] Disabling CORS auto fix rules');
+              await chrome.declarativeNetRequest.updateEnabledRulesets({
+                disableRulesetIds: ['cors_rules'],
+              });
+              console.log('[Moq] CORS auto fix rules disabled successfully');
+            }
+          } catch (error) {
+            console.error('[Moq] Failed to update CORS rules:', error);
+          }
+        }
+
         return { success: true };
       }
       return { success: false, error: 'No settings provided' };

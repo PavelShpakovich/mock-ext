@@ -5,6 +5,16 @@ All notable changes to Moq Extension will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.10.3] - 2026-01-29
+
+### Enhanced
+- **CORS Auto Fix**: Significantly improved CORS handling using Chrome's `declarativeNetRequest` API
+  - Network-level header modification bypasses browser CORS checks entirely
+  - CORS headers now appear in browser Network tab (not just JavaScript responses)
+  - Works for **all** HTTP requests (fetch/XMLHttpRequest) across any website
+  - No longer requires creating mock rules for CORS-restricted endpoints
+  - Instant, reliable CORS resolution for development and testing scenarios
+
 ## [2.10.2] - 2026-01-26
 
 ### Fixed
