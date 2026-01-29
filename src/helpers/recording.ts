@@ -12,7 +12,10 @@ export function isValidRecordingTab(tab: chrome.tabs.Tab): boolean {
 }
 
 export async function findValidWebTab(): Promise<chrome.tabs.Tab | undefined> {
-  const tabs = await chrome.tabs.query({ active: true });
+  // Get the current window first
+  const currentWindow = await chrome.windows.getCurrent();
+  // Then find the active tab in that specific window
+  const tabs = await chrome.tabs.query({ active: true, windowId: currentWindow.id });
   return tabs.find(isValidRecordingTab);
 }
 

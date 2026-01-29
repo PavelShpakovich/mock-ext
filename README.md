@@ -2,7 +2,13 @@
 
 A powerful Chrome DevTools extension for mocking API requests during development and testing. Intercepts HTTP requests at the JavaScript level and responds with custom data, status codes, and delays without modifying your application code.
 
-## What's New in v2.10.3
+## What's New in v2.10.4
+
+🔧 **Multi-Window Recording Fix**
+
+- **Window-Scoped Recording**: Recording now correctly identifies tabs only within the current browser window
+- **Prevents Cross-Window Confusion**: No more accidentally recording tabs from other Chrome windows
+- **Reliable Multi-Window Usage**: Extension works properly when multiple browser windows are open
 
 🚀 **Enhanced CORS Auto Fix - Now Works Properly!**
 

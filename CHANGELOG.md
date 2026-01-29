@@ -5,6 +5,14 @@ All notable changes to Moq Extension will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.10.4] - 2026-01-29
+
+### Fixed
+- **Multi-Window Recording**: Fixed recording functionality to properly scope tab selection to the current browser window
+  - Recording now correctly identifies and records tabs only within the active window
+  - Prevents accidentally recording tabs from other browser windows
+  - Resolves issues where recording would work "weirdly" with multiple Chrome windows open
+
 ## [2.10.3] - 2026-01-29
 
 ### Enhanced
