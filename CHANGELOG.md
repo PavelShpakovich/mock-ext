@@ -5,6 +5,13 @@ All notable changes to Moq Extension will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.10.6] - 2026-02-02
+
+### Fixed
+- **CORS Auto Fix UI State**: Fixed race condition where CORS toggle could appear enabled in UI even when extension was disabled
+  - Background script now reloads settings from storage before processing toggle to ensure consistency
+  - Resolves visual inconsistency between actual CORS state and UI display
+
 ## [2.10.5] - 2026-02-02
 
 ### Fixed

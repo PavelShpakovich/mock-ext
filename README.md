@@ -2,13 +2,13 @@
 
 A powerful Chrome DevTools extension for mocking API requests during development and testing. Intercepts HTTP requests at the JavaScript level and responds with custom data, status codes, and delays without modifying your application code.
 
-## What's New in v2.10.5
+## What's New in v2.10.6
 
-🔧 **CORS Auto Fix Reliability**
+🔧 **CORS Auto Fix UI Consistency**
 
-- **Master Toggle Synchronization**: CORS auto-fix now correctly deactivates when the extension is disabled
-- **Network-Level Consistency**: Prevents cross-origin headers from being injected when mocking is turned off
-- **Rock-Solid Initialization**: Improved ruleset syncing ensures correct state on extension startup
+- **UI State Synchronization**: Fixed visual inconsistency where CORS toggle could appear enabled when extension was disabled
+- **Race Condition Resolved**: Background script now properly syncs with frontend settings changes
+- **Reliable State Management**: CORS toggle accurately reflects actual network-level CORS state
 
 ## Features
 
