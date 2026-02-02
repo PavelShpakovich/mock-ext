@@ -5,6 +5,13 @@ All notable changes to Moq Extension will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.10.5] - 2026-02-02
+
+### Fixed
+- **CORS Auto Fix**: Fixed bug where network-level CORS rules could remain active even when the extension was disabled.
+- **Reliability**: Refactored background script to strictly tie CORS auto-fix to the extension's master toggle state.
+- **Initialization**: Improved ruleset synchronization during extension startup.
+
 ## [2.10.4] - 2026-01-29
 
 ### Fixed

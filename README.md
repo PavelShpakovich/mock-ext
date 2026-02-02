@@ -2,23 +2,13 @@
 
 A powerful Chrome DevTools extension for mocking API requests during development and testing. Intercepts HTTP requests at the JavaScript level and responds with custom data, status codes, and delays without modifying your application code.
 
-## What's New in v2.10.4
+## What's New in v2.10.5
 
-🔧 **Multi-Window Recording Fix**
+🔧 **CORS Auto Fix Reliability**
 
-- **Window-Scoped Recording**: Recording now correctly identifies tabs only within the current browser window
-- **Prevents Cross-Window Confusion**: No more accidentally recording tabs from other Chrome windows
-- **Reliable Multi-Window Usage**: Extension works properly when multiple browser windows are open
-
-🚀 **Enhanced CORS Auto Fix - Now Works Properly!**
-
-- **Network-Level CORS Resolution**: Uses Chrome's `declarativeNetRequest` API for true CORS bypass
-- **Visible in Network Tab**: CORS headers now appear in browser developer tools (not just JavaScript)
-- **Zero Configuration**: Works instantly for both `fetch()` and `XMLHttpRequest` across any website
-- **No More CORS Errors**: Test third-party APIs and cross-origin requests without issues
-- **One-Click Enable**: Toggle CORS auto fix in the extension header for immediate effect
-
-For complete details, see [CHANGELOG.md](CHANGELOG.md).
+- **Master Toggle Synchronization**: CORS auto-fix now correctly deactivates when the extension is disabled
+- **Network-Level Consistency**: Prevents cross-origin headers from being injected when mocking is turned off
+- **Rock-Solid Initialization**: Improved ruleset syncing ensures correct state on extension startup
 
 ## Features
 
@@ -344,49 +334,68 @@ mock-ext/
 │   │   ├── string.ts           # String manipulation utilities
 │   │   └── validation.ts       # General validation functions
 │   ├── components/
-│   │   ├── App.tsx             # Main app component with tabs (280 lines)
-│   │   ├── Header.tsx          # Extension header
+│   │   ├── App.tsx             # Main app component with tabs
+│   │   ├── Header.tsx          # Extension header with settings menu
 │   │   ├── RulesTab.tsx        # Rules management tab
-│   │   ├── RequestsTab.tsx     # Request logging tab
-│   │   ├── RuleEditor.tsx      # Form for creating/editing rules (280 lines)
+│   │   ├── RequestsTab.tsx     # Request logging and filtering tab
+│   │   ├── RuleEditor.tsx      # Form for creating/editing rules
+│   │   ├── RuleEditor/         # Rule editor sub-components
+│   │   │   ├── ExpandedEditor.tsx # Full rule editor view
+│   │   │   ├── RuleBasicInfo.tsx # Name and URL pattern section
+│   │   │   ├── RuleMatchingSection.tsx # Method and matching type
+│   │   │   └── RuleResponseSection.tsx # Response and hooks
 │   │   ├── RuleItem.tsx        # Individual rule display
+│   │   ├── RulesList.tsx       # Rules list with sorting
+│   │   ├── RulesSearchBar.tsx  # Search and filtering for rules
+│   │   ├── RulesToolbar.tsx    # Toolbar with bulk operations
+│   │   ├── RulesEmptyState.tsx # Empty state UI
+│   │   ├── FolderEditor.tsx    # Folder creation/editing
+│   │   ├── FolderItem.tsx      # Individual folder display
 │   │   ├── RequestItem.tsx     # Individual request display
-│   │   └── ui/                 # Reusable UI components (atomic design)
-│   │       ├── Badge.tsx       # Status badges
-│   │       ├── Button.tsx      # Primary UI button
-│   │       ├── Card.tsx        # Container cards
-│   │       ├── Input.tsx       # Form inputs
-│   │       ├── Select.tsx      # Dropdown selects
-│   │       ├── TabButton.tsx   # Tab navigation
-│   │       ├── TextArea.tsx    # Multi-line inputs
-│   │       ├── Toggle.tsx      # On/off switches
-│   │       ├── IconButton.tsx  # Icon-only buttons
-│   │       ├── FilterPanel.tsx # Filter UI panel
-│   │       ├── ImportDialog.tsx # Import preview modal (129 lines)
-│   │       ├── HeadersEditor.tsx # HTTP headers editor (72 lines)
+│   │   ├── FilterButton.tsx # Individual filter button
+│   │       ├── FilterSection.tsx # Filter section container
+│   │       ├── ImportDialog.tsx # Import preview modal
+│   │       ├── HeadersEditor.tsx # HTTP headers editor
+│   │       ├── ConfirmDialog.tsx # Confirmation modal
+│   │       ├── Toast.tsx       # Toast notification component
+│   │       ├── SettingsMenu.tsx # Settings dropdown menu
+│   │       ├── MenuOption.tsx   # Menu option item
+│   │       ├── MenuSection.tsx  # Menu section group
 │   │       ├── RadioOption.tsx  # Atomic: Radio with label/description
 │   │       ├── StatItem.tsx     # Atomic: Icon + label + value
 │   │       ├── DialogHeader.tsx # Atomic: Modal header with close
 │   │       └── InfoPanel.tsx    # Atomic: Contextual info panels
 │   ├── contexts/
-│   │   └── I18nContext.tsx     # Internationalization context (EN/RU)
+│   │   ├── I18nContext.tsx     # Internationalization context (EN/RU)
+│   │   └── ThemeContext.tsx    # Theme context (light/dark mode)
+│   ├── hooks/
+│   │   ├── useBodyScrollLock.ts # Prevent body scroll
+│   │   ├── useClickOutside.ts  # Click outside detection
+│   │   ├── useCrossContextSync.ts # Sync between DevTools and window
+│   │   ├── useFoldersManager.ts # Folder CRUD operations
+│   │   ├── useRecording.ts     # Recording state management
+│   │   ├── useRulesManager.ts  # Rule CRUD operations
+│   │   ├── useStandaloneWindowStatus.ts # Window mode state
+│   │   └── index.ts            # Hook exports
 │   ├── locales/
 │   │   ├── en.json             # English translations
 │   │   └── ru.json             # Russian translations
-│   └── __tests__/              # Unit tests (Jest + Testing Library)
+│   └── __tests__/              # Unit tests (Jest + Testing Library) - 230+ tests
 │       ├── setup.ts            # Test configuration
-│       ├── recording.test.ts   # Recording helpers tests (12 tests)
-│       ├── importExport.test.ts # Import/export tests (22 tests)
-│       ├── headers.test.ts     # Headers utilities tests (11 tests)
-│       ├── ruleForm.test.ts    # Form initialization tests (12 tests)
-│       ├── ruleValidation.test.ts # Validation tests (enhanced with 19 tests)
-│       ├── urlMatching.test.ts # URL matching tests
-│       ├── filtering.test.ts   # Filtering logic tests
+│       ├── background.test.ts  # Background service worker tests
+│       ├── recording.test.ts   # Recording functionality tests
+│       ├── importExport.test.ts # Import/export logic tests
+│       ├── headers.test.ts     # HTTP header utilities tests
+│       ├── ruleForm.test.ts    # Rule form initialization tests
+│       ├── ruleValidation.test.ts # Validation logic tests
+│       ├── urlMatching.test.ts # URL pattern matching tests
+│       ├── filtering.test.ts   # Request filtering tests
 │       ├── time.test.ts        # Time formatting tests
 │       ├── utils.test.ts       # Utility functions tests
-│       ├── storage.test.ts     # Storage tests
-│       ├── contextHandler.test.ts # Context validation tests
-│       └── i18n.test.ts        # I18n tests
+│       ├── storage.test.ts     # Storage operations tests
+│       ├── contextHandler.test.ts # Extension context tests
+│       ├── folderManagement.test.ts # Folder operations tests
+│       └── i18n.test.ts        # Internationalization tests
 ├── public/
 │   ├── manifest.json           # Extension manifest (Manifest V3)
 │   ├── popup.html              # UI HTML structure
@@ -416,7 +425,8 @@ mock-ext/
 - **Client-Side Interception**: MAIN world interceptor for fetch/XHR before network
 - **Service Worker**: Background script for cross-tab messaging and storage
 - **Chrome Storage**: Persistent data storage for rules and logs
-- **Comprehensive Testing**: 214 unit tests with Jest and Testing Library
+- **Comprehensive Testing**: 230+ unit tests with Jest covering all business logic
+- **Hooks Architecture**: 7+ custom React hooks for feature separation and reusability
 
 ### Performance Optimizations
 
@@ -575,13 +585,14 @@ Moq has comprehensive test coverage for critical business logic:
 
 ### Test Suites
 
-- **229 unit tests** covering URL matching, storage, utilities, context handling, translations, folder management, background worker, and more
+- **230+ unit tests** covering URL matching, storage, utilities, context handling, translations, folder management, background worker, recording, import/export, headers, and more
 - **Coverage highlights**:
   - URL matching logic: 100%
   - Context handler: 100%
-  - Mobile/Service Worker: 95%
+  - Service Worker/Background: 100%
   - Utils: 100%
   - Storage: 85%
+  - Helpers: 90%+
 
 ### Running Tests
 
@@ -599,7 +610,13 @@ npm run test:coverage   # Coverage report
 - `src/__tests__/urlMatching.test.ts` - URL pattern matching (exact, wildcard, regex)
 - `src/__tests__/folderManagement.test.ts` - Folder management operations
 - `src/__tests__/ruleValidation.test.ts` - Rule and response hook validation
-- `src/__tests__/i18n.test.ts` - Translation validation
+- `src/__tests__/i18n.test.ts` - Internationalization validation
+- `src/__tests__/recording.test.ts` - Request recording logic
+- `src/__tests__/importExport.test.ts` - Import/export functionality
+- `src/__tests__/headers.test.ts` - HTTP header utilities
+- `src/__tests__/ruleForm.test.ts` - Form initialization
+- `src/__tests__/time.test.ts` - Time formatting utilities
+- `src/__tests__/background.test.ts` - Background service worker
 
 ### Mock Not Applied
 

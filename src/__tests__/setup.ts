@@ -48,6 +48,7 @@ const createListener = (name: string) => ({
     onInstalled: createListener('runtime.onInstalled'),
   },
   declarativeNetRequest: {
+    updateEnabledRulesets: jest.fn().mockResolvedValue(undefined),
     RuleActionType: {
       REDIRECT: 'redirect',
     },
