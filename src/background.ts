@@ -228,6 +228,8 @@ async function handleMessage(message: MessageAction, sender?: chrome.runtime.Mes
 
     case 'toggleMocking':
       if (message.enabled !== undefined) {
+        // Reload settings from storage to get the latest state (e.g., corsAutoFix may have been disabled)
+        settings = await Storage.getSettings();
         settings.enabled = message.enabled;
 
         // If disabling extension, clear recording tab ID
