@@ -61,12 +61,9 @@ export function detectContentType(serverContentType: string | undefined, respons
   if (responseBody?.trim()) {
     const body = responseBody.trim();
 
-    // Avoid detection on truncated responses
-    if (!responseBody.includes('...[truncated]')) {
-      // JSON detection (including Google's )]}' XSSI protection prefix)
-      if (body.startsWith('{') || body.startsWith('[') || body.startsWith(")]}'\n")) {
-        return 'application/json';
-      }
+    // JSON detection (including Google's )]}' XSSI protection prefix)
+    if (body.startsWith('{') || body.startsWith('[') || body.startsWith(")]}'\n")) {
+      return 'application/json';
     }
   }
 

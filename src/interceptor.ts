@@ -4,7 +4,6 @@
 // ⚠️ String literal types here mirror enums defined in src/enums.ts
 
 // Constants (duplicated from src/constants.ts - cannot use imports in MAIN world)
-const MAX_RESPONSE_BODY_SIZE = 100000;
 const MAX_RANDOM_NUMBER = 1000000;
 
 interface MockRule {
@@ -263,7 +262,7 @@ class RequestInterceptor {
         stripGooglePrefix: (responseBody: string): string => {
           return responseBody.replace(/^[\s\S]*?\)\n/, '');
         },
-        parseGoogleJSON: (responseBody: string): any => {
+        parseGoogleJSON: (responseBody: string): unknown => {
           const stripped = responseBody.replace(/^[\s\S]*?\)\n/, '');
           try {
             return JSON.parse(stripped);
@@ -372,7 +371,7 @@ class RequestInterceptor {
 
           return stripped;
         },
-        parseGoogleJSON: (responseBody: string): any => {
+        parseGoogleJSON: (responseBody: string): unknown => {
           // Remove )]}' prefix
           let stripped = responseBody.replace(/^\)\]\}'\s*/, '');
 
@@ -473,14 +472,10 @@ class RequestInterceptor {
     method: string,
     statusCode: number,
     contentType: string,
-    body: any,
+    body: unknown,
     headers: Record<string, string>
   ): void {
     const safeBody = typeof body === 'string' ? body : String(body || '');
-    const truncatedBody =
-      safeBody.length > MAX_RESPONSE_BODY_SIZE
-        ? safeBody.substring(0, MAX_RESPONSE_BODY_SIZE) + '...[truncated]'
-        : safeBody;
 
     window.postMessage(
       {
@@ -489,7 +484,7 @@ class RequestInterceptor {
         method,
         statusCode,
         contentType: contentType ? contentType.split(';')[0].trim() : '',
-        responseBody: truncatedBody,
+        responseBody: safeBody,
         responseHeaders: headers,
       },
       '*'

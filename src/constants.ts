@@ -24,16 +24,6 @@ export const MAX_FOLDER_NAME_LENGTH = 50;
 export const UNUSED_RULE_DAYS_THRESHOLD = 30;
 
 // ============================================================================
-// Response Body Limits
-// ============================================================================
-
-/**
- * Maximum response body size before truncation (bytes)
- * Used when capturing responses to prevent memory issues
- */
-export const MAX_RESPONSE_BODY_SIZE = 100000;
-
-// ============================================================================
 // Default Values
 // ============================================================================
 

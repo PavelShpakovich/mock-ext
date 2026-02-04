@@ -5,6 +5,15 @@ All notable changes to Moq Extension will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.10.7] - 2026-02-04
+
+### Fixed
+- **Response Body Capture**: Removed the 100KB truncation limit for captured response bodies
+  - Response bodies are now captured in full regardless of size
+  - Eliminates `...[truncated]` markers that were causing issues for customers
+  - Improves reliability when working with large API responses
+  - Removed unnecessary truncation checks in content type detection
+
 ## [2.10.6] - 2026-02-02
 
 ### Fixed
