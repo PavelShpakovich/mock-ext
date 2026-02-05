@@ -34,6 +34,7 @@ interface Settings {
 
 class RequestInterceptor {
   private rules: MockRule[] = [];
+  private regexCache: Map<string, RegExp> = new Map();
   private settings: Settings = {
     enabled: true,
     logRequests: true,
@@ -89,24 +90,42 @@ class RequestInterceptor {
     // For wildcard, ignore query parameters unless pattern includes them
     const urlToMatch = pattern.includes('?') ? url : url.split('?')[0];
 
-    const regexPattern = pattern
-      .split('*')
-      .map((part) => this.escapeRegExp(part))
-      .join('.*');
+    const regex = this.getCachedRegex('wildcard', pattern);
+    if (!regex) return false;
 
-    try {
-      return new RegExp('^' + regexPattern + '$').test(urlToMatch);
-    } catch {
-      return false;
-    }
+    return regex.test(urlToMatch);
   }
 
   private matchesRegex(url: string, pattern: string): boolean {
+    const regex = this.getCachedRegex('regex', pattern);
+    if (!regex) return false;
+
+    return regex.test(url);
+  }
+
+  private getCachedRegex(type: 'regex' | 'wildcard', pattern: string): RegExp | null {
+    const key = `${type}:${pattern}`;
+    if (this.regexCache.has(key)) {
+      return this.regexCache.get(key) || null;
+    }
+
     try {
-      return new RegExp(pattern).test(url);
+      let regex: RegExp;
+      if (type === 'regex') {
+        regex = new RegExp(pattern);
+      } else {
+        // Wildcard to regex conversion
+        const regexPattern = pattern
+          .split('*')
+          .map((part) => this.escapeRegExp(part))
+          .join('.*');
+        regex = new RegExp('^' + regexPattern + '$');
+      }
+      this.regexCache.set(key, regex);
+      return regex;
     } catch {
-      console.error('[Moq] Invalid regex pattern:', pattern);
-      return false;
+      console.error(`[Moq] Invalid ${type} pattern:`, pattern);
+      return null;
     }
   }
 
@@ -657,7 +676,8 @@ class RequestInterceptor {
     xhr: XMLHttpRequest,
     rule: MockRule,
     responseBody: string,
-    getStatusText: (code: number) => string
+    getStatusText: (code: number) => string,
+    url: string
   ): void {
     const statusCode = typeof rule.statusCode === 'number' && !isNaN(rule.statusCode) ? rule.statusCode : 200;
 
@@ -672,6 +692,7 @@ class RequestInterceptor {
     Object.defineProperty(xhr, 'responseText', { value: responseBody, writable: false, configurable: true });
     Object.defineProperty(xhr, 'response', { value: responseBody, writable: false, configurable: true });
     Object.defineProperty(xhr, 'responseType', { value: '', writable: false, configurable: true });
+    Object.defineProperty(xhr, 'responseURL', { value: url, writable: false, configurable: true });
 
     // Set header methods
     const headerHandlers = this.createXHRResponseHeaders(rule);
@@ -738,7 +759,7 @@ class RequestInterceptor {
     responseBody = applyDynamicVariables(responseBody);
 
     // Setup XHR response
-    this.setupXHRResponse(xhr, rule, responseBody, getStatusText);
+    this.setupXHRResponse(xhr, rule, responseBody, getStatusText, url);
 
     // Trigger events
     this.triggerXHREvents(xhr, responseBody);
@@ -799,6 +820,11 @@ class RequestInterceptor {
       Object.defineProperty(mockXhr, 'responseText', { value: realBody, writable: false, configurable: true });
       Object.defineProperty(mockXhr, 'response', { value: realBody, writable: false, configurable: true });
       Object.defineProperty(mockXhr, 'responseType', { value: '', writable: false, configurable: true });
+      Object.defineProperty(mockXhr, 'responseURL', {
+        value: realXhr.responseURL,
+        writable: false,
+        configurable: true,
+      });
 
       const headerHandlers = this.createXHRResponseHeaders(rule);
       mockXhr.getResponseHeader = headerHandlers.getHeader;
@@ -808,7 +834,7 @@ class RequestInterceptor {
     } catch (error) {
       console.error('[Moq] XHR passthrough failed:', error);
       const responseBody = typeof rule.response === 'string' ? rule.response : JSON.stringify(rule.response);
-      this.setupXHRResponse(mockXhr, rule, responseBody, getStatusText);
+      this.setupXHRResponse(mockXhr, rule, responseBody, getStatusText, url);
       this.triggerXHREvents(mockXhr, responseBody);
     }
   }
@@ -878,6 +904,7 @@ class RequestInterceptor {
       if (event.source !== window) return;
       if (event.data.type === 'MOQ_UPDATE_RULES') {
         this.rules = event.data.rules;
+        this.regexCache.clear(); // Clear cache when rules are updated
         if (event.data.settings) {
           this.settings = event.data.settings;
         }
@@ -925,11 +952,12 @@ class RequestInterceptor {
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-interface Window {
+interface WindowWithInterceptor extends Window {
   __MOQ_INTERCEPTOR__?: RequestInterceptor;
 }
 
-if (!window.__MOQ_INTERCEPTOR__) {
-  window.__MOQ_INTERCEPTOR__ = new RequestInterceptor();
+const windowExt = window as WindowWithInterceptor;
+
+if (!windowExt.__MOQ_INTERCEPTOR__) {
+  windowExt.__MOQ_INTERCEPTOR__ = new RequestInterceptor();
 }

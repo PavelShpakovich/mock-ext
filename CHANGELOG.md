@@ -5,6 +5,30 @@ All notable changes to Moq Extension will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.10.8] - 2026-02-05
+
+### Added
+- **Import Security Warning**: Added security dialog when importing rules containing response hooks (executable JavaScript code)
+  - Warns users before importing rules with executable code
+  - Supports both English and Russian translations
+  - Helps prevent accidental execution of untrusted code
+
+### Improved
+- **Performance**: Implemented regex pattern caching in request interceptor
+  - Compiles regex patterns once and caches them for subsequent requests
+  - Significantly reduces overhead for frequently matched URL patterns
+  - Cache automatically clears when rules are updated
+- **Storage Stability**: Added 5MB byte-size limit for session storage request logs
+  - Prevents storage quota errors when capturing large responses
+  - Removes oldest log entries when limit is exceeded
+  - Maintains up to 1000 recent log entries
+
+### Fixed
+- **XHR Fidelity**: Added missing `responseURL` property to mocked XMLHttpRequest objects
+  - Mocked XHR responses now include proper `responseURL` property
+  - Matches real XMLHttpRequest behavior more accurately
+  - Fixes compatibility issues with libraries that rely on `responseURL`
+
 ## [2.10.7] - 2026-02-04
 
 ### Fixed

@@ -3,6 +3,7 @@ import { MockRule, RequestLog, Folder } from '../types';
 import { Tab, ImportMode, ToastType, ConfirmDialogVariant, FolderEditMode } from '../enums';
 import { useI18n } from '../contexts/I18nContext';
 import { isDevTools } from '../helpers/context';
+import { withContextCheck } from '../contextHandler';
 import {
   useStandaloneWindowStatus,
   useRulesManager,
@@ -79,6 +80,13 @@ const App: React.FC = () => {
     // Empty deps - only run once on mount
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Switch to Requests tab if recording is active on mount
+  useEffect(() => {
+    if (recording.settings.logRequests) {
+      setActiveTab(Tab.Requests);
+    }
+  }, [recording.settings.logRequests]);
 
   // ===========================
   // Rule Handlers
@@ -157,6 +165,20 @@ const App: React.FC = () => {
           return;
         }
 
+        const hasHooks = importedRules.some((r) => r.responseHook && r.responseHook.trim().length > 0);
+        if (hasHooks) {
+          setConfirmDialog({
+            title: t('import.securityWarning'),
+            message: t('import.securityMessage'),
+            variant: ConfirmDialogVariant.Danger,
+            onConfirm: () => {
+              setConfirmDialog(null);
+              setImportDialogData({ rules: importedRules });
+            },
+          });
+          return;
+        }
+
         setImportDialogData({ rules: importedRules });
       } catch (error) {
         console.error('Import error:', error);
@@ -180,9 +202,11 @@ const App: React.FC = () => {
         const newRulesCount =
           mode === ImportMode.Merge ? updatedRules.length - currentRules.length : importedRules.length;
 
-        // Update rules through the manager
+        // Update all rules at once through background script
         rulesManager.setRulesDirectly(updatedRules);
-        await rulesManager.saveRule(updatedRules[0], null); // Trigger save
+        await withContextCheck(() => chrome.runtime.sendMessage({ action: 'updateRules', rules: updatedRules })).catch(
+          () => {}
+        );
 
         setImportDialogData(null);
         setToast({

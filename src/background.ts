@@ -19,6 +19,15 @@ async function initialize(): Promise<void> {
   try {
     mockRules = await Storage.getRules();
     settings = await Storage.getSettings();
+
+    // Clear logRequests if no recording tab is active
+    // This handles cases where service worker crashed before onSuspend could fire
+    if (settings.logRequests && recordingTabId === null) {
+      console.log('[Moq] Clearing stale logRequests state on initialization');
+      settings.logRequests = false;
+      await Storage.saveSettings(settings);
+    }
+
     await updateRulesInAllTabs();
     await injectScriptsToExistingTabs();
     await syncCorsRules();
@@ -232,9 +241,11 @@ async function handleMessage(message: MessageAction, sender?: chrome.runtime.Mes
         settings = await Storage.getSettings();
         settings.enabled = message.enabled;
 
-        // If disabling extension, clear recording tab ID
+        // If disabling extension, clear recording tab ID and CORS auto-fix
         if (!message.enabled) {
           recordingTabId = null;
+          settings.corsAutoFix = false;
+          settings.logRequests = false;
         }
 
         await Storage.saveSettings(settings);
@@ -388,24 +399,67 @@ async function showDevToolsPromptInActiveTab(): Promise<void> {
 chrome.tabs.onRemoved.addListener((tabId) => {
   if (tabId === recordingTabId) {
     recordingTabId = null;
+
+    // Also clear logRequests in storage when recording tab closes
+    Storage.getSettings().then((currentSettings) => {
+      if (currentSettings.logRequests) {
+        currentSettings.logRequests = false;
+        Storage.saveSettings(currentSettings).then(() => {
+          // Notify popup about recording stop
+          chrome.runtime.sendMessage({ action: 'settingsUpdated' }).catch(() => {});
+        });
+      }
+    });
   }
 });
 
 // Update tab title when the recording tab navigates
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-  // Only process if this is the recording tab and the title has changed
-  if (tabId === recordingTabId && changeInfo.title && tab.title) {
-    // Notify all extension contexts about the title change
-    chrome.runtime
-      .sendMessage({
-        action: 'recordingTabUpdated',
-        tabTitle: tab.title,
-      })
-      .catch(() => {
-        // Silent fail - no listeners
+  // Only process if this is the recording tab
+  if (tabId === recordingTabId) {
+    // Check if tab navigated to a restricted URL
+    if (changeInfo.url && !isValidRecordingTab(tab)) {
+      console.log('[Moq] Recording tab navigated to restricted URL, stopping recording');
+      recordingTabId = null;
+
+      // Clear logRequests in storage
+      Storage.getSettings().then((currentSettings) => {
+        if (currentSettings.logRequests) {
+          currentSettings.logRequests = false;
+          Storage.saveSettings(currentSettings).then(() => {
+            // Notify popup about recording stop
+            chrome.runtime.sendMessage({ action: 'settingsUpdated' }).catch(() => {});
+          });
+        }
       });
+      return;
+    }
+
+    // Notify about title change if it changed
+    if (changeInfo.title && tab.title) {
+      chrome.runtime
+        .sendMessage({
+          action: 'recordingTabUpdated',
+          tabTitle: tab.title,
+        })
+        .catch(() => {
+          // Silent fail - no listeners
+        });
+    }
   }
 });
+
+// Helper function to check if tab is valid for recording (from helpers/recording.ts)
+function isValidRecordingTab(tab: chrome.tabs.Tab): boolean {
+  return (
+    tab.id !== undefined &&
+    !!tab.url &&
+    !tab.url.startsWith('chrome-extension://') &&
+    !tab.url.startsWith('chrome://') &&
+    !tab.url.startsWith('about:') &&
+    tab.windowId !== chrome.windows.WINDOW_ID_NONE
+  );
+}
 
 // Install/update handler
 chrome.runtime.onInstalled.addListener(async (details) => {
@@ -492,6 +546,25 @@ async function createContextMenu(): Promise<void> {
     contexts: ['action'],
   });
 }
+
+// Helper: Clean up recording state on service worker suspend
+async function cleanupRecordingState(): Promise<void> {
+  recordingTabId = null;
+
+  // Clear logRequests in storage when service worker is suspended
+  const currentSettings = await Storage.getSettings();
+  if (currentSettings.logRequests) {
+    currentSettings.logRequests = false;
+    await Storage.saveSettings(currentSettings);
+  }
+}
+
+// Stop recording and clear state when service worker is about to suspend
+chrome.runtime.onSuspend.addListener(() => {
+  cleanupRecordingState().catch((error) => {
+    console.error('[Moq] Failed to cleanup recording state on suspend:', error);
+  });
+});
 
 // Service worker startup
 initialize();

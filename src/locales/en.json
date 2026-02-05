@@ -75,7 +75,9 @@
     "willRemove": "Rules to remove",
     "willAdd": "Rules to add",
     "confirmMerge": "Merge Rules",
-    "confirmReplace": "Replace All Rules"
+    "confirmReplace": "Replace All Rules",
+    "securityWarning": "Security Warning",
+    "securityMessage": "These rules contain executable code (Response Hooks). Only import if you trust the source."
   },
   "warnings": {
     "overlappingRules": "Overlaps with {{count}} other rule{{count, plural, one {} other {s}}}",

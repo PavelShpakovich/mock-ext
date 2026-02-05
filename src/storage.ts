@@ -8,6 +8,7 @@ let flushTimeout: ReturnType<typeof setTimeout> | null = null;
 // Constants
 const BATCH_INTERVAL_MS = 500;
 const MAX_LOG_ENTRIES = 1000;
+const MAX_LOG_SIZE_BYTES = 5 * 1024 * 1024; // 5MB limit for session storage logs
 
 const DEFAULT_SETTINGS: Settings = {
   enabled: true,
@@ -106,6 +107,12 @@ export class Storage {
       const result = await chrome.storage.session.get(this.LOG_KEY);
       const existingLog = result[this.LOG_KEY] || [];
       const combinedLog = [...currentBuffer, ...existingLog].slice(0, MAX_LOG_ENTRIES);
+
+      // Enforce byte size limit
+      while (combinedLog.length > 0 && JSON.stringify(combinedLog).length > MAX_LOG_SIZE_BYTES) {
+        combinedLog.pop();
+      }
+
       await chrome.storage.session.set({ [this.LOG_KEY]: combinedLog });
     } catch (error) {
       console.error('[Moq] Error flushing log buffer:', error);
@@ -126,11 +133,11 @@ export class Storage {
   }
 
   // Draft operations
-  static async saveDraft(draft: any): Promise<void> {
+  static async saveDraft(draft: unknown): Promise<void> {
     await chrome.storage.local.set({ [this.DRAFT_KEY]: draft });
   }
 
-  static async getDraft(): Promise<any> {
+  static async getDraft(): Promise<unknown> {
     const result = await chrome.storage.local.get(this.DRAFT_KEY);
     return result[this.DRAFT_KEY] || null;
   }

@@ -165,8 +165,24 @@ export const useRecording = (): UseRecordingReturn => {
         try {
           const response = await withContextCheck(() => getRecordingStatus(), { success: false });
           if (response.success && response.data?.tabId) {
-            const tab = await chrome.tabs.get(response.data.tabId);
-            setActiveTabTitle(tab.title || 'Unknown Tab');
+            try {
+              const tab = await chrome.tabs.get(response.data.tabId);
+              setActiveTabTitle(tab.title || 'Unknown Tab');
+            } catch (error) {
+              // Recording tab no longer exists or is invalid
+              console.log('[Moq] Recording tab is no longer valid, clearing recording state');
+              const newSettings = { ...loadedSettings, logRequests: false };
+              setSettings(newSettings);
+              await Storage.saveSettings(newSettings);
+              setActiveTabTitle('');
+            }
+          } else {
+            // No active recording tab, clear stale state
+            if (loadedSettings.logRequests) {
+              const newSettings = { ...loadedSettings, logRequests: false };
+              setSettings(newSettings);
+              await Storage.saveSettings(newSettings);
+            }
           }
         } catch (error) {
           console.error('Failed to restore recording status:', error);
