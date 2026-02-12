@@ -46,6 +46,7 @@ const createListener = (name: string) => ({
     sendMessage: jest.fn(),
     onMessage: createListener('runtime.onMessage'),
     onInstalled: createListener('runtime.onInstalled'),
+    onSuspend: createListener('runtime.onSuspend'),
   },
   declarativeNetRequest: {
     updateEnabledRulesets: jest.fn().mockResolvedValue(undefined),
