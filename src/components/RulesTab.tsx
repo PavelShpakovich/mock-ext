@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { MockRule, Folder } from '../types';
+import { MockRule, Folder, Settings } from '../types';
 import { ValidationWarning, getRulesGroupedByFolder, getFolderRuleCounts } from '../helpers';
+import { RulesView } from '../enums';
+import { Storage } from '../storage';
 import RuleEditor from './RuleEditor';
 import { RulesSearchBar } from './RulesSearchBar';
 import { RulesToolbar } from './RulesToolbar';
@@ -12,6 +14,7 @@ interface RulesTabProps {
   folders: Folder[];
   ruleWarnings: Map<string, ValidationWarning[]>;
   searchTerm: string;
+  settings: Settings;
   onSearchChange: (term: string) => void;
   editingRuleId: string | null;
   onEditRule: (id: string | null) => void;
@@ -36,6 +39,7 @@ const RulesTab: React.FC<RulesTabProps> = ({
   folders,
   ruleWarnings,
   searchTerm,
+  settings,
   onSearchChange,
   editingRuleId,
   onEditRule,
@@ -57,7 +61,15 @@ const RulesTab: React.FC<RulesTabProps> = ({
   const [mockRequest, setMockRequest] = useState<any>(null);
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [rulesView, setRulesView] = useState<RulesView>((settings.rulesView as RulesView) || RulesView.Detailed);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  // Sync rulesView with settings when they change
+  useEffect(() => {
+    if (settings.rulesView) {
+      setRulesView(settings.rulesView as RulesView);
+    }
+  }, [settings.rulesView]);
 
   const filteredRules = rules.filter((rule) => {
     const searchLower = searchTerm.toLowerCase();
@@ -82,6 +94,12 @@ const RulesTab: React.FC<RulesTabProps> = ({
   });
 
   const handleImportClick = () => fileInputRef.current?.click();
+
+  const handleViewChange = async (view: RulesView) => {
+    setRulesView(view);
+    const currentSettings = await Storage.getSettings();
+    await Storage.saveSettings({ ...currentSettings, rulesView: view });
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -155,6 +173,7 @@ const RulesTab: React.FC<RulesTabProps> = ({
         selectedCount={selectedIds.size}
         totalFilteredCount={filteredRules.length}
         totalRulesCount={rules.length}
+        currentView={rulesView}
         onToggleSelectionMode={handleToggleSelectionMode}
         onToggleSelectAll={handleToggleSelectAll}
         onExportSelected={handleExportSelected}
@@ -162,13 +181,14 @@ const RulesTab: React.FC<RulesTabProps> = ({
         onImportClick={handleImportClick}
         onCreateFolder={onCreateFolder}
         onCreateRule={() => onEditRule('new')}
+        onViewChange={handleViewChange}
         fileInputRef={fileInputRef}
         onFileChange={handleFileChange}
       />
 
-      {filteredRules.length === 0 && folders.length === 0 ? (
-        <RulesEmptyState onCreateRule={() => onEditRule('new')} />
-      ) : (
+      {filteredRules.length === 0 && folders.length === 0 && <RulesEmptyState onCreateRule={() => onEditRule('new')} />}
+
+      {(filteredRules.length > 0 || folders.length > 0) && (
         <RulesList
           groupedRules={groupedRules}
           folders={folders}
@@ -178,6 +198,7 @@ const RulesTab: React.FC<RulesTabProps> = ({
           searchTerm={searchTerm}
           selectionMode={selectionMode}
           selectedIds={selectedIds}
+          view={rulesView}
           onToggleSelection={handleToggleSelection}
           onToggleFolderCollapse={onToggleFolderCollapse}
           onEditFolder={onEditFolder}

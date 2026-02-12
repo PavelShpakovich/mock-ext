@@ -1,8 +1,8 @@
 import React from 'react';
-import { Download, Upload, CheckSquare, Square, FolderPlus, PlusCircle } from 'lucide-react';
+import { Download, Upload, CheckSquare, Square, FolderPlus, PlusCircle, List, LayoutList } from 'lucide-react';
 import { Button } from './ui/Button';
 import { IconButton } from './ui/IconButton';
-import { ButtonVariant, IconButtonVariant } from '../enums';
+import { ButtonVariant, IconButtonVariant, RulesView } from '../enums';
 import { useI18n } from '../contexts/I18nContext';
 
 interface RulesToolbarProps {
@@ -10,6 +10,7 @@ interface RulesToolbarProps {
   selectedCount: number;
   totalFilteredCount: number;
   totalRulesCount: number;
+  currentView: RulesView;
   onToggleSelectionMode: () => void;
   onToggleSelectAll: () => void;
   onExportSelected: () => void;
@@ -17,6 +18,7 @@ interface RulesToolbarProps {
   onImportClick: () => void;
   onCreateFolder: () => void;
   onCreateRule: () => void;
+  onViewChange: (view: RulesView) => void;
   fileInputRef: React.RefObject<HTMLInputElement | null>;
   onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
@@ -26,6 +28,7 @@ export const RulesToolbar: React.FC<RulesToolbarProps> = ({
   selectedCount,
   totalFilteredCount,
   totalRulesCount,
+  currentView,
   onToggleSelectionMode,
   onToggleSelectAll,
   onExportSelected,
@@ -33,6 +36,7 @@ export const RulesToolbar: React.FC<RulesToolbarProps> = ({
   onImportClick,
   onCreateFolder,
   onCreateRule,
+  onViewChange,
   fileInputRef,
   onFileChange,
 }) => {
@@ -90,6 +94,21 @@ export const RulesToolbar: React.FC<RulesToolbarProps> = ({
             </IconButton>
             <IconButton onClick={onCreateFolder} variant={IconButtonVariant.Ghost} title={t('folders.createFolder')}>
               <FolderPlus className='w-5 h-5' />
+            </IconButton>
+            <div className='h-6 w-px bg-gray-300 dark:bg-gray-600 mx-2' />
+            <IconButton
+              onClick={() => onViewChange(RulesView.Detailed)}
+              variant={currentView === RulesView.Detailed ? IconButtonVariant.Primary : IconButtonVariant.Ghost}
+              title={t('rules.viewDetailed')}
+            >
+              <List className='w-5 h-5' />
+            </IconButton>
+            <IconButton
+              onClick={() => onViewChange(RulesView.Compact)}
+              variant={currentView === RulesView.Compact ? IconButtonVariant.Primary : IconButtonVariant.Ghost}
+              title={t('rules.viewCompact')}
+            >
+              <LayoutList className='w-5 h-5' />
             </IconButton>
           </>
         )}

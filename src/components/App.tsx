@@ -319,6 +319,7 @@ const App: React.FC = () => {
           folders={foldersManager.folders}
           ruleWarnings={rulesManager.ruleWarnings}
           searchTerm={searchTerm}
+          settings={recording.settings}
           onSearchChange={setSearchTerm}
           editingRuleId={editingRuleId}
           onEditRule={setEditingRuleId}

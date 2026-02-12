@@ -7,6 +7,11 @@ export enum Tab {
   Requests = 'requests',
 }
 
+export enum RulesView {
+  Detailed = 'detailed',
+  Compact = 'compact',
+}
+
 export enum MatchType {
   Wildcard = 'wildcard',
   Exact = 'exact',

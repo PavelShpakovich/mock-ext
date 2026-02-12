@@ -55,15 +55,18 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
       <IconButton
         onClick={() => setIsOpen(!isOpen)}
         className={clsx(
-          'flex items-center gap-1.5 px-3 py-2 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700',
+          'flex items-center gap-1.5 px-3 py-2 border',
+          'bg-gray-200 dark:bg-gray-700 border-gray-300 dark:border-gray-600',
+          'text-gray-700 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white',
+          'hover:bg-gray-300 dark:hover:bg-gray-600',
           {
-            'bg-gray-200 dark:bg-gray-700': isOpen,
+            'bg-gray-300 dark:bg-gray-600': isOpen,
           }
         )}
         title={translations.settings}
       >
         <Settings
-          className={clsx('w-4 h-4 text-gray-600 dark:text-gray-300 transition-transform duration-300', {
+          className={clsx('w-4 h-4 transition-transform duration-300', {
             'rotate-90': isOpen,
           })}
         />

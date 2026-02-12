@@ -40,6 +40,7 @@ export interface Settings {
   corsAutoFix: boolean;
   language?: Language;
   theme?: Theme;
+  rulesView?: string;
 }
 
 export interface RequestLog {
