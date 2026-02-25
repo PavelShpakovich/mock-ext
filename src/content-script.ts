@@ -6,7 +6,7 @@ import { MockRule, Settings } from './types';
 import { withContextCheck } from './contextHandler';
 import { MessageActionType } from './enums';
 interface RuntimeMessage {
-  action: MessageActionType.UpdateRulesInPage | MessageActionType.OpenDevTools;
+  action: MessageActionType.UpdateRulesInPage | MessageActionType.OpenDevTools | MessageActionType.Ping;
   rules?: MockRule[];
   settings?: Settings;
   language?: string;
