@@ -3,7 +3,7 @@ import clsx from 'clsx';
 import { Folder } from '../types';
 import { Card } from './ui/Card';
 import { IconButton } from './ui/IconButton';
-import { ChevronDown, ChevronRight, Edit, Trash2, Power, PowerOff } from 'lucide-react';
+import { ChevronDown, ChevronRight, Edit, Trash2, Power, PowerOff, GripVertical } from 'lucide-react';
 import { useI18n } from '../contexts/I18nContext';
 import { IconButtonVariant } from '../enums';
 
@@ -16,6 +16,9 @@ interface CompactFolderItemProps {
   onDelete: () => void;
   onEnableAll: () => void;
   onDisableAll: () => void;
+  // Visual feedback
+  isDragging?: boolean;
+  isDropTarget?: boolean;
 }
 
 export const CompactFolderItem: React.FC<CompactFolderItemProps> = ({
@@ -27,6 +30,8 @@ export const CompactFolderItem: React.FC<CompactFolderItemProps> = ({
   onDelete,
   onEnableAll,
   onDisableAll,
+  isDragging = false,
+  isDropTarget = false,
 }) => {
   const { t } = useI18n();
   const [showActions, setShowActions] = useState(false);
@@ -35,15 +40,22 @@ export const CompactFolderItem: React.FC<CompactFolderItemProps> = ({
   return (
     <div onMouseEnter={() => setShowActions(true)} onMouseLeave={() => setShowActions(false)}>
       <Card
-        className={clsx('cursor-pointer py-1.5 px-3', {
+        className={clsx('py-1.5 px-3', {
+          'opacity-40': isDragging,
           'bg-gray-50 dark:bg-gray-900/30': folder.collapsed,
           'bg-blue-50/50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800': !folder.collapsed,
+          'ring-2 ring-blue-500 ring-offset-1': isDropTarget,
         })}
         hoverEffect={true}
-        onClick={onToggleCollapse}
       >
         <div className='flex items-center justify-between'>
-          <div className='flex items-center gap-2 flex-1 min-w-0'>
+          <div className='flex items-center gap-2 flex-1 min-w-0 cursor-pointer' onClick={onToggleCollapse}>
+            <div
+              className='shrink-0 text-gray-400 dark:text-gray-600 cursor-grab active:cursor-grabbing'
+              onClick={(e) => e.stopPropagation()}
+            >
+              <GripVertical className='w-3.5 h-3.5' />
+            </div>
             <div className='shrink-0'>
               {folder.collapsed ? (
                 <ChevronRight className='w-3.5 h-3.5 text-gray-600 dark:text-gray-400' />
@@ -60,6 +72,7 @@ export const CompactFolderItem: React.FC<CompactFolderItemProps> = ({
               'opacity-0': !showActions,
             })}
             onClick={(e) => e.stopPropagation()}
+            draggable='false'
           >
             {ruleCount > 0 && (
               <IconButton
@@ -82,3 +95,5 @@ export const CompactFolderItem: React.FC<CompactFolderItemProps> = ({
     </div>
   );
 };
+
+export default CompactFolderItem;

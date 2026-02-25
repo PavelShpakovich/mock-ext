@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { Storage } from './storage';
 import { MockRule, Settings, MessageAction, MessageResponse } from './types';
-import { MatchType, HttpMethod, Language } from './enums';
+import { MatchType, HttpMethod, Language, MessageActionType } from './enums';
 import { findMatchingRule } from './helpers/urlMatching';
 
 let mockRules: MockRule[] = [];
@@ -23,6 +23,7 @@ async function initialize(): Promise<void> {
     // Clear logRequests if no recording tab is active
     // This handles cases where service worker crashed before onSuspend could fire
     if (settings.logRequests && recordingTabId === null) {
+      // eslint-disable-next-line no-console
       console.log('[Moq] Clearing stale logRequests state on initialization');
       settings.logRequests = false;
       await Storage.saveSettings(settings);
@@ -42,11 +43,13 @@ async function syncCorsRules(): Promise<void> {
     const shouldBeEnabled = settings.enabled && settings.corsAutoFix;
 
     if (shouldBeEnabled) {
+      // eslint-disable-next-line no-console
       console.log('[Moq] Activating CORS auto fix rules');
       await chrome.declarativeNetRequest.updateEnabledRulesets({
         enableRulesetIds: ['cors_rules'],
       });
     } else {
+      // eslint-disable-next-line no-console
       console.log('[Moq] Deactivating CORS auto fix rules');
       await chrome.declarativeNetRequest.updateEnabledRulesets({
         disableRulesetIds: ['cors_rules'],
@@ -67,7 +70,7 @@ async function injectScriptsToExistingTabs(): Promise<void> {
     try {
       // Check if content script is already there
       const isAlive = await chrome.tabs
-        .sendMessage(tab.id, { action: 'ping' })
+        .sendMessage(tab.id, { action: MessageActionType.Ping })
         .then(() => true)
         .catch(() => false);
 
@@ -85,6 +88,7 @@ async function injectScriptsToExistingTabs(): Promise<void> {
           world: 'MAIN',
         });
 
+        // eslint-disable-next-line no-console
         console.log(`[Moq] Scripts force-injected into tab ${tab.id}`);
       }
     } catch {
@@ -102,7 +106,7 @@ function isValidTab(tab: chrome.tabs.Tab): boolean {
 // Returns true if scripts were already present, false if they needed injection
 async function sendRulesToTab(tabId: number, rules: MockRule[]): Promise<boolean> {
   const isAlive = await chrome.tabs
-    .sendMessage(tabId, { action: 'ping' })
+    .sendMessage(tabId, { action: MessageActionType.Ping })
     .then(() => true)
     .catch(() => false);
 
@@ -126,7 +130,7 @@ async function sendRulesToTab(tabId: number, rules: MockRule[]): Promise<boolean
 
   try {
     await chrome.tabs.sendMessage(tabId, {
-      action: 'updateRulesInPage',
+      action: MessageActionType.UpdateRulesInPage,
       rules,
       settings,
     });
@@ -153,7 +157,7 @@ async function incrementRuleCounter(ruleId: string): Promise<void> {
   await Storage.saveRules(mockRules);
 
   // Notify popup to reload rules for real-time counter updates
-  chrome.runtime.sendMessage({ action: 'rulesUpdated' }).catch(() => {
+  chrome.runtime.sendMessage({ action: MessageActionType.RulesUpdated }).catch(() => {
     // Popup might not be open, ignore
   });
 }
@@ -385,7 +389,7 @@ async function showDevToolsPromptInActiveTab(): Promise<void> {
   if (tabs[0]?.id) {
     try {
       await chrome.tabs.sendMessage(tabs[0].id, {
-        action: 'openDevTools',
+        action: MessageActionType.OpenDevTools,
         language: settings.language || 'en',
         theme: settings.theme || 'system',
       });
@@ -406,7 +410,7 @@ chrome.tabs.onRemoved.addListener((tabId) => {
         currentSettings.logRequests = false;
         Storage.saveSettings(currentSettings).then(() => {
           // Notify popup about recording stop
-          chrome.runtime.sendMessage({ action: 'settingsUpdated' }).catch(() => {});
+          chrome.runtime.sendMessage({ action: MessageActionType.SettingsUpdated }).catch(() => {});
         });
       }
     });
@@ -419,6 +423,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (tabId === recordingTabId) {
     // Check if tab navigated to a restricted URL
     if (changeInfo.url && !isValidRecordingTab(tab)) {
+      // eslint-disable-next-line no-console
       console.log('[Moq] Recording tab navigated to restricted URL, stopping recording');
       recordingTabId = null;
 
@@ -428,7 +433,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
           currentSettings.logRequests = false;
           Storage.saveSettings(currentSettings).then(() => {
             // Notify popup about recording stop
-            chrome.runtime.sendMessage({ action: 'settingsUpdated' }).catch(() => {});
+            chrome.runtime.sendMessage({ action: MessageActionType.SettingsUpdated }).catch(() => {});
           });
         }
       });
@@ -439,7 +444,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     if (changeInfo.title && tab.title) {
       chrome.runtime
         .sendMessage({
-          action: 'recordingTabUpdated',
+          action: MessageActionType.RecordingTabUpdated,
           tabTitle: tab.title,
         })
         .catch(() => {

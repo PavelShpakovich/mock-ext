@@ -1,13 +1,16 @@
+import { MessageActionType } from '../enums';
 import '../__tests__/setup';
 import { MessageAction, MessageResponse, Language } from '../types';
 
 // Helper to access the chrome mock with types
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const mockChrome = (globalThis as any).chrome;
 
 describe('Background Script', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     jest.resetModules();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (globalThis as any).chrome.resetListeners();
 
     // Default storage state
@@ -109,7 +112,7 @@ describe('Background Script', () => {
       // We need to either reload script or update via message.
 
       // Let's update via message first
-      const rules: any = [
+      const rules: unknown = [
         {
           id: 'test-rule',
           enabled: true,
@@ -124,16 +127,16 @@ describe('Background Script', () => {
           modified: 0,
         },
       ];
-      await sendMessage({ action: 'updateRules', rules });
+      await sendMessage({ action: MessageActionType.UpdateRules, rules } as unknown as MessageAction);
 
       // Now get them
-      const response: any = await sendMessage({ action: 'getRules' });
-      expect(response.success).toBe(true);
-      expect(response.data).toEqual(rules);
+      const response: unknown = await sendMessage({ action: MessageActionType.GetRules });
+      expect((response as MessageResponse).success).toBe(true);
+      expect((response as any).data).toEqual(rules);
     });
 
     test('updateSettings should update settings and refresh tabs', async () => {
-      const settings: any = {
+      const settings: unknown = {
         enabled: false,
         theme: 'dark',
         logRequests: false,
@@ -141,9 +144,12 @@ describe('Background Script', () => {
         corsAutoFix: false,
       };
 
-      const response: any = await sendMessage({ action: 'updateSettings', settings });
+      const response: unknown = await sendMessage({
+        action: MessageActionType.UpdateSettings,
+        settings,
+      } as unknown as MessageAction);
 
-      expect(response.success).toBe(true);
+      expect((response as MessageResponse).success).toBe(true);
       expect(mockChrome.storage.local.set).toHaveBeenCalledWith(expect.objectContaining({ settings }));
 
       // Should set badge to disabled state
@@ -154,20 +160,26 @@ describe('Background Script', () => {
       const tabId = 123;
       mockChrome.tabs.sendMessage.mockResolvedValue(true); // Ping success
 
-      const response: any = await sendMessage({ action: 'startRecording', tabId, tabTitle: 'Test' });
+      const response: unknown = await sendMessage({
+        action: MessageActionType.StartRecording,
+        tabId,
+        tabTitle: 'Test',
+      } as unknown as MessageAction);
 
-      expect(response.success).toBe(true);
-      expect(response.data.tabId).toBe(tabId);
+      expect((response as MessageResponse).success).toBe(true);
+      expect((response as any).data.tabId).toBe(tabId);
 
       // Check status
-      const statusRes: any = await sendMessage({ action: 'getRecordingStatus' });
-      expect(statusRes.data.tabId).toBe(tabId);
+      const statusRes: unknown = await sendMessage({
+        action: MessageActionType.GetRecordingStatus,
+      } as unknown as MessageAction);
+      expect((statusRes as any).data.tabId).toBe(tabId);
     });
 
     test('incrementRuleCounter should update match count', async () => {
       // 1. Set up a rule
       const ruleId = 'counter-rule';
-      const initialRule: any = {
+      const initialRule: unknown = {
         id: ruleId,
         matchCount: 0,
         enabled: true,
@@ -181,10 +193,10 @@ describe('Background Script', () => {
         created: 0,
         modified: 0,
       };
-      await sendMessage({ action: 'updateRules', rules: [initialRule] });
+      await sendMessage({ action: MessageActionType.UpdateRules, rules: [initialRule] } as unknown as MessageAction);
 
       // 2. Increment
-      await sendMessage({ action: 'incrementRuleCounter', ruleId });
+      await sendMessage({ action: MessageActionType.IncrementRuleCounter, ruleId } as unknown as MessageAction);
 
       // 3. Verify storage update
       expect(mockChrome.storage.local.set).toHaveBeenCalledWith(
@@ -212,15 +224,21 @@ describe('Background Script', () => {
         const tabId = 100;
         // Start recording
         mockChrome.tabs.sendMessage.mockResolvedValue(true);
-        const startRes: any = await sendMessage({ action: 'startRecording', tabId, tabTitle: 'Test' });
-        expect(startRes.success).toBe(true);
+        const startRes: unknown = await sendMessage({
+          action: MessageActionType.StartRecording,
+          tabId,
+          tabTitle: 'Test',
+        } as unknown as MessageAction);
+        expect((startRes as MessageResponse).success).toBe(true);
 
         // Verify recording status
-        const statusRes: any = await sendMessage({ action: 'getRecordingStatus' });
-        expect(statusRes.data.tabId).toBe(tabId);
+        const statusRes: unknown = await sendMessage({
+          action: MessageActionType.GetRecordingStatus,
+        } as unknown as MessageAction);
+        expect((statusRes as any).data.tabId).toBe(tabId);
 
-        const logMessage: any = {
-          action: 'logCapturedResponse',
+        const logMessage: unknown = {
+          action: MessageActionType.LogCapturedResponse,
           url: 'https://api.example.com/data',
           method: 'GET',
           statusCode: 200,
@@ -231,7 +249,7 @@ describe('Background Script', () => {
         };
 
         // Send from the recording tab
-        await sendMessage(logMessage, { tab: { id: tabId } });
+        await sendMessage(logMessage as MessageAction, { tab: { id: tabId } } as chrome.runtime.MessageSender);
 
         // Advance timer to trigger buffer flush (500ms interval)
         jest.advanceTimersByTime(1000);
@@ -256,10 +274,10 @@ describe('Background Script', () => {
     });
 
     test('should NOT log if not recording', async () => {
-      await sendMessage({ action: 'stopRecording' });
+      await sendMessage({ action: MessageActionType.StopRecording } as unknown as MessageAction);
 
-      const logMessage: any = {
-        action: 'logCapturedResponse',
+      const logMessage: unknown = {
+        action: MessageActionType.LogCapturedResponse,
         url: 'https://api.example.com/data',
         method: 'GET',
         statusCode: 200,
@@ -272,7 +290,7 @@ describe('Background Script', () => {
       // Reset mocks to clear previous calls
       mockChrome.storage.local.set.mockClear();
 
-      await sendMessage(logMessage, { tab: { id: 1 } });
+      await sendMessage(logMessage as MessageAction, { tab: { id: 1 } } as chrome.runtime.MessageSender);
 
       expect(mockChrome.storage.local.set).not.toHaveBeenCalled();
     });
@@ -284,9 +302,11 @@ describe('Background Script', () => {
     });
 
     test('should open new window if none exists', async () => {
-      const response: any = await sendMessage({ action: 'openStandaloneWindow' });
+      const response: unknown = await sendMessage({
+        action: MessageActionType.OpenStandaloneWindow,
+      } as unknown as MessageAction);
 
-      expect(response.success).toBe(true);
+      expect((response as MessageResponse).success).toBe(true);
       expect(mockChrome.windows.create).toHaveBeenCalledWith(
         expect.objectContaining({
           url: 'window.html',
@@ -296,9 +316,12 @@ describe('Background Script', () => {
     });
 
     test('should pass language param to window URL', async () => {
-      const response: any = await sendMessage({ action: 'openStandaloneWindow', language: Language.English });
+      const response: unknown = await sendMessage({
+        action: MessageActionType.OpenStandaloneWindow,
+        language: Language.English,
+      } as unknown as MessageAction);
 
-      expect(response.success).toBe(true);
+      expect((response as MessageResponse).success).toBe(true);
       expect(mockChrome.windows.create).toHaveBeenCalledWith(
         expect.objectContaining({
           url: 'window.html?lang=en',
@@ -310,13 +333,13 @@ describe('Background Script', () => {
     test('should focus existing window if already open', async () => {
       // First open
       mockChrome.windows.create.mockResolvedValue({ id: 555 });
-      await sendMessage({ action: 'openStandaloneWindow' });
+      await sendMessage({ action: MessageActionType.OpenStandaloneWindow } as unknown as MessageAction);
 
       // Simulate checking existing window
       mockChrome.windows.get.mockResolvedValue({ id: 555 });
 
       // Second open request
-      await sendMessage({ action: 'openStandaloneWindow' });
+      await sendMessage({ action: MessageActionType.OpenStandaloneWindow } as unknown as MessageAction);
 
       expect(mockChrome.windows.update).toHaveBeenCalledWith(555, { focused: true });
       // Should not create another

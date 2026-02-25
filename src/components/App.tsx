@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { MockRule, RequestLog, Folder } from '../types';
-import { Tab, ImportMode, ToastType, ConfirmDialogVariant, FolderEditMode } from '../enums';
+import { Tab, ImportMode, ToastType, ConfirmDialogVariant, EditMode, MessageActionType } from '../enums';
 import { useI18n } from '../contexts/I18nContext';
 import { isDevTools } from '../helpers/context';
 import { withContextCheck } from '../contextHandler';
@@ -10,6 +10,7 @@ import {
   useFoldersManager,
   useRecording,
   useCrossContextSync,
+  useDragDropHandlers,
 } from '../hooks';
 import {
   downloadFile,
@@ -39,7 +40,7 @@ const App: React.FC = () => {
   // UI State
   const [activeTab, setActiveTab] = useState<Tab>(Tab.Rules);
   const [editingRuleId, setEditingRuleId] = useState<string | null>(null);
-  const [editingFolder, setEditingFolder] = useState<Folder | null | FolderEditMode>(null);
+  const [editingFolder, setEditingFolder] = useState<Folder | null | EditMode>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [requestsSearchTerm, setRequestsSearchTerm] = useState('');
   const [importDialogData, setImportDialogData] = useState<{ rules: MockRule[] } | null>(null);
@@ -56,6 +57,14 @@ const App: React.FC = () => {
   const rulesManager = useRulesManager();
   const foldersManager = useFoldersManager();
   const recording = useRecording();
+
+  // Drag-and-drop handlers
+  useDragDropHandlers({
+    rules: rulesManager.rules,
+    folders: foldersManager.folders,
+    onRulesChange: rulesManager.saveRules,
+    onFoldersChange: foldersManager.saveFolders,
+  });
 
   // Cross-context sync - ensures state stays synchronized across all contexts
   useCrossContextSync({
@@ -112,7 +121,7 @@ const App: React.FC = () => {
 
   const handleMockRequest = useCallback((request: RequestLog) => {
     setActiveTab(Tab.Rules);
-    setEditingRuleId('new');
+    setEditingRuleId(EditMode.New);
     sessionStorage.setItem('mockRequest', JSON.stringify(request));
   }, []);
 
@@ -204,9 +213,9 @@ const App: React.FC = () => {
 
         // Update all rules at once through background script
         rulesManager.setRulesDirectly(updatedRules);
-        await withContextCheck(() => chrome.runtime.sendMessage({ action: 'updateRules', rules: updatedRules })).catch(
-          () => {}
-        );
+        await withContextCheck(() =>
+          chrome.runtime.sendMessage({ action: MessageActionType.UpdateRules, rules: updatedRules })
+        ).catch(() => {});
 
         setImportDialogData(null);
         setToast({
@@ -229,7 +238,7 @@ const App: React.FC = () => {
   // ===========================
 
   const handleCreateFolder = useCallback(() => {
-    setEditingFolder(FolderEditMode.New);
+    setEditingFolder(EditMode.New);
   }, []);
 
   const handleEditFolder = useCallback(
@@ -244,7 +253,7 @@ const App: React.FC = () => {
 
   const handleSaveFolder = useCallback(
     async (name: string) => {
-      const folderToEdit = editingFolder === FolderEditMode.New ? null : (editingFolder as Folder | null);
+      const folderToEdit = editingFolder === EditMode.New ? null : (editingFolder as Folder | null);
       await foldersManager.saveFolder(name, folderToEdit);
       setEditingFolder(null);
     },
@@ -327,7 +336,6 @@ const App: React.FC = () => {
           onDeleteRule={handleDeleteRule}
           onToggleRule={rulesManager.toggleRule}
           onDuplicateRule={rulesManager.duplicateRule}
-          onResetRuleHits={rulesManager.resetRuleHits}
           onCancelEdit={() => setEditingRuleId(null)}
           onExportRules={handleExportRules}
           onImportRules={handleImportRules}
@@ -362,7 +370,7 @@ const App: React.FC = () => {
 
       {editingFolder && (
         <FolderEditor
-          folder={editingFolder === FolderEditMode.New ? null : editingFolder}
+          folder={editingFolder === EditMode.New ? null : editingFolder}
           existingFolders={foldersManager.folders}
           onSave={handleSaveFolder}
           onCancel={() => setEditingFolder(null)}

@@ -1,6 +1,6 @@
 {
   "name": "moq-extension",
-  "version": "2.10.9",
+  "version": "2.11.0",
   "description": "Chrome extension for mocking API requests with full control over status codes, delays, and responses",
   "scripts": {
     "build": "webpack --mode production",
@@ -69,6 +69,10 @@
     "webpack-cli": "^5.1.4"
   },
   "dependencies": {
+    "@atlaskit/pragmatic-drag-and-drop": "^1.7.7",
+    "@atlaskit/pragmatic-drag-and-drop-flourish": "^2.0.12",
+    "@atlaskit/pragmatic-drag-and-drop-hitbox": "^1.1.0",
+    "@atlaskit/pragmatic-drag-and-drop-react-drop-indicator": "^3.2.12",
     "acorn": "^8.15.0",
     "clsx": "^2.1.1",
     "eslint-scope": "^9.1.0",

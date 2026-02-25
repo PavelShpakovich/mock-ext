@@ -1,4 +1,5 @@
 import { Settings } from '../types';
+import { MessageActionType } from '../enums';
 
 export function isValidRecordingTab(tab: chrome.tabs.Tab): boolean {
   return (
@@ -24,7 +25,7 @@ export async function sendStartRecordingMessage(
 ): Promise<{ success: boolean; data?: { reloaded: boolean } }> {
   try {
     const response = await chrome.runtime.sendMessage({
-      action: 'startRecording',
+      action: MessageActionType.StartRecording,
       tabId,
     });
     return response || { success: false };
@@ -35,7 +36,7 @@ export async function sendStartRecordingMessage(
 
 export async function sendStopRecordingMessage(): Promise<void> {
   try {
-    await chrome.runtime.sendMessage({ action: 'stopRecording' });
+    await chrome.runtime.sendMessage({ action: MessageActionType.StopRecording });
   } catch {
     // Silent fail - context invalidated
   }
@@ -43,7 +44,7 @@ export async function sendStopRecordingMessage(): Promise<void> {
 
 export async function getRecordingStatus(): Promise<{ success: boolean; data?: { tabId: number } }> {
   try {
-    const response = await chrome.runtime.sendMessage({ action: 'getRecordingStatus' });
+    const response = await chrome.runtime.sendMessage({ action: MessageActionType.GetRecordingStatus });
     return response || { success: false };
   } catch {
     return { success: false };

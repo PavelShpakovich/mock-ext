@@ -1,5 +1,6 @@
 import { MockRule, Settings, StorageData, RequestLog, Folder } from './types';
 import { Theme, RulesView } from './enums';
+import { migrateFoldersAndRules } from './helpers/folderManagement';
 
 // Batch buffer for log entries
 let logBuffer: RequestLog[] = [];
@@ -25,6 +26,37 @@ export class Storage {
   private static readonly LOG_KEY = 'requestLog';
   private static readonly DRAFT_KEY = 'ruleDraft';
   private static readonly FOLDERS_KEY = 'folders';
+  private static readonly SCHEMA_VERSION_KEY = 'schemaVersion';
+  private static readonly CURRENT_SCHEMA_VERSION = 2;
+
+  /**
+   * Run storage schema migrations (idempotent — safe to call multiple times).
+   * v1 → v2: adds `order` to rules/folders and `parentFolderId` to folders.
+   */
+  static async migrateStorageSchema(): Promise<void> {
+    try {
+      const result = await chrome.storage.local.get(this.SCHEMA_VERSION_KEY);
+      const storedVersion: number = result[this.SCHEMA_VERSION_KEY] ?? 1;
+
+      if (storedVersion >= this.CURRENT_SCHEMA_VERSION) return; // Already up to date
+
+      if (storedVersion < 2) {
+        const [folders, rules] = await Promise.all([this.getFolders(), this.getRules()]);
+        const migrated = migrateFoldersAndRules(folders, rules);
+        await Promise.all([
+          chrome.storage.local.set({ [this.FOLDERS_KEY]: migrated.folders }),
+          chrome.storage.local.set({ [this.RULES_KEY]: migrated.rules }),
+        ]);
+        // eslint-disable-next-line no-console
+        console.log('[Moq] Storage migrated to schema v2 (order fields added)');
+      }
+
+      await chrome.storage.local.set({ [this.SCHEMA_VERSION_KEY]: this.CURRENT_SCHEMA_VERSION });
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error('[Moq] Storage migration failed:', error);
+    }
+  }
 
   // Rules operations
   static async getRules(): Promise<MockRule[]> {
@@ -145,5 +177,10 @@ export class Storage {
 
   static async clearDraft(): Promise<void> {
     await chrome.storage.local.remove(this.DRAFT_KEY);
+  }
+
+  /** Reset schema version (for testing only) */
+  static async _resetSchemaVersion(): Promise<void> {
+    await chrome.storage.local.remove(this.SCHEMA_VERSION_KEY);
   }
 }

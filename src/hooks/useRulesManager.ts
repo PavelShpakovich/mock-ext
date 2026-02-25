@@ -4,6 +4,7 @@ import { Storage } from '../storage';
 import { MockRule } from '../types';
 import { withContextCheck } from '../contextHandler';
 import { validateAllRules, ValidationWarning } from '../helpers';
+import { EditMode, MessageActionType } from '../enums';
 
 interface UseRulesManagerReturn {
   rules: MockRule[];
@@ -15,6 +16,8 @@ interface UseRulesManagerReturn {
   duplicateRule: (id: string) => Promise<void>;
   resetRuleHits: (id: string) => Promise<void>;
   setRulesDirectly: (rules: MockRule[]) => void;
+  /** Replace the entire rule list (used by drag-drop reordering) */
+  saveRules: (rules: MockRule[]) => Promise<void>;
 }
 
 /**
@@ -36,9 +39,9 @@ export const useRulesManager = (): UseRulesManagerReturn => {
       validateAndUpdateWarnings(updatedRules);
 
       await Storage.saveRules(updatedRules);
-      await withContextCheck(() => chrome.runtime.sendMessage({ action: 'updateRules', rules: updatedRules })).catch(
-        () => {}
-      );
+      await withContextCheck(() =>
+        chrome.runtime.sendMessage({ action: MessageActionType.UpdateRules, rules: updatedRules })
+      ).catch(() => {});
     },
     [validateAndUpdateWarnings]
   );
@@ -52,7 +55,7 @@ export const useRulesManager = (): UseRulesManagerReturn => {
   const saveRule = useCallback(
     async (rule: MockRule, editingRuleId: string | null) => {
       let updatedRules: MockRule[];
-      if (editingRuleId && editingRuleId !== 'new') {
+      if (editingRuleId && editingRuleId !== EditMode.New) {
         updatedRules = rules.map((r) => (r.id === editingRuleId ? rule : r));
       } else {
         updatedRules = [...rules, rule];
@@ -122,6 +125,13 @@ export const useRulesManager = (): UseRulesManagerReturn => {
     [validateAndUpdateWarnings]
   );
 
+  const saveRules = useCallback(
+    async (updatedRules: MockRule[]) => {
+      await updateRulesEverywhere(updatedRules);
+    },
+    [updateRulesEverywhere]
+  );
+
   return {
     rules,
     ruleWarnings,
@@ -132,5 +142,6 @@ export const useRulesManager = (): UseRulesManagerReturn => {
     duplicateRule,
     resetRuleHits,
     setRulesDirectly,
+    saveRules,
   };
 };

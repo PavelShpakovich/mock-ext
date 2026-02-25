@@ -24,6 +24,18 @@ export const MAX_FOLDER_NAME_LENGTH = 50;
 export const UNUSED_RULE_DAYS_THRESHOLD = 30;
 
 // ============================================================================
+// Drag & Drop Constants
+// ============================================================================
+
+/**
+ * ID used to identify the root drop zone for ungrouping items
+ */
+export const ROOT_DROP_ZONE_ID = 'root-drop-zone';
+
+/** Maximum allowed nesting depth for folders */
+export const MAX_FOLDER_DEPTH = 5;
+
+// ============================================================================
 // Default Values
 // ============================================================================
 

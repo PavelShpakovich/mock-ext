@@ -75,13 +75,53 @@ export enum ConfirmDialogVariant {
   Primary = 'primary',
 }
 
-export enum FolderEditMode {
+export enum EditMode {
   New = 'new',
+}
+
+// ============================================================================
+// Drag & Drop Enums
+// ============================================================================
+
+export enum DragDropItemType {
+  Rule = 'rule',
+  Folder = 'folder',
+}
+
+export enum DropEdge {
+  Top = 'top',
+  Bottom = 'bottom',
 }
 
 // ============================================================================
 // Validation Enums
 // ============================================================================
+
+export enum MessageActionType {
+  UpdateRules = 'updateRules',
+  UpdateSettings = 'updateSettings',
+  ToggleMocking = 'toggleMocking',
+  GetRules = 'getRules',
+  GetSettings = 'getSettings',
+  ExportRules = 'exportRules',
+  StartRecording = 'startRecording',
+  StopRecording = 'stopRecording',
+  GetRecordingStatus = 'getRecordingStatus',
+  UpdateRulesInPage = 'updateRulesInPage',
+  LogMockedRequest = 'logMockedRequest',
+  LogCapturedResponse = 'logCapturedResponse',
+  IncrementRuleCounter = 'incrementRuleCounter',
+  RulesUpdated = 'rulesUpdated',
+  SettingsUpdated = 'settingsUpdated',
+  FoldersUpdated = 'foldersUpdated',
+  RequestLogUpdated = 'requestLogUpdated',
+  RecordingTabUpdated = 'recordingTabUpdated',
+  OpenDevTools = 'openDevTools',
+  UpdateFolders = 'updateFolders',
+  OpenStandaloneWindow = 'openStandaloneWindow',
+  GetStandaloneWindowStatus = 'getStandaloneWindowStatus',
+  Ping = 'ping',
+}
 
 export enum ValidationWarningType {
   Overlapping = 'overlapping',

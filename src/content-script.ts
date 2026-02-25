@@ -4,8 +4,9 @@
 import { Storage } from './storage';
 import { MockRule, Settings } from './types';
 import { withContextCheck } from './contextHandler';
+import { MessageActionType } from './enums';
 interface RuntimeMessage {
-  action: 'updateRulesInPage' | 'openDevTools';
+  action: MessageActionType.UpdateRulesInPage | MessageActionType.OpenDevTools;
   rules?: MockRule[];
   settings?: Settings;
   language?: string;
@@ -46,18 +47,18 @@ class ContentScriptBridge {
     _sender: chrome.runtime.MessageSender,
     sendResponse: (response: MessageResponse) => void
   ): boolean {
-    if (message.action === ('ping' as any)) {
-      sendResponse({ success: true } as any);
+    if (message.action === MessageActionType.Ping) {
+      sendResponse({ success: true });
       return true;
     }
 
-    if (message.action === 'updateRulesInPage') {
+    if (message.action === MessageActionType.UpdateRulesInPage) {
       this.updatePageRules(message.rules ?? [], message.settings);
       sendResponse({ success: true });
       return true;
     }
 
-    if (message.action === 'openDevTools') {
+    if (message.action === MessageActionType.OpenDevTools) {
       this.showDevToolsPrompt(message.language || 'en');
       sendResponse({ success: true });
       return true;
@@ -108,7 +109,7 @@ class ContentScriptBridge {
 
     chrome.runtime
       .sendMessage({
-        action: 'logMockedRequest',
+        action: MessageActionType.LogMockedRequest,
         url: data.url,
         method: data.method,
         ruleId: data.ruleId,
@@ -125,7 +126,7 @@ class ContentScriptBridge {
 
     chrome.runtime
       .sendMessage({
-        action: 'logCapturedResponse',
+        action: MessageActionType.LogCapturedResponse,
         url: data.url,
         method: data.method,
         statusCode: data.statusCode,
@@ -143,7 +144,7 @@ class ContentScriptBridge {
 
     chrome.runtime
       .sendMessage({
-        action: 'incrementRuleCounter',
+        action: MessageActionType.IncrementRuleCounter,
         ruleId: ruleId,
       })
       .catch(() => {

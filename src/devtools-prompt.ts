@@ -1,6 +1,8 @@
+import { MessageActionType } from './enums';
+
 // Listen for messages from background to show DevTools prompt
 chrome.runtime.onMessage.addListener((message) => {
-  if (message.action === 'openDevTools') {
+  if (message.action === MessageActionType.OpenDevTools) {
     showDevToolsPrompt(message.language || 'en', message.theme || 'system');
   }
 });

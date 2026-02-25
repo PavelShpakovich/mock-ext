@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { MessageActionType } from '../enums';
 
 interface SyncCallbacks {
   onRulesUpdated: () => void;
@@ -18,18 +19,18 @@ export const useCrossContextSync = ({
   onRequestLogUpdated,
 }: SyncCallbacks): void => {
   useEffect(() => {
-    const messageListener = (message: any) => {
+    const messageListener = (message: { action: MessageActionType }) => {
       switch (message.action) {
-        case 'rulesUpdated':
+        case MessageActionType.RulesUpdated:
           onRulesUpdated();
           break;
-        case 'settingsUpdated':
+        case MessageActionType.SettingsUpdated:
           onSettingsUpdated();
           break;
-        case 'foldersUpdated':
+        case MessageActionType.FoldersUpdated:
           onFoldersUpdated();
           break;
-        case 'requestLogUpdated':
+        case MessageActionType.RequestLogUpdated:
           onRequestLogUpdated();
           break;
       }

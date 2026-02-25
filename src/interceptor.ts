@@ -584,7 +584,14 @@ class RequestInterceptor {
     const notifyInterception = this.notifyInterception.bind(this);
 
     window.fetch = async function (input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
-      const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+      let url: string;
+      if (typeof input === 'string') {
+        url = input;
+      } else if (input instanceof URL) {
+        url = input.href;
+      } else {
+        url = input.url;
+      }
 
       // Extract method: from init, or from Request object, or default to GET
       let method = init?.method || 'GET';

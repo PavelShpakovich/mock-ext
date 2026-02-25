@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { MessageActionType } from '../enums';
 import { isDevTools } from '../helpers/context';
 
 /**
@@ -12,7 +13,7 @@ export const useStandaloneWindowStatus = (): boolean => {
     if (!isDevTools()) return;
 
     const checkWindowStatus = () => {
-      chrome.runtime.sendMessage({ action: 'getStandaloneWindowStatus' }, (response) => {
+      chrome.runtime.sendMessage({ action: MessageActionType.GetStandaloneWindowStatus }, (response) => {
         if (chrome.runtime.lastError) {
           return; // Ignore errors
         }

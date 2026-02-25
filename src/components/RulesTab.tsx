@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { MockRule, Folder, Settings } from '../types';
-import { ValidationWarning, getRulesGroupedByFolder, getFolderRuleCounts } from '../helpers';
-import { RulesView } from '../enums';
+import { MockRule, Folder, Settings, RequestLog } from '../types';
+import { ValidationWarning, getFolderRuleCounts } from '../helpers';
+import { RulesView, EditMode } from '../enums';
 import { Storage } from '../storage';
 import RuleEditor from './RuleEditor';
 import { RulesSearchBar } from './RulesSearchBar';
 import { RulesToolbar } from './RulesToolbar';
 import { RulesEmptyState } from './RulesEmptyState';
 import { RulesList } from './RulesList';
+import { buildFolderTree } from '../helpers/folderManagement';
 
 interface RulesTabProps {
   rules: MockRule[];
@@ -22,7 +23,6 @@ interface RulesTabProps {
   onDeleteRule: (id: string) => void;
   onToggleRule: (id: string) => void;
   onDuplicateRule: (id: string) => void;
-  onResetRuleHits: (id: string) => void;
   onCancelEdit: () => void;
   onExportRules: (selectedIds?: string[]) => void;
   onImportRules: (file: File) => void;
@@ -47,7 +47,6 @@ const RulesTab: React.FC<RulesTabProps> = ({
   onDeleteRule,
   onToggleRule,
   onDuplicateRule,
-  onResetRuleHits,
   onCancelEdit,
   onExportRules,
   onImportRules,
@@ -58,7 +57,7 @@ const RulesTab: React.FC<RulesTabProps> = ({
   onEnableFolderRules,
   onDisableFolderRules,
 }) => {
-  const [mockRequest, setMockRequest] = useState<any>(null);
+  const [mockRequest, setMockRequest] = useState<RequestLog | null>(null);
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [rulesView, setRulesView] = useState<RulesView>((settings.rulesView as RulesView) || RulesView.Detailed);
@@ -80,7 +79,8 @@ const RulesTab: React.FC<RulesTabProps> = ({
     );
   });
 
-  const groupedRules = getRulesGroupedByFolder(filteredRules, folders);
+  const folderTree = buildFolderTree(folders, filteredRules);
+  const ungroupedRules = filteredRules.filter((r) => !r.folderId);
   const ruleCounts = getFolderRuleCounts(rules, folders);
 
   const enabledCounts = new Map<string | undefined, number>();
@@ -142,7 +142,7 @@ const RulesTab: React.FC<RulesTabProps> = ({
 
   useEffect(() => {
     const requestData = sessionStorage.getItem('mockRequest');
-    if (requestData && editingRuleId === 'new') {
+    if (requestData && editingRuleId === EditMode.New) {
       setMockRequest(JSON.parse(requestData));
       sessionStorage.removeItem('mockRequest');
     } else if (!editingRuleId) {
@@ -154,7 +154,7 @@ const RulesTab: React.FC<RulesTabProps> = ({
     return (
       <div className='p-6'>
         <RuleEditor
-          rule={editingRuleId === 'new' ? null : rules.find((r) => r.id === editingRuleId) || null}
+          rule={editingRuleId === EditMode.New ? null : rules.find((r) => r.id === editingRuleId) || null}
           onSave={onSaveRule}
           onCancel={onCancelEdit}
           mockRequest={mockRequest}
@@ -180,17 +180,20 @@ const RulesTab: React.FC<RulesTabProps> = ({
         onExportAll={() => onExportRules()}
         onImportClick={handleImportClick}
         onCreateFolder={onCreateFolder}
-        onCreateRule={() => onEditRule('new')}
+        onCreateRule={() => onEditRule(EditMode.New)}
         onViewChange={handleViewChange}
         fileInputRef={fileInputRef}
         onFileChange={handleFileChange}
       />
 
-      {filteredRules.length === 0 && folders.length === 0 && <RulesEmptyState onCreateRule={() => onEditRule('new')} />}
+      {filteredRules.length === 0 && folders.length === 0 && (
+        <RulesEmptyState onCreateRule={() => onEditRule(EditMode.New)} />
+      )}
 
       {(filteredRules.length > 0 || folders.length > 0) && (
         <RulesList
-          groupedRules={groupedRules}
+          folderTree={folderTree}
+          ungroupedRules={ungroupedRules}
           folders={folders}
           ruleCounts={ruleCounts}
           enabledCounts={enabledCounts}
@@ -209,7 +212,6 @@ const RulesTab: React.FC<RulesTabProps> = ({
           onDeleteRule={onDeleteRule}
           onToggleRule={onToggleRule}
           onDuplicateRule={onDuplicateRule}
-          onResetRuleHits={onResetRuleHits}
         />
       )}
     </div>

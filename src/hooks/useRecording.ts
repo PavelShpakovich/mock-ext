@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { Storage } from '../storage';
+import { MessageActionType } from '../enums';
 import { Settings, RequestLog } from '../types';
 import { withContextCheck } from '../contextHandler';
 import {
@@ -63,7 +64,7 @@ export const useRecording = (): UseRecordingReturn => {
         setActiveTabTitle(tab.title || 'Unknown Tab');
 
         // Notify other contexts about recording state change
-        chrome.runtime.sendMessage({ action: 'settingsUpdated' }).catch(() => {});
+        chrome.runtime.sendMessage({ action: MessageActionType.SettingsUpdated }).catch(() => {});
 
         return { success: true, reloaded: response.data?.reloaded };
       }
@@ -81,7 +82,7 @@ export const useRecording = (): UseRecordingReturn => {
     setActiveTabTitle('');
 
     // Notify other contexts about recording state change
-    chrome.runtime.sendMessage({ action: 'settingsUpdated' }).catch(() => {});
+    chrome.runtime.sendMessage({ action: MessageActionType.SettingsUpdated }).catch(() => {});
   }, [settings]);
 
   const handleGlobalToggle = useCallback(
@@ -90,10 +91,12 @@ export const useRecording = (): UseRecordingReturn => {
 
       setSettings(newSettings);
       await Storage.saveSettings(newSettings);
-      await withContextCheck(() => chrome.runtime.sendMessage({ action: 'toggleMocking', enabled })).catch(() => {});
+      await withContextCheck(() =>
+        chrome.runtime.sendMessage({ action: MessageActionType.ToggleMocking, enabled })
+      ).catch(() => {});
 
       // Notify other contexts about settings change
-      chrome.runtime.sendMessage({ action: 'settingsUpdated' }).catch(() => {});
+      chrome.runtime.sendMessage({ action: MessageActionType.SettingsUpdated }).catch(() => {});
 
       if (!enabled && settings.logRequests) {
         setActiveTabTitle('');
@@ -132,11 +135,11 @@ export const useRecording = (): UseRecordingReturn => {
       setSettings(newSettings);
       await Storage.saveSettings(newSettings);
       await withContextCheck(() =>
-        chrome.runtime.sendMessage({ action: 'updateSettings', settings: newSettings })
+        chrome.runtime.sendMessage({ action: MessageActionType.UpdateSettings, settings: newSettings })
       ).catch(() => {});
 
       // Notify other contexts about settings change
-      chrome.runtime.sendMessage({ action: 'settingsUpdated' }).catch(() => {});
+      chrome.runtime.sendMessage({ action: MessageActionType.SettingsUpdated }).catch(() => {});
     },
     [settings]
   );
@@ -146,7 +149,7 @@ export const useRecording = (): UseRecordingReturn => {
     setRequestLog([]);
 
     // Notify other contexts about request log clear
-    chrome.runtime.sendMessage({ action: 'requestLogUpdated' }).catch(() => {});
+    chrome.runtime.sendMessage({ action: MessageActionType.RequestLogUpdated }).catch(() => {});
   }, []);
 
   const setSettingsDirectly = useCallback((updatedSettings: Settings) => {
@@ -170,6 +173,7 @@ export const useRecording = (): UseRecordingReturn => {
               setActiveTabTitle(tab.title || 'Unknown Tab');
             } catch (error) {
               // Recording tab no longer exists or is invalid
+              // eslint-disable-next-line no-console
               console.log('[Moq] Recording tab is no longer valid, clearing recording state');
               const newSettings = { ...loadedSettings, logRequests: false };
               setSettings(newSettings);
@@ -185,6 +189,7 @@ export const useRecording = (): UseRecordingReturn => {
             }
           }
         } catch (error) {
+          // eslint-disable-next-line no-console
           console.error('Failed to restore recording status:', error);
         }
       }
@@ -205,7 +210,7 @@ export const useRecording = (): UseRecordingReturn => {
 
   // Listen for recording tab title updates
   useEffect(() => {
-    const messageListener = (message: any) => {
+    const messageListener = (message: { action: string; tabTitle?: string }) => {
       if (message.action === 'recordingTabUpdated' && message.tabTitle) {
         setActiveTabTitle(message.tabTitle);
       }

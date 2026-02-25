@@ -5,6 +5,14 @@ All notable changes to Moq Extension will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.11.0] - 2026-02-26
+
+### Changed
+- **Internal Refactoring**: Eliminated hardcoded string types across the codebase
+  - Introduced strongly-typed enums (`MessageActionType`, `ValidationSeverity`, `EditMode`) for Chrome runtime messaging, UI components, and state management
+  - Improved code readability, maintainability, and type safety
+  - Refactored all React hooks, background scripts, and content scripts to use the new enum-based messaging system
+
 ## [2.10.9] - 2026-02-12
 
 ### Fixed

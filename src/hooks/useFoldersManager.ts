@@ -2,19 +2,25 @@ import { useState, useCallback } from 'react';
 import { Storage } from '../storage';
 import { Folder, MockRule } from '../types';
 import { withContextCheck } from '../contextHandler';
+import { MessageActionType } from '../enums';
 import {
   createFolder,
   renameFolder,
   toggleFolderCollapse,
   deleteFolderAndUngroup,
+  deleteFolderRecursively,
   toggleFolderRules,
 } from '../helpers';
 
 interface UseFoldersManagerReturn {
   folders: Folder[];
   loadFolders: () => Promise<void>;
-  saveFolder: (name: string, editingFolder: Folder | null) => Promise<void>;
+  saveFolder: (name: string, editingFolder: Folder | null, parentFolderId?: string) => Promise<void>;
   deleteFolderAndUpdateRules: (
+    folderId: string,
+    rules: MockRule[]
+  ) => Promise<{ folders: Folder[]; rules: MockRule[] }>;
+  deleteFolderRecursivelyAndUpdateRules: (
     folderId: string,
     rules: MockRule[]
   ) => Promise<{ folders: Folder[]; rules: MockRule[] }>;
@@ -22,6 +28,8 @@ interface UseFoldersManagerReturn {
   enableFolderRules: (rules: MockRule[], folderId: string) => Promise<MockRule[]>;
   disableFolderRules: (rules: MockRule[], folderId: string) => Promise<MockRule[]>;
   setFoldersDirectly: (folders: Folder[]) => void;
+  /** Replace the entire folder list (used by drag-drop reordering/moving) */
+  saveFolders: (folders: Folder[]) => Promise<void>;
 }
 
 /**
@@ -37,12 +45,12 @@ export const useFoldersManager = (): UseFoldersManagerReturn => {
   }, []);
 
   const saveFolder = useCallback(
-    async (name: string, editingFolder: Folder | null) => {
+    async (name: string, editingFolder: Folder | null, parentFolderId?: string) => {
       let updatedFolders: Folder[];
 
       if (!editingFolder) {
-        // Create new folder
-        const newFolder = createFolder(name);
+        // Create new folder (optionally nested)
+        const newFolder = createFolder(name, parentFolderId);
         updatedFolders = [...folders, newFolder];
       } else {
         // Rename existing folder
@@ -51,7 +59,7 @@ export const useFoldersManager = (): UseFoldersManagerReturn => {
 
       setFolders(updatedFolders);
       await Storage.saveFolders(updatedFolders);
-      chrome.runtime.sendMessage({ action: 'foldersUpdated' }).catch(() => {});
+      chrome.runtime.sendMessage({ action: MessageActionType.FoldersUpdated }).catch(() => {});
     },
     [folders]
   );
@@ -63,12 +71,31 @@ export const useFoldersManager = (): UseFoldersManagerReturn => {
 
       await Promise.all([Storage.saveFolders(result.folders), Storage.saveRules(result.rules)]);
 
-      await withContextCheck(() => chrome.runtime.sendMessage({ action: 'updateRules', rules: result.rules })).catch(
-        () => {}
-      );
+      await withContextCheck(() =>
+        chrome.runtime.sendMessage({ action: MessageActionType.UpdateRules, rules: result.rules })
+      ).catch(() => {});
 
-      chrome.runtime.sendMessage({ action: 'foldersUpdated' }).catch(() => {});
-      chrome.runtime.sendMessage({ action: 'rulesUpdated' }).catch(() => {});
+      chrome.runtime.sendMessage({ action: MessageActionType.FoldersUpdated }).catch(() => {});
+      chrome.runtime.sendMessage({ action: MessageActionType.RulesUpdated }).catch(() => {});
+
+      return result;
+    },
+    [folders]
+  );
+
+  const deleteFolderRecursivelyAndUpdateRules = useCallback(
+    async (folderId: string, rules: MockRule[]) => {
+      const result = deleteFolderRecursively(folders, rules, folderId);
+      setFolders(result.folders);
+
+      await Promise.all([Storage.saveFolders(result.folders), Storage.saveRules(result.rules)]);
+
+      await withContextCheck(() =>
+        chrome.runtime.sendMessage({ action: MessageActionType.UpdateRules, rules: result.rules })
+      ).catch(() => {});
+
+      chrome.runtime.sendMessage({ action: MessageActionType.FoldersUpdated }).catch(() => {});
+      chrome.runtime.sendMessage({ action: MessageActionType.RulesUpdated }).catch(() => {});
 
       return result;
     },
@@ -80,7 +107,7 @@ export const useFoldersManager = (): UseFoldersManagerReturn => {
       const updatedFolders = folders.map((f) => (f.id === folderId ? toggleFolderCollapse(f) : f));
       setFolders(updatedFolders);
       await Storage.saveFolders(updatedFolders);
-      chrome.runtime.sendMessage({ action: 'foldersUpdated' }).catch(() => {});
+      chrome.runtime.sendMessage({ action: MessageActionType.FoldersUpdated }).catch(() => {});
     },
     [folders]
   );
@@ -97,14 +124,22 @@ export const useFoldersManager = (): UseFoldersManagerReturn => {
     setFolders(updatedFolders);
   }, []);
 
+  const saveFolders = useCallback(async (updatedFolders: Folder[]) => {
+    setFolders(updatedFolders);
+    await Storage.saveFolders(updatedFolders);
+    chrome.runtime.sendMessage({ action: MessageActionType.FoldersUpdated }).catch(() => {});
+  }, []);
+
   return {
     folders,
     loadFolders,
     saveFolder,
     deleteFolderAndUpdateRules,
+    deleteFolderRecursivelyAndUpdateRules,
     toggleCollapse,
     enableFolderRules,
     disableFolderRules,
     setFoldersDirectly,
+    saveFolders,
   };
 };

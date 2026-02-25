@@ -12,6 +12,7 @@ import {
   Folder as FolderIcon,
   Power,
   PowerOff,
+  GripVertical,
 } from 'lucide-react';
 import { useI18n } from '../contexts/I18nContext';
 import { IconButtonVariant } from '../enums';
@@ -25,6 +26,9 @@ interface FolderItemProps {
   onDelete: () => void;
   onEnableAll: () => void;
   onDisableAll: () => void;
+  // Visual feedback
+  isDragging?: boolean;
+  isDropTarget?: boolean;
 }
 
 const FolderItem: React.FC<FolderItemProps> = ({
@@ -36,6 +40,8 @@ const FolderItem: React.FC<FolderItemProps> = ({
   onDelete,
   onEnableAll,
   onDisableAll,
+  isDragging = false,
+  isDropTarget = false,
 }) => {
   const { t } = useI18n();
   const [showActions, setShowActions] = useState(false);
@@ -45,13 +51,21 @@ const FolderItem: React.FC<FolderItemProps> = ({
     <div onMouseEnter={() => setShowActions(true)} onMouseLeave={() => setShowActions(false)}>
       <Card
         className={clsx('cursor-pointer', {
+          'opacity-40': isDragging,
           'bg-blue-50/50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800': !folder.collapsed,
+          'ring-2 ring-blue-500 ring-offset-1 dark:ring-offset-gray-900': isDropTarget,
         })}
         hoverEffect={true}
         onClick={onToggleCollapse}
       >
         <div className='flex items-center justify-between'>
           <div className='flex items-center gap-2 flex-1'>
+            <div
+              className='p-1 text-gray-400 dark:text-gray-600 cursor-grab active:cursor-grabbing'
+              onClick={(e) => e.stopPropagation()}
+            >
+              <GripVertical className='w-4 h-4' />
+            </div>
             <div className='p-1'>
               {folder.collapsed ? (
                 <ChevronRight className='w-5 h-5 text-gray-600 dark:text-gray-400' />
@@ -65,7 +79,6 @@ const FolderItem: React.FC<FolderItemProps> = ({
             ) : (
               <FolderOpen className='w-5 h-5 text-blue-600 dark:text-blue-400' />
             )}
-
             <h3 className='font-bold text-gray-800 dark:text-white text-base flex-1 flex items-center gap-2'>
               {folder.name}
               <span className='text-sm font-normal text-gray-500 dark:text-gray-400'>({ruleCount})</span>
@@ -78,6 +91,7 @@ const FolderItem: React.FC<FolderItemProps> = ({
               'opacity-0': !showActions,
             })}
             onClick={(e) => e.stopPropagation()}
+            draggable='false'
           >
             {ruleCount > 0 && (
               <IconButton
