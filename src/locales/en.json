@@ -216,6 +216,20 @@
   "recording": {
     "pageReloaded": "Page reloaded to activate request interceptor"
   },
+  "expandedEditor": {
+    "search": "Search",
+    "searchPlaceholder": "Find...",
+    "searchShortcut": "Search (Cmd/Ctrl+F)",
+    "beautify": "Beautify",
+    "close": "Close",
+    "noResults": "No results",
+    "matchCount": "{{current}} of {{total}}",
+    "previous": "Previous",
+    "previousShortcut": "Previous (Shift+Enter)",
+    "next": "Next",
+    "nextShortcut": "Next (Enter)",
+    "closeSearch": "Close (Esc)"
+  },
   "common": {
     "ok": "OK",
     "cancel": "Cancel",

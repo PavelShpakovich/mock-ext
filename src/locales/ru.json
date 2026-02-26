@@ -216,6 +216,20 @@
   "recording": {
     "pageReloaded": "Страница перезагружена для активации перехватчика запросов"
   },
+  "expandedEditor": {
+    "search": "Поиск",
+    "searchPlaceholder": "Найти...",
+    "searchShortcut": "Поиск (Cmd/Ctrl+F)",
+    "beautify": "Форматировать",
+    "close": "Закрыть",
+    "noResults": "Нет результатов",
+    "matchCount": "{{current}} из {{total}}",
+    "previous": "Предыдущий",
+    "previousShortcut": "Предыдущий (Shift+Enter)",
+    "next": "Следующий",
+    "nextShortcut": "Следующий (Enter)",
+    "closeSearch": "Закрыть (Esc)"
+  },
   "common": {
     "ok": "ОК",
     "cancel": "Отмена",

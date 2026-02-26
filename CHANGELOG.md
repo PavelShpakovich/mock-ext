@@ -5,6 +5,26 @@ All notable changes to Moq Extension will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.12.0] - 2026-02-26
+
+### Added
+- **Expanded Editor Search**: Full-featured search functionality in expanded editor (response body/hook editor)
+  - Press Cmd/Ctrl+F to open search, prefills with selected text if available
+  - Whole-word matching: queries with only word characters match complete words only
+  - Navigate with Enter (next), Shift+Enter (previous), F3, or Cmd/Ctrl+G
+  - Auto-scroll to center matches in viewport
+  - Match counter shows current position (e.g., "3 of 12")
+  - Press Esc to close search and return focus to editor
+  - Intercepts browser's native find dialog to keep search within the editor
+  - Fully internationalized (i18n) with English and Russian translations
+
+### Changed
+- **Code Quality**: Refactored ExpandedEditor component for better maintainability
+  - Eliminated magic numbers - all numeric values now use descriptive named constants
+  - Removed redundant comments, keeping only meaningful documentation
+  - Improved code structure with clear separation of concerns
+  - Enhanced type safety throughout the component
+
 ## [2.11.2] - 2026-02-26
 
 ### Fixed
