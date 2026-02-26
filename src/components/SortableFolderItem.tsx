@@ -5,6 +5,7 @@ import { attachClosestEdge, extractClosestEdge } from '@atlaskit/pragmatic-drag-
 import { CustomDropIndicator } from './ui/DropIndicator';
 import { Folder, DragDropData } from '../types';
 import { DragDropItemType, DropEdge } from '../enums';
+import { setRoundedCardDragPreview } from '../helpers/dragPreview';
 import FolderItem from './FolderItem';
 import CompactFolderItem from './CompactFolderItem';
 
@@ -35,7 +36,7 @@ export const SortableFolderItem: React.FC<SortableFolderItemProps> = ({
   onEnableAll,
   onDisableAll,
 }) => {
-  const ref = useRef<HTMLDivElement>(null);
+  const interactiveRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isDropTarget, setIsDropTarget] = useState(false);
   const [closestEdge, setClosestEdge] = useState<DropEdge | null>(null);
@@ -66,13 +67,20 @@ export const SortableFolderItem: React.FC<SortableFolderItemProps> = ({
   );
 
   useEffect(() => {
-    const el = ref.current;
+    const el = interactiveRef.current;
     if (!el) return;
 
     return combine(
       draggable({
         element: el,
         getInitialData: () => sortableData as unknown as Record<string, unknown>,
+        onGenerateDragPreview: ({ nativeSetDragImage, location }) => {
+          setRoundedCardDragPreview({
+            element: el,
+            nativeSetDragImage,
+            input: location.initial.input,
+          });
+        },
         onDragStart: () => setIsDragging(true),
         onDrop: () => setIsDragging(false),
       }),
@@ -140,19 +148,25 @@ export const SortableFolderItem: React.FC<SortableFolderItemProps> = ({
   const Component = isCompact ? CompactFolderItem : FolderItem;
 
   return (
-    <div ref={ref} style={{ position: 'relative', opacity: isDragging ? 0.4 : 1 }}>
-      <Component
-        folder={folder}
-        ruleCount={ruleCount}
-        enabledCount={enabledCount}
-        onToggleCollapse={() => onToggleCollapse(folder.id)}
-        onEdit={onEdit}
-        onDelete={onDelete}
-        onEnableAll={onEnableAll}
-        onDisableAll={onDisableAll}
-        isDragging={isDragging}
-        isDropTarget={isDropTarget}
-      />
+    <div style={{ position: 'relative', opacity: isDragging ? 0.4 : 1 }}>
+      <div
+        ref={interactiveRef}
+        className='bg-white dark:bg-gray-900'
+        style={{ borderRadius: '0.75rem', overflow: 'hidden' }}
+      >
+        <Component
+          folder={folder}
+          ruleCount={ruleCount}
+          enabledCount={enabledCount}
+          onToggleCollapse={() => onToggleCollapse(folder.id)}
+          onEdit={onEdit}
+          onDelete={onDelete}
+          onEnableAll={onEnableAll}
+          onDisableAll={onDisableAll}
+          isDragging={isDragging}
+          isDropTarget={isDropTarget}
+        />
+      </div>
       {closestEdge && <CustomDropIndicator edge={closestEdge} isCompact={isCompact} />}
     </div>
   );

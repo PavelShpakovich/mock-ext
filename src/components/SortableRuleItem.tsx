@@ -6,6 +6,7 @@ import { CustomDropIndicator } from './ui/DropIndicator';
 import { MockRule, DragDropData } from '../types';
 import { DragDropItemType, RulesView, DropEdge } from '../enums';
 import { ValidationWarning } from '../helpers';
+import { setRoundedCardDragPreview } from '../helpers/dragPreview';
 import RuleItem from './RuleItem';
 import { CompactRuleItem } from './CompactRuleItem';
 import { SelectableRuleItem } from './SelectableRuleItem';
@@ -36,7 +37,7 @@ export const SortableRuleItem: React.FC<SortableRuleItemProps> = ({
   onToggleSelection,
   ...restProps
 }) => {
-  const ref = useRef<HTMLDivElement>(null);
+  const interactiveRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [closestEdge, setClosestEdge] = useState<DropEdge | null>(null);
 
@@ -52,13 +53,20 @@ export const SortableRuleItem: React.FC<SortableRuleItemProps> = ({
   );
 
   useEffect(() => {
-    const el = ref.current;
+    const el = interactiveRef.current;
     if (!el || selectionMode) return;
 
     return combine(
       draggable({
         element: el,
         getInitialData: () => dragData as unknown as Record<string, unknown>,
+        onGenerateDragPreview: ({ nativeSetDragImage, location }) => {
+          setRoundedCardDragPreview({
+            element: el,
+            nativeSetDragImage,
+            input: location.initial.input,
+          });
+        },
         onDragStart: () => setIsDragging(true),
         onDrop: () => setIsDragging(false),
       }),
@@ -99,17 +107,23 @@ export const SortableRuleItem: React.FC<SortableRuleItemProps> = ({
   }
 
   return (
-    <div ref={ref} style={{ position: 'relative', opacity: isDragging ? 0.4 : 1 }}>
-      <Component
-        rule={rule}
-        warnings={warnings}
-        isDragging={isDragging}
-        isDropTarget={false}
-        selectionMode={selectionMode ?? false}
-        isSelected={isSelected ?? false}
-        onToggleSelection={onToggleSelection ?? (() => {})}
-        {...restProps}
-      />
+    <div style={{ position: 'relative', opacity: isDragging ? 0.4 : 1 }}>
+      <div
+        ref={interactiveRef}
+        className='bg-white dark:bg-gray-900'
+        style={{ borderRadius: '0.75rem', overflow: 'hidden' }}
+      >
+        <Component
+          rule={rule}
+          warnings={warnings}
+          isDragging={isDragging}
+          isDropTarget={false}
+          selectionMode={selectionMode ?? false}
+          isSelected={isSelected ?? false}
+          onToggleSelection={onToggleSelection ?? (() => {})}
+          {...restProps}
+        />
+      </div>
       {closestEdge && <CustomDropIndicator edge={closestEdge} isCompact={isCompact} />}
     </div>
   );
