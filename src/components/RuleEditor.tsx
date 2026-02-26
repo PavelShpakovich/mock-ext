@@ -22,7 +22,7 @@ interface RuleEditorProps {
   rule: MockRule | null;
   mockRequest?: RequestLog | null;
   folders: Folder[];
-  onSave: (rule: MockRule) => void;
+  onSave: (rule: MockRule) => void | Promise<void>;
   onCancel: () => void;
 }
 
@@ -159,7 +159,7 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, mockRequest, folders, onS
     if (!(await validate())) return;
 
     const savedRule = buildMockRule(formData, rule);
-    onSave(savedRule);
+    await onSave(savedRule);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

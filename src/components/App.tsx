@@ -103,8 +103,11 @@ const App: React.FC = () => {
 
   const handleSaveRule = useCallback(
     async (rule: MockRule) => {
-      await rulesManager.saveRule(rule, editingRuleId);
-      setEditingRuleId(null);
+      try {
+        await rulesManager.saveRule(rule, editingRuleId);
+      } finally {
+        setEditingRuleId(null);
+      }
     },
     [rulesManager, editingRuleId]
   );

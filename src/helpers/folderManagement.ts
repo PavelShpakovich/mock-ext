@@ -88,8 +88,20 @@ export function deleteFolderAndUngroup(
   rules: MockRule[],
   folderId: string
 ): { folders: Folder[]; rules: MockRule[] } {
-  const newFolders = folders.filter((f) => f.id !== folderId);
-  const newRules = rules.map((rule) => (rule.folderId === folderId ? { ...rule, folderId: undefined } : rule));
+  const folderToDelete = folders.find((f) => f.id === folderId);
+  if (!folderToDelete) {
+    return { folders, rules };
+  }
+
+  const targetParentId = folderToDelete.parentFolderId;
+
+  const newFolders = folders
+    .filter((f) => f.id !== folderId)
+    .map((folder) => (folder.parentFolderId === folderId ? { ...folder, parentFolderId: targetParentId } : folder));
+
+  const newRules = rules.map((rule) =>
+    rule.folderId === folderId ? { ...rule, folderId: targetParentId, modified: Date.now() } : rule
+  );
 
   return { folders: newFolders, rules: newRules };
 }

@@ -5,6 +5,18 @@ All notable changes to Moq Extension will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.11.2] - 2026-02-26
+
+### Fixed
+- **Folder Deletion Behavior**: Deleting a folder now preserves nested content instead of making it disappear
+  - Rules from the deleted folder are moved to its parent folder (or ungrouped at root)
+  - Direct child folders are reparented to the deleted folder's parent
+- **Rule Editor UX**: Improved update flow reliability so the editor closes consistently after save
+- **Drag & Drop Feedback**: Restored visible drop-target highlighting when moving items into folders
+
+### Changed
+- **Folder Naming Policy**: Enforced globally unique folder names to avoid ambiguity in flat folder selectors
+
 ## [2.11.1] - 2026-02-26
 
 ### Fixed

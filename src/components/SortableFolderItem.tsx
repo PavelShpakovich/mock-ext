@@ -149,11 +149,7 @@ export const SortableFolderItem: React.FC<SortableFolderItemProps> = ({
 
   return (
     <div style={{ position: 'relative', opacity: isDragging ? 0.4 : 1 }}>
-      <div
-        ref={interactiveRef}
-        className='bg-white dark:bg-gray-900'
-        style={{ borderRadius: '0.75rem', overflow: 'hidden' }}
-      >
+      <div ref={interactiveRef} className='bg-white dark:bg-gray-900' style={{ borderRadius: '0.75rem' }}>
         <Component
           folder={folder}
           ruleCount={ruleCount}

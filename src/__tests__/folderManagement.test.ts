@@ -226,6 +226,67 @@ describe('folderManagement', () => {
       expect(result.rules[0].folderId).toBeUndefined();
       expect(result.rules[1].folderId).toBe('folder-2');
     });
+
+    it('should move deleted folder rules to parent folder when parent exists', () => {
+      const nestedFolders: Folder[] = [
+        { id: 'parent', name: 'Parent', parentFolderId: undefined, collapsed: false, created: Date.now() },
+        { id: 'child', name: 'Child', parentFolderId: 'parent', collapsed: false, created: Date.now() },
+      ];
+
+      const nestedRules: MockRule[] = [
+        {
+          id: 'rule-in-child',
+          name: 'Rule in child',
+          enabled: true,
+          urlPattern: 'https://api.example.com/*',
+          matchType: MatchType.Wildcard,
+          method: HttpMethod.GET,
+          statusCode: 200,
+          response: {},
+          contentType: 'application/json',
+          delay: 0,
+          created: Date.now(),
+          modified: Date.now(),
+          folderId: 'child',
+        },
+      ];
+
+      const result = deleteFolderAndUngroup(nestedFolders, nestedRules, 'child');
+
+      expect(result.folders).toHaveLength(1);
+      expect(result.folders[0].id).toBe('parent');
+      expect(result.rules[0].folderId).toBe('parent');
+    });
+
+    it('should reparent direct child folders to deleted folder parent', () => {
+      const nestedFolders: Folder[] = [
+        { id: 'root', name: 'Root', parentFolderId: undefined, collapsed: false, created: Date.now() },
+        { id: 'to-delete', name: 'To Delete', parentFolderId: 'root', collapsed: false, created: Date.now() },
+        { id: 'child-a', name: 'Child A', parentFolderId: 'to-delete', collapsed: false, created: Date.now() },
+      ];
+
+      const result = deleteFolderAndUngroup(nestedFolders, [], 'to-delete');
+
+      expect(result.folders.find((f) => f.id === 'to-delete')).toBeUndefined();
+      expect(result.folders.find((f) => f.id === 'child-a')?.parentFolderId).toBe('root');
+    });
+
+    it('should move child folders to root when deleting a root folder', () => {
+      const nestedFolders: Folder[] = [
+        { id: 'root-to-delete', name: 'Root Delete', parentFolderId: undefined, collapsed: false, created: Date.now() },
+        {
+          id: 'child-of-root',
+          name: 'Child Of Root',
+          parentFolderId: 'root-to-delete',
+          collapsed: false,
+          created: Date.now(),
+        },
+      ];
+
+      const result = deleteFolderAndUngroup(nestedFolders, [], 'root-to-delete');
+
+      expect(result.folders.find((f) => f.id === 'child-of-root')?.parentFolderId).toBeUndefined();
+    });
   });
 
   describe('toggleFolderRules', () => {
@@ -357,7 +418,8 @@ describe('folderManagement', () => {
 
   describe('validateFolderName', () => {
     const existingFolders: Folder[] = [
-      { id: 'folder-1', name: 'Existing Folder', collapsed: false, created: Date.now() },
+      { id: 'folder-1', name: 'Existing Folder', parentFolderId: undefined, collapsed: false, created: Date.now() },
+      { id: 'folder-2', name: 'Another Folder', parentFolderId: 'parent-1', collapsed: false, created: Date.now() },
     ];
 
     it('should return null for valid name', () => {
@@ -378,6 +440,15 @@ describe('folderManagement', () => {
 
     it('should reject duplicate name', () => {
       const error = validateFolderName('Existing Folder', existingFolders);
+      expect(error).toBe('validation.folderNameDuplicate');
+    });
+
+    it('should reject duplicate name even when folder is in a different parent', () => {
+      const withDifferentParent: Folder[] = [
+        { id: 'root-a', name: 'Same Name', parentFolderId: undefined, collapsed: false, created: Date.now() },
+        { id: 'child-b', name: 'Other', parentFolderId: 'parent-1', collapsed: false, created: Date.now() },
+      ];
+      const error = validateFolderName('Same Name', withDifferentParent, 'child-b');
       expect(error).toBe('validation.folderNameDuplicate');
     });
 

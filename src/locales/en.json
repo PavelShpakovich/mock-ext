@@ -53,7 +53,7 @@
     "createFolder": "New Folder",
     "renameFolder": "Rename Folder",
     "deleteFolder": "Delete Folder",
-    "deleteConfirmMessage": "Delete folder \"{{name}}\"? Rules in this folder will be ungrouped.",
+    "deleteConfirmMessage": "Delete folder \"{{name}}\"? Rules will be moved to the parent folder (or ungrouped if no parent).",
     "folderName": "Folder Name",
     "folderNamePlaceholder": "E.g., User API, Payment API",
     "create": "Create",
