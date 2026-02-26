@@ -5,6 +5,18 @@ All notable changes to Moq Extension will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.11.1] - 2026-02-26
+
+### Fixed
+- **Drag & Drop UI**: Fixed light/square corner artifacts visible on dragged cards
+  - Switched sortable rule/folder items to use a custom native drag preview
+  - Enforced rounded clipping and card background in drag preview rendering
+
+### Changed
+- **Internal Refactoring**: Simplified drag preview setup for maintainability
+  - Extracted shared helper logic into `dragPreview.ts`
+  - Removed duplicated preview setup code in sortable components
+
 ## [2.11.0] - 2026-02-26
 
 ### Changed
