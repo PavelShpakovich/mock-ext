@@ -5,6 +5,25 @@ All notable changes to Moq Extension will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.13.0] - 2026-02-26
+
+### Added
+- **Collapsible Editor Sections**: Rule Editor sections are now collapsible to save screen space
+  - 5 independent sections: Request Matching, Response Configuration, Response Headers, Response Body, and Response Hooks
+  - Click section headers to expand/collapse with smooth chevron icon animations
+  - Centralized configuration for default open/closed states (`editorSections.ts`)
+  - Response Headers section defaults to closed to save space
+  - Cursor pointer on headers for clear interaction affordance
+  - Response Hooks section displays Enabled/Disabled badge in the header
+  - Consistent visual design with color-coded accents (blue for request, green for response)
+  - Fully internationalized with English and Russian translations
+
+### Changed
+- **Response Hook Section**: Removed nested collapsible, now integrates directly with main section
+  - Section description displayed at the top for better visibility
+  - Status badge moved to section header for at-a-glance state awareness
+  - Simplified structure for more intuitive interaction
+
 ## [2.12.0] - 2026-02-26
 
 ### Added

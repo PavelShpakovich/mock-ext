@@ -1,8 +1,10 @@
 import React from 'react';
 import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
+import { CollapsibleSection } from '../ui/CollapsibleSection';
 import { MatchType, HttpMethod } from '../../enums';
 import { useI18n } from '../../contexts/I18nContext';
+import { EDITOR_SECTIONS_CONFIG } from '../../config/editorSections';
 
 interface RuleMatchingSectionProps {
   urlPattern: string;
@@ -45,7 +47,12 @@ export const RuleMatchingSection: React.FC<RuleMatchingSectionProps> = ({
   };
 
   return (
-    <div className='border-l-4 border-gray-300 dark:border-blue-500 bg-gray-50 dark:bg-blue-500/5 rounded-r-lg pl-4 pr-4 py-4 flex flex-col gap-4'>
+    <CollapsibleSection
+      title={t('editor.matchingSection')}
+      defaultOpen={EDITOR_SECTIONS_CONFIG.matching.defaultOpen}
+      borderColor='border-gray-300 dark:border-blue-500'
+      bgColor='bg-gray-50 dark:bg-blue-500/5'
+    >
       <Input
         label={t('editor.urlPattern')}
         value={urlPattern}
@@ -77,6 +84,6 @@ export const RuleMatchingSection: React.FC<RuleMatchingSectionProps> = ({
           <option value='HEAD'>HEAD</option>
         </Select>
       </div>
-    </div>
+    </CollapsibleSection>
   );
 };
