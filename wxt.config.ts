@@ -44,6 +44,8 @@ export default defineConfig({
     },
     data_collection_permissions: {
       cookies: false,
+      fingerprinting: false,
+      network: false,
     },
   },
   vite: () => ({
