@@ -40,7 +40,9 @@ export default defineConfig({
     browser_specific_settings: {
       gecko: {
         id: 'moq-mock-api@mozilla.org',
+        // @ts-expect-error - Firefox requires data_collection_permissions field (not yet in WXT types)
         data_collection_permissions: {
+          required: [],
           cookies: false,
           fingerprinting: false,
           network: false,
