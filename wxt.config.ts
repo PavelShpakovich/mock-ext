@@ -37,6 +37,11 @@ export default defineConfig({
         },
       ],
     },
+    browser_specific_settings: {
+      gecko: {
+        id: 'moq-mock-api@mozilla.org',
+      },
+    },
   },
   vite: () => ({
     build: {
