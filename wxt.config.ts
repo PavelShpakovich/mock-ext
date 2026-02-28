@@ -40,12 +40,12 @@ export default defineConfig({
     browser_specific_settings: {
       gecko: {
         id: 'moq-mock-api@mozilla.org',
+        data_collection_permissions: {
+          cookies: false,
+          fingerprinting: false,
+          network: false,
+        },
       },
-    },
-    data_collection_permissions: {
-      cookies: false,
-      fingerprinting: false,
-      network: false,
     },
   },
   vite: () => ({
