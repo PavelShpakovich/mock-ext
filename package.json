@@ -1,13 +1,22 @@
 {
   "name": "moq-extension",
-  "version": "2.13.0",
-  "description": "Chrome extension for mocking API requests with full control over status codes, delays, and responses",
+  "version": "2.14.0",
+  "description": "Browser extension for mocking API requests with full control over status codes, delays, and responses",
   "scripts": {
-    "build": "webpack --mode production",
-    "dev": "webpack --mode development --watch",
-    "clean": "rm -rf dist",
-    "analyze": "webpack --mode production --analyze",
-    "package": "node scripts/package.js",
+    "dev": "wxt",
+    "dev:firefox": "wxt --browser firefox",
+    "build": "wxt build",
+    "build:chrome": "wxt build --browser chrome",
+    "build:firefox": "wxt build --browser firefox",
+    "build:safari": "wxt build --browser safari",
+    "build:all": "npm run build:chrome && npm run build:firefox && npm run build:safari",
+    "zip": "wxt zip",
+    "zip:chrome": "wxt zip --browser chrome",
+    "zip:firefox": "wxt zip --browser firefox",
+    "zip:safari": "wxt zip --browser safari",
+    "zip:all": "npm run zip:chrome && npm run zip:firefox && npm run zip:safari",
+    "postinstall": "wxt prepare",
+    "clean": "rm -rf build",
     "lint": "eslint 'src/**/*.{ts,tsx}'",
     "lint:fix": "eslint 'src/**/*.{ts,tsx}' --fix",
     "format": "prettier --write 'src/**/*.{ts,tsx,css,json}'",
@@ -16,7 +25,7 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "prepare": "husky"
+    "prepare": "husky || wxt prepare"
   },
   "keywords": [
     "chrome-extension",
@@ -45,6 +54,7 @@
     "@types/uuid": "^10.0.0",
     "@typescript-eslint/eslint-plugin": "^6.21.0",
     "@typescript-eslint/parser": "^6.21.0",
+    "@wxt-dev/module-react": "^1.1.5",
     "autoprefixer": "^10.4.23",
     "copy-webpack-plugin": "^11.0.0",
     "css-loader": "^7.1.2",
@@ -66,7 +76,8 @@
     "ts-loader": "^9.5.1",
     "typescript": "^5.3.3",
     "webpack": "^5.89.0",
-    "webpack-cli": "^5.1.4"
+    "webpack-cli": "^5.1.4",
+    "wxt": "^0.20.18"
   },
   "dependencies": {
     "@atlaskit/pragmatic-drag-and-drop": "^1.7.7",

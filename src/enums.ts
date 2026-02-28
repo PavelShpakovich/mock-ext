@@ -107,6 +107,7 @@ export enum MessageActionType {
   StartRecording = 'startRecording',
   StopRecording = 'stopRecording',
   GetRecordingStatus = 'getRecordingStatus',
+  GetTabById = 'getTabById',
   UpdateRulesInPage = 'updateRulesInPage',
   LogMockedRequest = 'logMockedRequest',
   LogCapturedResponse = 'logCapturedResponse',

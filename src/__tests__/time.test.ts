@@ -2,7 +2,7 @@ import { formatRelativeTime } from '../helpers/time';
 
 describe('Time Helpers', () => {
   // Mock translation function for English
-  const mockT = (key: string, params?: any): string => {
+  const mockT = (key: string, params?: Record<string, string | number>): string => {
     const translations: Record<string, string> = {
       'time.justNow': 'just now',
       'time.minutesAgo': `${params?.count} minute${params?.count !== 1 ? 's' : ''} ago`,

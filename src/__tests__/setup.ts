@@ -28,7 +28,7 @@ const createListener = (name: string) => ({
   },
 });
 
-(globalThis as any).chrome = {
+(globalThis as unknown as { chrome: unknown; resetListeners: () => void }).chrome = {
   resetListeners, // Exposed for testing
   storage: {
     local: {
@@ -82,6 +82,16 @@ const createListener = (name: string) => ({
     create: jest.fn(),
     onClicked: createListener('contextMenus.onClicked'),
   },
+};
+
+// Mock browser API (WXT cross-browser API)
+// This is the same as chrome for testing purposes
+(globalThis as unknown as { browser: unknown }).browser = (globalThis as unknown as { chrome: unknown }).chrome;
+
+// Mock WXT's defineBackground global function
+(globalThis as unknown as { defineBackground: unknown }).defineBackground = (callback: () => void) => {
+  callback();
+  return {};
 };
 
 export {};

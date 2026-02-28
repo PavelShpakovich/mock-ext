@@ -123,7 +123,7 @@ export function executeResponseHook(
           ${hookCode}
           return response;
         } catch (error) {
-          console.error('[Moq] Response hook error:', error.message);
+          console.error('[Moq] Response hook error:', (error as Error).message);
           return response;
         }
       }).call(globalProxy);
@@ -131,7 +131,7 @@ export function executeResponseHook(
     );
 
     // Execute hook
-    const modifiedResponse = fn(context.response, context.request, context.helpers);
+    const modifiedResponse = fn(context.response, context.request, context.helpers) as unknown;
 
     // Return modified response
     return modifiedResponse;
@@ -151,7 +151,7 @@ export function executeResponseHook(
  */
 export async function validateResponseHook(
   hookCode: string,
-  t: (key: string, params?: Record<string, any>) => string
+  t: (key: string, params?: Record<string, string | number>) => string
 ): Promise<string | null> {
   // Empty hook is valid (no modification)
   if (!hookCode || hookCode.trim() === '') {

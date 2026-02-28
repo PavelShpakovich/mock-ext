@@ -59,7 +59,7 @@ export const useFoldersManager = (): UseFoldersManagerReturn => {
 
       setFolders(updatedFolders);
       await Storage.saveFolders(updatedFolders);
-      chrome.runtime.sendMessage({ action: MessageActionType.FoldersUpdated }).catch(() => {});
+      browser.runtime.sendMessage({ action: MessageActionType.FoldersUpdated }).catch(() => {});
     },
     [folders]
   );
@@ -72,11 +72,11 @@ export const useFoldersManager = (): UseFoldersManagerReturn => {
       await Promise.all([Storage.saveFolders(result.folders), Storage.saveRules(result.rules)]);
 
       await withContextCheck(() =>
-        chrome.runtime.sendMessage({ action: MessageActionType.UpdateRules, rules: result.rules })
+        browser.runtime.sendMessage({ action: MessageActionType.UpdateRules, rules: result.rules })
       ).catch(() => {});
 
-      chrome.runtime.sendMessage({ action: MessageActionType.FoldersUpdated }).catch(() => {});
-      chrome.runtime.sendMessage({ action: MessageActionType.RulesUpdated }).catch(() => {});
+      browser.runtime.sendMessage({ action: MessageActionType.FoldersUpdated }).catch(() => {});
+      browser.runtime.sendMessage({ action: MessageActionType.RulesUpdated }).catch(() => {});
 
       return result;
     },
@@ -91,11 +91,11 @@ export const useFoldersManager = (): UseFoldersManagerReturn => {
       await Promise.all([Storage.saveFolders(result.folders), Storage.saveRules(result.rules)]);
 
       await withContextCheck(() =>
-        chrome.runtime.sendMessage({ action: MessageActionType.UpdateRules, rules: result.rules })
+        browser.runtime.sendMessage({ action: MessageActionType.UpdateRules, rules: result.rules })
       ).catch(() => {});
 
-      chrome.runtime.sendMessage({ action: MessageActionType.FoldersUpdated }).catch(() => {});
-      chrome.runtime.sendMessage({ action: MessageActionType.RulesUpdated }).catch(() => {});
+      browser.runtime.sendMessage({ action: MessageActionType.FoldersUpdated }).catch(() => {});
+      browser.runtime.sendMessage({ action: MessageActionType.RulesUpdated }).catch(() => {});
 
       return result;
     },
@@ -107,7 +107,7 @@ export const useFoldersManager = (): UseFoldersManagerReturn => {
       const updatedFolders = folders.map((f) => (f.id === folderId ? toggleFolderCollapse(f) : f));
       setFolders(updatedFolders);
       await Storage.saveFolders(updatedFolders);
-      chrome.runtime.sendMessage({ action: MessageActionType.FoldersUpdated }).catch(() => {});
+      browser.runtime.sendMessage({ action: MessageActionType.FoldersUpdated }).catch(() => {});
     },
     [folders]
   );
@@ -127,7 +127,7 @@ export const useFoldersManager = (): UseFoldersManagerReturn => {
   const saveFolders = useCallback(async (updatedFolders: Folder[]) => {
     setFolders(updatedFolders);
     await Storage.saveFolders(updatedFolders);
-    chrome.runtime.sendMessage({ action: MessageActionType.FoldersUpdated }).catch(() => {});
+    browser.runtime.sendMessage({ action: MessageActionType.FoldersUpdated }).catch(() => {});
   }, []);
 
   return {

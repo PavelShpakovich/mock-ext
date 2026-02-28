@@ -36,10 +36,10 @@ export const useCrossContextSync = ({
       }
     };
 
-    chrome.runtime.onMessage.addListener(messageListener);
+    browser.runtime.onMessage.addListener(messageListener);
 
     return () => {
-      chrome.runtime.onMessage.removeListener(messageListener);
+      browser.runtime.onMessage.removeListener(messageListener);
     };
   }, [onRulesUpdated, onSettingsUpdated, onFoldersUpdated, onRequestLogUpdated]);
 };

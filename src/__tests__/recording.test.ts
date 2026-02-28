@@ -2,7 +2,7 @@ import { isValidRecordingTab, createUpdatedSettings, createDisabledSettings } fr
 import { Settings } from '../types';
 
 // Mock Chrome API
-(globalThis as any).chrome = {
+(globalThis as unknown as { chrome: { windows: { WINDOW_ID_NONE: number } } }).chrome = {
   windows: {
     WINDOW_ID_NONE: -1,
   },
@@ -26,7 +26,7 @@ describe('Recording Helpers', () => {
         groupId: -1,
       };
 
-      expect(isValidRecordingTab(validTab)).toBe(true);
+      expect(isValidRecordingTab(validTab as unknown as Browser.tabs.Tab)).toBe(true);
     });
 
     it('should return false for tabs without id', () => {
@@ -44,7 +44,7 @@ describe('Recording Helpers', () => {
         groupId: -1,
       };
 
-      expect(isValidRecordingTab(tab)).toBe(false);
+      expect(isValidRecordingTab(tab as unknown as Browser.tabs.Tab)).toBe(false);
     });
 
     it('should return false for tabs without url', () => {
@@ -62,7 +62,7 @@ describe('Recording Helpers', () => {
         groupId: -1,
       };
 
-      expect(isValidRecordingTab(tab)).toBe(false);
+      expect(isValidRecordingTab(tab as unknown as Browser.tabs.Tab)).toBe(false);
     });
 
     it('should return false for chrome extension URLs', () => {
@@ -81,7 +81,7 @@ describe('Recording Helpers', () => {
         groupId: -1,
       };
 
-      expect(isValidRecordingTab(tab)).toBe(false);
+      expect(isValidRecordingTab(tab as unknown as Browser.tabs.Tab)).toBe(false);
     });
 
     it('should return false for chrome:// URLs', () => {
@@ -100,7 +100,7 @@ describe('Recording Helpers', () => {
         groupId: -1,
       };
 
-      expect(isValidRecordingTab(tab)).toBe(false);
+      expect(isValidRecordingTab(tab as unknown as Browser.tabs.Tab)).toBe(false);
     });
 
     it('should return false for about: URLs', () => {
@@ -119,7 +119,7 @@ describe('Recording Helpers', () => {
         groupId: -1,
       };
 
-      expect(isValidRecordingTab(tab)).toBe(false);
+      expect(isValidRecordingTab(tab as unknown as Browser.tabs.Tab)).toBe(false);
     });
 
     it('should return false for tabs with WINDOW_ID_NONE', () => {
@@ -138,7 +138,7 @@ describe('Recording Helpers', () => {
         groupId: -1,
       };
 
-      expect(isValidRecordingTab(tab)).toBe(false);
+      expect(isValidRecordingTab(tab as unknown as Browser.tabs.Tab)).toBe(false);
     });
   });
 

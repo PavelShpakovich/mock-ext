@@ -33,7 +33,7 @@ class ContentScriptBridge {
     // No need for dynamic injection
 
     // Listen for messages from background
-    chrome.runtime.onMessage.addListener(this.handleRuntimeMessage.bind(this));
+    browser.runtime.onMessage.addListener(this.handleRuntimeMessage.bind(this));
 
     // Listen for messages from page
     window.addEventListener('message', this.handlePageMessage.bind(this));
@@ -44,7 +44,7 @@ class ContentScriptBridge {
 
   private handleRuntimeMessage(
     message: RuntimeMessage,
-    _sender: chrome.runtime.MessageSender,
+    _sender: Browser.runtime.MessageSender,
     sendResponse: (response: MessageResponse) => void
   ): boolean {
     if (message.action === MessageActionType.Ping) {
@@ -105,9 +105,9 @@ class ContentScriptBridge {
   }
 
   private forwardMockedRequest(data: PageMessageData): void {
-    if (!chrome.runtime?.id) return;
+    if (!browser.runtime?.id) return;
 
-    chrome.runtime
+    browser.runtime
       .sendMessage({
         action: MessageActionType.LogMockedRequest,
         url: data.url,
@@ -122,9 +122,9 @@ class ContentScriptBridge {
   }
 
   private forwardCapturedResponse(data: PageMessageData): void {
-    if (!chrome.runtime?.id) return;
+    if (!browser.runtime?.id) return;
 
-    chrome.runtime
+    browser.runtime
       .sendMessage({
         action: MessageActionType.LogCapturedResponse,
         url: data.url,
@@ -140,9 +140,9 @@ class ContentScriptBridge {
   }
 
   private incrementRuleCounter(ruleId: string): void {
-    if (!chrome.runtime?.id) return;
+    if (!browser.runtime?.id) return;
 
-    chrome.runtime
+    browser.runtime
       .sendMessage({
         action: MessageActionType.IncrementRuleCounter,
         ruleId: ruleId,

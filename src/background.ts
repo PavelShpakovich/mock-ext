@@ -45,13 +45,13 @@ async function syncCorsRules(): Promise<void> {
     if (shouldBeEnabled) {
       // eslint-disable-next-line no-console
       console.log('[Moq] Activating CORS auto fix rules');
-      await chrome.declarativeNetRequest.updateEnabledRulesets({
+      await browser.declarativeNetRequest.updateEnabledRulesets({
         enableRulesetIds: ['cors_rules'],
       });
     } else {
       // eslint-disable-next-line no-console
       console.log('[Moq] Deactivating CORS auto fix rules');
-      await chrome.declarativeNetRequest.updateEnabledRulesets({
+      await browser.declarativeNetRequest.updateEnabledRulesets({
         disableRulesetIds: ['cors_rules'],
       });
     }
@@ -62,29 +62,29 @@ async function syncCorsRules(): Promise<void> {
 
 // Helper: Inject scripts into existing tabs (e.g., after extension install/reload)
 async function injectScriptsToExistingTabs(): Promise<void> {
-  const tabs = await chrome.tabs.query({ url: ['http://*/*', 'https://*/*'] });
+  const tabs = await browser.tabs.query({ url: ['http://*/*', 'https://*/*'] });
 
   for (const tab of tabs) {
     if (!tab.id) continue;
 
     try {
       // Check if content script is already there
-      const isAlive = await chrome.tabs
+      const isAlive = await browser.tabs
         .sendMessage(tab.id, { action: MessageActionType.Ping })
         .then(() => true)
         .catch(() => false);
 
       if (!isAlive) {
         // Inject content script
-        await chrome.scripting.executeScript({
+        await browser.scripting.executeScript({
           target: { tabId: tab.id, allFrames: true },
-          files: ['content-script.js'],
+          files: ['/content-scripts/content.js'],
         });
 
         // Inject interceptor into MAIN world
-        await chrome.scripting.executeScript({
+        await browser.scripting.executeScript({
           target: { tabId: tab.id, allFrames: true },
-          files: ['interceptor.js'],
+          files: ['/content-scripts/interceptor.js'],
           world: 'MAIN',
         });
 
@@ -98,27 +98,27 @@ async function injectScriptsToExistingTabs(): Promise<void> {
 }
 
 // Helper: Check if tab can receive content script messages
-function isValidTab(tab: chrome.tabs.Tab): boolean {
+function isValidTab(tab: Browser.tabs.Tab): boolean {
   return !!tab.id && !!tab.url && !tab.url.startsWith('chrome://') && !tab.url.startsWith('chrome-extension://');
 }
 
 // Helper: Send rules to a single tab
 // Returns true if scripts were already present, false if they needed injection
 async function sendRulesToTab(tabId: number, rules: MockRule[]): Promise<boolean> {
-  const isAlive = await chrome.tabs
+  const isAlive = await browser.tabs
     .sendMessage(tabId, { action: MessageActionType.Ping })
     .then(() => true)
     .catch(() => false);
 
   if (!isAlive) {
     try {
-      await chrome.scripting.executeScript({
+      await browser.scripting.executeScript({
         target: { tabId, allFrames: true },
-        files: ['content-script.js'],
+        files: ['/content-scripts/content.js'],
       });
-      await chrome.scripting.executeScript({
+      await browser.scripting.executeScript({
         target: { tabId, allFrames: true },
-        files: ['interceptor.js'],
+        files: ['/content-scripts/interceptor.js'],
         world: 'MAIN',
       });
     } catch {
@@ -129,7 +129,7 @@ async function sendRulesToTab(tabId: number, rules: MockRule[]): Promise<boolean
   }
 
   try {
-    await chrome.tabs.sendMessage(tabId, {
+    await browser.tabs.sendMessage(tabId, {
       action: MessageActionType.UpdateRulesInPage,
       rules,
       settings,
@@ -157,7 +157,7 @@ async function incrementRuleCounter(ruleId: string): Promise<void> {
   await Storage.saveRules(mockRules);
 
   // Notify popup to reload rules for real-time counter updates
-  chrome.runtime.sendMessage({ action: MessageActionType.RulesUpdated }).catch(() => {
+  browser.runtime.sendMessage({ action: MessageActionType.RulesUpdated }).catch(() => {
     // Popup might not be open, ignore
   });
 }
@@ -165,7 +165,7 @@ async function incrementRuleCounter(ruleId: string): Promise<void> {
 // Update rules in all tabs via content script
 async function updateRulesInAllTabs(): Promise<void> {
   const enabledRules = getEnabledRules();
-  const tabs = await chrome.tabs.query({});
+  const tabs = await browser.tabs.query({});
 
   // Send rules to each valid tab
   const sendPromises = tabs.filter(isValidTab).map((tab) => sendRulesToTab(tab.id!, enabledRules));
@@ -178,9 +178,9 @@ async function updateRulesInAllTabs(): Promise<void> {
 
 // Helper: Set badge appearance
 function setBadge(text: string, color?: string): void {
-  chrome.action.setBadgeText({ text });
+  browser.action.setBadgeText({ text });
   if (color) {
-    chrome.action.setBadgeBackgroundColor({ color });
+    browser.action.setBadgeBackgroundColor({ color });
   }
 }
 
@@ -196,8 +196,12 @@ function updateBadge(enabled: boolean, count?: number): void {
 }
 
 // Handle messages from popup
-chrome.runtime.onMessage.addListener(
-  (message: MessageAction, sender: chrome.runtime.MessageSender, sendResponse: (response: MessageResponse) => void) => {
+browser.runtime.onMessage.addListener(
+  (
+    message: MessageAction,
+    sender: Browser.runtime.MessageSender,
+    sendResponse: (response: MessageResponse) => void
+  ) => {
     handleMessage(message, sender)
       .then((response) => sendResponse(response))
       .catch((error) => {
@@ -210,7 +214,7 @@ chrome.runtime.onMessage.addListener(
   }
 );
 
-async function handleMessage(message: MessageAction, sender?: chrome.runtime.MessageSender): Promise<MessageResponse> {
+async function handleMessage(message: MessageAction, sender?: Browser.runtime.MessageSender): Promise<MessageResponse> {
   switch (message.action) {
     case 'incrementRuleCounter':
       if (message.ruleId) {
@@ -278,7 +282,7 @@ async function handleMessage(message: MessageAction, sender?: chrome.runtime.Mes
         if (!scriptsPresent) {
           // Scripts weren't present - reload the tab to properly inject them
           try {
-            await chrome.tabs.reload(message.tabId);
+            await browser.tabs.reload(message.tabId);
             // Set recording tab AFTER reload to catch requests on page load
             recordingTabId = message.tabId;
             return { success: true, data: { tabId: recordingTabId, reloaded: true } };
@@ -321,7 +325,7 @@ async function handleMessage(message: MessageAction, sender?: chrome.runtime.Mes
 }
 
 // Helper: Handle captured response logging
-async function handleCapturedResponse(message: MessageAction, sender?: chrome.runtime.MessageSender): Promise<void> {
+async function handleCapturedResponse(message: MessageAction, sender?: Browser.runtime.MessageSender): Promise<void> {
   if (message.action !== 'logCapturedResponse') {
     return;
   }
@@ -355,7 +359,7 @@ async function handleCapturedResponse(message: MessageAction, sender?: chrome.ru
 }
 
 // Helper: Handle mocked request logging
-async function handleMockedRequest(message: MessageAction, sender?: chrome.runtime.MessageSender): Promise<void> {
+async function handleMockedRequest(message: MessageAction, sender?: Browser.runtime.MessageSender): Promise<void> {
   if (message.action !== 'logMockedRequest') {
     return;
   }
@@ -384,11 +388,11 @@ async function handleMockedRequest(message: MessageAction, sender?: chrome.runti
 // Helper: Show DevTools prompt in active tab
 async function showDevToolsPromptInActiveTab(): Promise<void> {
   const settings = await Storage.getSettings();
-  const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+  const tabs = await browser.tabs.query({ active: true, currentWindow: true });
 
   if (tabs[0]?.id) {
     try {
-      await chrome.tabs.sendMessage(tabs[0].id, {
+      await browser.tabs.sendMessage(tabs[0].id, {
         action: MessageActionType.OpenDevTools,
         language: settings.language || 'en',
         theme: settings.theme || 'system',
@@ -400,7 +404,7 @@ async function showDevToolsPromptInActiveTab(): Promise<void> {
 }
 
 // Clear recording tab if it's closed
-chrome.tabs.onRemoved.addListener((tabId) => {
+browser.tabs.onRemoved.addListener((tabId) => {
   if (tabId === recordingTabId) {
     recordingTabId = null;
 
@@ -410,7 +414,7 @@ chrome.tabs.onRemoved.addListener((tabId) => {
         currentSettings.logRequests = false;
         Storage.saveSettings(currentSettings).then(() => {
           // Notify popup about recording stop
-          chrome.runtime.sendMessage({ action: MessageActionType.SettingsUpdated }).catch(() => {});
+          browser.runtime.sendMessage({ action: MessageActionType.SettingsUpdated }).catch(() => {});
         });
       }
     });
@@ -418,7 +422,7 @@ chrome.tabs.onRemoved.addListener((tabId) => {
 });
 
 // Update tab title when the recording tab navigates
-chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+browser.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   // Only process if this is the recording tab
   if (tabId === recordingTabId) {
     // Check if tab navigated to a restricted URL
@@ -433,7 +437,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
           currentSettings.logRequests = false;
           Storage.saveSettings(currentSettings).then(() => {
             // Notify popup about recording stop
-            chrome.runtime.sendMessage({ action: MessageActionType.SettingsUpdated }).catch(() => {});
+            browser.runtime.sendMessage({ action: MessageActionType.SettingsUpdated }).catch(() => {});
           });
         }
       });
@@ -442,7 +446,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 
     // Notify about title change if it changed
     if (changeInfo.title && tab.title) {
-      chrome.runtime
+      browser.runtime
         .sendMessage({
           action: MessageActionType.RecordingTabUpdated,
           tabTitle: tab.title,
@@ -455,19 +459,19 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 });
 
 // Helper function to check if tab is valid for recording (from helpers/recording.ts)
-function isValidRecordingTab(tab: chrome.tabs.Tab): boolean {
+function isValidRecordingTab(tab: Browser.tabs.Tab): boolean {
   return (
     tab.id !== undefined &&
     !!tab.url &&
     !tab.url.startsWith('chrome-extension://') &&
     !tab.url.startsWith('chrome://') &&
     !tab.url.startsWith('about:') &&
-    tab.windowId !== chrome.windows.WINDOW_ID_NONE
+    tab.windowId !== -1
   );
 }
 
 // Install/update handler
-chrome.runtime.onInstalled.addListener(async (details) => {
+browser.runtime.onInstalled.addListener(async (details) => {
   if (details.reason === 'install') {
     await createExampleRule();
   }
@@ -507,10 +511,10 @@ async function openStandaloneWindow(language?: Language): Promise<void> {
   // Check if window already exists
   if (standaloneWindowId !== null) {
     try {
-      const existingWindow = await chrome.windows.get(standaloneWindowId);
+      const existingWindow = await browser.windows.get(standaloneWindowId);
       if (existingWindow) {
         // Focus existing window
-        await chrome.windows.update(standaloneWindowId, { focused: true });
+        await browser.windows.update(standaloneWindowId, { focused: true });
         return;
       }
     } catch {
@@ -524,7 +528,7 @@ async function openStandaloneWindow(language?: Language): Promise<void> {
   const url = lang ? `window.html?lang=${lang}` : 'window.html';
 
   // Create new window
-  const window = await chrome.windows.create({
+  const window = await browser.windows.create({
     url,
     type: 'popup',
     width: 800,
@@ -533,11 +537,11 @@ async function openStandaloneWindow(language?: Language): Promise<void> {
     top: 100,
   });
 
-  standaloneWindowId = window.id || null;
+  standaloneWindowId = window?.id || null;
 }
 
 // Clean up window reference when window is closed
-chrome.windows.onRemoved.addListener((windowId) => {
+browser.windows.onRemoved.addListener((windowId) => {
   if (windowId === standaloneWindowId) {
     standaloneWindowId = null;
   }
@@ -545,7 +549,7 @@ chrome.windows.onRemoved.addListener((windowId) => {
 
 // Helper: Create context menu
 async function createContextMenu(): Promise<void> {
-  chrome.contextMenus.create({
+  browser.contextMenus.create({
     id: 'openFloatingWindow',
     title: 'Open Moq',
     contexts: ['action'],
@@ -565,7 +569,7 @@ async function cleanupRecordingState(): Promise<void> {
 }
 
 // Stop recording and clear state when service worker is about to suspend
-chrome.runtime.onSuspend.addListener(() => {
+browser.runtime.onSuspend.addListener(() => {
   cleanupRecordingState().catch((error) => {
     console.error('[Moq] Failed to cleanup recording state on suspend:', error);
   });
@@ -575,10 +579,10 @@ chrome.runtime.onSuspend.addListener(() => {
 initialize();
 
 // Handle extension icon click to show DevTools prompt
-chrome.action.onClicked.addListener(showDevToolsPromptInActiveTab);
+browser.action.onClicked.addListener(showDevToolsPromptInActiveTab);
 
 // Context menu handler
-chrome.contextMenus.onClicked.addListener(async (info) => {
+browser.contextMenus.onClicked.addListener(async (info) => {
   if (info.menuItemId === 'openFloatingWindow') {
     await openStandaloneWindow();
   }

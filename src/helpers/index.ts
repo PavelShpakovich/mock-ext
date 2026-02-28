@@ -11,3 +11,4 @@ export * from './recording';
 export * from './importExport';
 export * from './ruleForm';
 export * from './folderManagement';
+export * from './firefoxDragFix';

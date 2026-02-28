@@ -10,7 +10,7 @@ export interface ValidationWarning {
   type: ValidationWarningType;
   severity: ValidationSeverity;
   messageKey: string;
-  messageParams?: Record<string, any>;
+  messageParams?: Record<string, string | number>;
   relatedRuleIds?: string[];
 }
 
@@ -191,7 +191,7 @@ export async function validateRuleForm(
     responseHook?: string;
   },
   jsonValidation: JSONValidation | null,
-  t: (key: string, params?: Record<string, string>) => string
+  t: (key: string, params?: Record<string, string | number>) => string
 ): Promise<FormValidationErrors> {
   const errors: FormValidationErrors = {};
 

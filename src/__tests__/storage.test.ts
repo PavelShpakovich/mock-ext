@@ -3,8 +3,8 @@ import { MockRule, Settings, RequestLog } from '../types';
 import { MatchType, HttpMethod, Language } from '../enums';
 
 // Mock chrome.storage.local and session
-const mockLocalStorage: { [key: string]: any } = {};
-const mockSessionStorage: { [key: string]: any } = {};
+const mockLocalStorage: { [key: string]: unknown } = {};
+const mockSessionStorage: { [key: string]: unknown } = {};
 
 // Use fake timers to control batching
 beforeEach(async () => {
@@ -14,8 +14,17 @@ beforeEach(async () => {
   Object.keys(mockLocalStorage).forEach((key) => delete mockLocalStorage[key]);
   Object.keys(mockSessionStorage).forEach((key) => delete mockSessionStorage[key]);
 
-  (globalThis as any).chrome.storage.local.get = jest.fn((keys: string | string[] | null) => {
-    const result: any = {};
+  (
+    globalThis as unknown as {
+      chrome: {
+        storage: {
+          local: { get: jest.Mock; set: jest.Mock; remove: jest.Mock };
+          session: { get: jest.Mock; set: jest.Mock; remove: jest.Mock };
+        };
+      };
+    }
+  ).chrome.storage.local.get = jest.fn((keys: string | string[] | null) => {
+    const result: { [key: string]: unknown } = {};
     if (typeof keys === 'string') {
       result[keys] = mockLocalStorage[keys];
     } else if (Array.isArray(keys)) {
@@ -28,42 +37,48 @@ beforeEach(async () => {
     return Promise.resolve(result);
   });
 
-  (globalThis as any).chrome.storage.local.set = jest.fn((items: { [key: string]: any }) => {
-    Object.assign(mockLocalStorage, items);
-    return Promise.resolve();
-  });
+  (globalThis as unknown as { chrome: { storage: { local: { set: jest.Mock } } } }).chrome.storage.local.set = jest.fn(
+    (items: { [key: string]: unknown }) => {
+      Object.assign(mockLocalStorage, items);
+      return Promise.resolve();
+    }
+  );
 
-  (globalThis as any).chrome.storage.local.remove = jest.fn((keys: string | string[]) => {
-    const keysArray = typeof keys === 'string' ? [keys] : keys;
-    keysArray.forEach((key) => delete mockLocalStorage[key]);
-    return Promise.resolve();
-  });
+  (globalThis as unknown as { chrome: { storage: { local: { remove: jest.Mock } } } }).chrome.storage.local.remove =
+    jest.fn((keys: string | string[]) => {
+      const keysArray = typeof keys === 'string' ? [keys] : keys;
+      keysArray.forEach((key) => delete mockLocalStorage[key]);
+      return Promise.resolve();
+    });
 
   // Mock session storage
-  (globalThis as any).chrome.storage.session.get = jest.fn((keys: string | string[] | null) => {
-    const result: any = {};
-    if (typeof keys === 'string') {
-      result[keys] = mockSessionStorage[keys];
-    } else if (Array.isArray(keys)) {
-      keys.forEach((key) => {
-        result[key] = mockSessionStorage[key];
-      });
-    } else {
-      Object.assign(result, mockSessionStorage);
-    }
-    return Promise.resolve(result);
-  });
+  (globalThis as unknown as { chrome: { storage: { session: { get: jest.Mock } } } }).chrome.storage.session.get =
+    jest.fn((keys: string | string[] | null) => {
+      const result: { [key: string]: unknown } = {};
+      if (typeof keys === 'string') {
+        result[keys] = mockSessionStorage[keys];
+      } else if (Array.isArray(keys)) {
+        keys.forEach((key) => {
+          result[key] = mockSessionStorage[key];
+        });
+      } else {
+        Object.assign(result, mockSessionStorage);
+      }
+      return Promise.resolve(result);
+    });
 
-  (globalThis as any).chrome.storage.session.set = jest.fn((items: { [key: string]: any }) => {
-    Object.assign(mockSessionStorage, items);
-    return Promise.resolve();
-  });
+  (globalThis as unknown as { chrome: { storage: { session: { set: jest.Mock } } } }).chrome.storage.session.set =
+    jest.fn((items: { [key: string]: unknown }) => {
+      Object.assign(mockSessionStorage, items);
+      return Promise.resolve();
+    });
 
-  (globalThis as any).chrome.storage.session.remove = jest.fn((keys: string | string[]) => {
-    const keysArray = typeof keys === 'string' ? [keys] : keys;
-    keysArray.forEach((key) => delete mockSessionStorage[key]);
-    return Promise.resolve();
-  });
+  (globalThis as unknown as { chrome: { storage: { session: { remove: jest.Mock } } } }).chrome.storage.session.remove =
+    jest.fn((keys: string | string[]) => {
+      const keysArray = typeof keys === 'string' ? [keys] : keys;
+      keysArray.forEach((key) => delete mockSessionStorage[key]);
+      return Promise.resolve();
+    });
 
   // Clear any lingering buffer state from previous tests
   await Storage.clearRequestLog();
@@ -179,7 +194,7 @@ describe('Storage', () => {
 
       await Storage.saveRules(mockRules);
       expect(mockLocalStorage.mockRules).toEqual(mockRules);
-      expect(mockLocalStorage.mockRules[0].headers).toEqual({
+      expect((mockLocalStorage.mockRules as MockRule[])?.[0]?.headers).toEqual({
         'Access-Control-Allow-Origin': '*',
         Authorization: 'Bearer token123',
       });
@@ -333,7 +348,7 @@ describe('addToRequestLog', () => {
 
     // Now it should be in session storage
     expect(mockSessionStorage.requestLog).toHaveLength(1);
-    expect(mockSessionStorage.requestLog[0]).toEqual(entry);
+    expect((mockSessionStorage.requestLog as RequestLog[])?.[0]).toEqual(entry);
   });
 
   it('should add entry with response headers to log', async () => {

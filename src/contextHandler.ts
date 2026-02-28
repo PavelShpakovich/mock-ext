@@ -5,7 +5,7 @@
 
 export async function withContextCheck<T>(fn: () => Promise<T>, fallback?: T): Promise<T> {
   // Check if extension context is valid before attempting operation
-  if (!chrome.runtime?.id) {
+  if (!browser.runtime?.id) {
     if (fallback !== undefined) {
       return fallback;
     }

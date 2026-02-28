@@ -5,6 +5,7 @@ import { attachClosestEdge, extractClosestEdge } from '@atlaskit/pragmatic-drag-
 import { CustomDropIndicator } from './ui/DropIndicator';
 import { Folder, DragDropData } from '../types';
 import { DragDropItemType, DropEdge } from '../enums';
+import { addFirefoxDragSupport } from '../helpers';
 import { setRoundedCardDragPreview } from '../helpers/dragPreview';
 import FolderItem from './FolderItem';
 import CompactFolderItem from './CompactFolderItem';
@@ -70,7 +71,10 @@ export const SortableFolderItem: React.FC<SortableFolderItemProps> = ({
     const el = interactiveRef.current;
     if (!el) return;
 
-    return combine(
+    // Add Firefox-specific drag support
+    const firefoxCleanup = addFirefoxDragSupport(el);
+
+    const pragmaticCleanup = combine(
       draggable({
         element: el,
         getInitialData: () => sortableData as unknown as Record<string, unknown>,
@@ -143,6 +147,11 @@ export const SortableFolderItem: React.FC<SortableFolderItemProps> = ({
         },
       })
     );
+
+    return () => {
+      firefoxCleanup();
+      pragmaticCleanup();
+    };
   }, [sortableData, droppableData]);
 
   const Component = isCompact ? CompactFolderItem : FolderItem;

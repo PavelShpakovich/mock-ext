@@ -5,6 +5,27 @@ All notable changes to Moq Extension will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.14.0] - 2026-02-28
+
+### Changed
+- **WXT Migration Cleanup**: Removed all legacy build configuration and entry point files
+  - Removed old entry point files: `background.ts`, `content-script.ts`, `interceptor.ts`, `devtools-prompt.ts`, `devtools.ts`, `popup.tsx` (now in `entrypoints/` directory)
+  - Removed `webpack.config.js` (replaced by `wxt.config.ts`)
+  - Removed `public/manifest.json` (now generated from `wxt.config.ts`)
+  - Updated all test mocks to support WXT's cross-browser `browser` API
+  - All 283 tests passing after migration cleanup
+
+### Fixed
+- **Type Safety Improvements**: Resolved all TypeScript compilation errors (40 errors fixed)
+  - Fixed Browser namespace type annotations throughout codebase
+  - Improved type narrowing in I18nContext for translation lookups
+  - Enhanced type safety in message response handlers
+- **Code Quality**: Eliminated all ESLint warnings (50 warnings fixed)
+  - Replaced all `any` types with `unknown` or proper type annotations
+  - Added proper type guards for discriminated unions
+  - Improved React hooks dependencies validation
+  - Enhanced type safety in test files and validation helpers
+
 ## [2.13.0] - 2026-02-26
 
 ### Added

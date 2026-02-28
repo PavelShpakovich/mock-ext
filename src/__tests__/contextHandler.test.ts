@@ -1,7 +1,10 @@
 import { withContextCheck } from '../contextHandler';
 
-// Mock chrome global
-declare const global: any;
+// Mock chrome and browser globals
+declare const global: {
+  chrome?: { runtime?: { id?: string } };
+  browser?: { runtime?: { id?: string } };
+} & typeof globalThis;
 
 describe('contextHandler', () => {
   describe('withContextCheck', () => {
@@ -11,7 +14,14 @@ describe('contextHandler', () => {
         runtime: {
           id: 'test-extension-id',
         },
-      } as any;
+      } as typeof global.chrome;
+
+      // Mock browser.runtime.id for WXT compatibility
+      global.browser = {
+        runtime: {
+          id: 'test-extension-id',
+        },
+      } as typeof global.browser;
     });
 
     afterEach(() => {
@@ -76,7 +86,12 @@ describe('contextHandler', () => {
 
     it('should return fallback when chrome.runtime.id is not available', async () => {
       // Simulate invalidated context
-      delete (global.chrome as any).runtime.id;
+      if (global.chrome?.runtime && 'id' in global.chrome.runtime) {
+        (global.chrome.runtime as { id?: string }).id = undefined;
+      }
+      if (global.browser?.runtime && 'id' in global.browser.runtime) {
+        (global.browser.runtime as { id?: string }).id = undefined;
+      }
 
       const mockFn = jest.fn().mockResolvedValue('should not be called');
       const fallback = 'fallback-value';
@@ -89,7 +104,12 @@ describe('contextHandler', () => {
 
     it('should throw when chrome.runtime.id is not available and no fallback', async () => {
       // Simulate invalidated context
-      delete (global.chrome as any).runtime.id;
+      if (global.chrome?.runtime && 'id' in global.chrome.runtime) {
+        (global.chrome.runtime as { id?: string }).id = undefined;
+      }
+      if (global.browser?.runtime && 'id' in global.browser.runtime) {
+        (global.browser.runtime as { id?: string }).id = undefined;
+      }
 
       const mockFn = jest.fn().mockResolvedValue('should not be called');
 

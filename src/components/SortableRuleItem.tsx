@@ -5,7 +5,7 @@ import { attachClosestEdge, extractClosestEdge } from '@atlaskit/pragmatic-drag-
 import { CustomDropIndicator } from './ui/DropIndicator';
 import { MockRule, DragDropData } from '../types';
 import { DragDropItemType, RulesView, DropEdge } from '../enums';
-import { ValidationWarning } from '../helpers';
+import { ValidationWarning, addFirefoxDragSupport } from '../helpers';
 import { setRoundedCardDragPreview } from '../helpers/dragPreview';
 import RuleItem from './RuleItem';
 import { CompactRuleItem } from './CompactRuleItem';
@@ -56,7 +56,10 @@ export const SortableRuleItem: React.FC<SortableRuleItemProps> = ({
     const el = interactiveRef.current;
     if (!el || selectionMode) return;
 
-    return combine(
+    // Add Firefox-specific drag support
+    const firefoxCleanup = addFirefoxDragSupport(el);
+
+    const pragmaticCleanup = combine(
       draggable({
         element: el,
         getInitialData: () => dragData as unknown as Record<string, unknown>,
@@ -93,6 +96,11 @@ export const SortableRuleItem: React.FC<SortableRuleItemProps> = ({
         },
       })
     );
+
+    return () => {
+      firefoxCleanup();
+      pragmaticCleanup();
+    };
   }, [dragData, selectionMode]);
 
   // Determine which component to render based on view and selection mode

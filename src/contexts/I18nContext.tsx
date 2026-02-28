@@ -6,7 +6,7 @@ import ruTranslations from '../locales/ru.json';
 import { Language } from '../enums';
 
 interface Translations {
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 const translations: Record<string, Translations> = {
@@ -52,7 +52,7 @@ export const I18nProvider: React.FC<{ children: React.ReactNode }> = ({ children
     loadLanguage();
 
     // Listen for storage changes to sync language across contexts
-    const handleStorageChange = (changes: { [key: string]: chrome.storage.StorageChange }) => {
+    const handleStorageChange = (changes: { [key: string]: Browser.storage.StorageChange }) => {
       if (changes.settings && changes.settings.newValue) {
         const newSettings = changes.settings.newValue as Settings;
         if (newSettings.language && newSettings.language !== language) {
@@ -61,11 +61,11 @@ export const I18nProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     };
 
-    chrome.storage.onChanged.addListener(handleStorageChange);
+    browser.storage.onChanged.addListener(handleStorageChange);
     return () => {
-      chrome.storage.onChanged.removeListener(handleStorageChange);
+      browser.storage.onChanged.removeListener(handleStorageChange);
     };
-  }, []);
+  }, [language]);
 
   const setLanguage = useCallback(async (lang: Language) => {
     setLanguageState(lang);
@@ -76,11 +76,11 @@ export const I18nProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const t = useCallback(
     (key: string, params?: Record<string, string | number>): string => {
       const keys = key.split('.');
-      let value: any = translations[language];
+      let value: unknown = translations[language];
 
       for (const k of keys) {
         if (value && typeof value === 'object' && k in value) {
-          value = value[k];
+          value = (value as Record<string, unknown>)[k];
         } else {
           console.warn(`Translation key not found: ${key}`);
           return key;
@@ -92,69 +92,75 @@ export const I18nProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return key;
       }
 
+      // At this point, value is definitely a string
+      let stringValue: string = value;
+
       // Replace parameters and handle plural forms
       if (params) {
         // Handle plural forms: {{count, plural, one {...} few {...} other {...}}}
         // Use a more robust regex that handles nested braces
-        value = value.replace(/\{\{(\w+),\s*plural,\s*((?:[^{}]|\{[^}]*\})*)\}\}/g, (match, paramKey, pluralRules) => {
-          const count = params[paramKey] as number;
-          if (count === undefined) return match;
+        stringValue = stringValue.replace(
+          /\{\{(\w+),\s*plural,\s*((?:[^{}]|\{[^}]*\})*)\}\}/g,
+          (match, paramKey, pluralRules) => {
+            const count = params[paramKey] as number;
+            if (count === undefined) return match;
 
-          // Parse plural rules manually to handle nested braces
-          let selectedForm = '';
-          const rulePattern = /(one|few|other)\s*\{([^}]*)\}/g;
-          const matches: Array<{ form: string; text: string }> = [];
-          let ruleMatch;
+            // Parse plural rules manually to handle nested braces
+            let selectedForm = '';
+            const rulePattern = /(one|few|other)\s*\{([^}]*)\}/g;
+            const matches: Array<{ form: string; text: string }> = [];
+            let ruleMatch;
 
-          while ((ruleMatch = rulePattern.exec(pluralRules)) !== null) {
-            matches.push({
-              form: ruleMatch[1],
-              text: ruleMatch[2],
-            });
-          }
+            while ((ruleMatch = rulePattern.exec(pluralRules)) !== null) {
+              matches.push({
+                form: ruleMatch[1],
+                text: ruleMatch[2],
+              });
+            }
 
-          // Select appropriate form based on count and language
-          for (const { form, text } of matches) {
-            if (language === 'en') {
-              if (form === 'one' && count === 1) {
-                selectedForm = text;
-                break;
-              } else if (form === 'other' && count !== 1) {
-                selectedForm = text;
-                break;
-              }
-            } else if (language === 'ru') {
-              const lastDigit = count % 10;
-              const lastTwoDigits = count % 100;
+            // Select appropriate form based on count and language
+            for (const { form, text } of matches) {
+              if (language === 'en') {
+                if (form === 'one' && count === 1) {
+                  selectedForm = text;
+                  break;
+                } else if (form === 'other' && count !== 1) {
+                  selectedForm = text;
+                  break;
+                }
+              } else if (language === 'ru') {
+                const lastDigit = count % 10;
+                const lastTwoDigits = count % 100;
 
-              if (form === 'one' && lastDigit === 1 && lastTwoDigits !== 11) {
-                selectedForm = text;
-                break;
-              } else if (
-                form === 'few' &&
-                lastDigit >= 2 &&
-                lastDigit <= 4 &&
-                (lastTwoDigits < 12 || lastTwoDigits > 14)
-              ) {
-                selectedForm = text;
-                break;
-              } else if (form === 'other') {
-                selectedForm = text;
-                break;
+                if (form === 'one' && lastDigit === 1 && lastTwoDigits !== 11) {
+                  selectedForm = text;
+                  break;
+                } else if (
+                  form === 'few' &&
+                  lastDigit >= 2 &&
+                  lastDigit <= 4 &&
+                  (lastTwoDigits < 12 || lastTwoDigits > 14)
+                ) {
+                  selectedForm = text;
+                  break;
+                } else if (form === 'other') {
+                  selectedForm = text;
+                  break;
+                }
               }
             }
-          }
 
-          return selectedForm;
-        });
+            return selectedForm;
+          }
+        );
 
         // Replace simple parameters
-        value = value.replace(/\{\{(\w+)\}\}/g, (match: string, paramKey: string) => {
+        stringValue = stringValue.replace(/\{\{(\w+)\}\}/g, (match: string, paramKey: string) => {
           return params[paramKey] !== undefined ? String(params[paramKey]) : match;
         });
       }
 
-      return value;
+      return stringValue;
     },
     [language]
   );

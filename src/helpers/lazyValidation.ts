@@ -9,7 +9,7 @@ let eslintModule: typeof import('eslint-scope') | null = null;
 /**
  * Translation function type
  */
-type TranslateFn = (key: string, params?: Record<string, any>) => string;
+type TranslateFn = (key: string, params?: Record<string, string | number>) => string;
 
 /**
  * Validates response hook code for safety and syntax with lazy-loaded dependencies
@@ -89,11 +89,14 @@ export async function validateResponseHookLazy(hookCode: string, t: TranslateFn)
 
   // Analyze scopes to find undefined variables
   try {
-    const scopeManager = eslintModule.analyze(ast as any, {
-      ecmaVersion: 2020,
-      sourceType: 'script',
-      ignoreEval: true,
-    });
+    const scopeManager = eslintModule.analyze(
+      ast as unknown as Parameters<typeof eslintModule.analyze>[0],
+      {
+        ecmaVersion: 2020,
+        sourceType: 'script',
+        ignoreEval: true,
+      } as Parameters<typeof eslintModule.analyze>[1]
+    );
 
     // Define allowed global variables (available in hook context)
     const allowedGlobals = new Set([

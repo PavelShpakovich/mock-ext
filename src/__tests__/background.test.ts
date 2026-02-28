@@ -1,6 +1,6 @@
 import { MessageActionType } from '../enums';
 import '../__tests__/setup';
-import { MessageAction, MessageResponse, Language } from '../types';
+import { MessageAction, MessageResponse, Language, MockRule } from '../types';
 
 // Helper to access the chrome mock with types
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -33,7 +33,7 @@ describe('Background Script', () => {
     // Isolate modules to ensure a fresh execution of background.ts logic
     // This runs appropriate top-level code like initialize()
     jest.isolateModules(() => {
-      require('../background');
+      require('../entrypoints/background');
     });
   };
 
@@ -87,7 +87,7 @@ describe('Background Script', () => {
       expect(mockChrome.scripting.executeScript).toHaveBeenCalledWith(
         expect.objectContaining({
           target: { tabId: 1, allFrames: true },
-          files: ['content-script.js'],
+          files: ['/content-scripts/content.js'],
         })
       );
 
@@ -130,9 +130,11 @@ describe('Background Script', () => {
       await sendMessage({ action: MessageActionType.UpdateRules, rules } as unknown as MessageAction);
 
       // Now get them
-      const response: unknown = await sendMessage({ action: MessageActionType.GetRules });
+      const response = await sendMessage({ action: MessageActionType.GetRules });
       expect((response as MessageResponse).success).toBe(true);
-      expect((response as any).data).toEqual(rules);
+      if ('data' in (response as MessageResponse)) {
+        expect((response as { success: true; data: MockRule[] }).data).toEqual(rules);
+      }
     });
 
     test('updateSettings should update settings and refresh tabs', async () => {
@@ -167,13 +169,17 @@ describe('Background Script', () => {
       } as unknown as MessageAction);
 
       expect((response as MessageResponse).success).toBe(true);
-      expect((response as any).data.tabId).toBe(tabId);
+      if ('data' in (response as MessageResponse)) {
+        expect((response as { success: true; data: { tabId: number } }).data.tabId).toBe(tabId);
+      }
 
       // Check status
-      const statusRes: unknown = await sendMessage({
+      const statusRes = await sendMessage({
         action: MessageActionType.GetRecordingStatus,
       } as unknown as MessageAction);
-      expect((statusRes as any).data.tabId).toBe(tabId);
+      if ('data' in (statusRes as MessageResponse)) {
+        expect((statusRes as { success: true; data: { tabId: number | null } }).data.tabId).toBe(tabId);
+      }
     });
 
     test('incrementRuleCounter should update match count', async () => {
@@ -232,10 +238,12 @@ describe('Background Script', () => {
         expect((startRes as MessageResponse).success).toBe(true);
 
         // Verify recording status
-        const statusRes: unknown = await sendMessage({
+        const statusRes = await sendMessage({
           action: MessageActionType.GetRecordingStatus,
         } as unknown as MessageAction);
-        expect((statusRes as any).data.tabId).toBe(tabId);
+        if ('data' in (statusRes as MessageResponse)) {
+          expect((statusRes as { success: true; data: { tabId: number | null } }).data.tabId).toBe(tabId);
+        }
 
         const logMessage: unknown = {
           action: MessageActionType.LogCapturedResponse,

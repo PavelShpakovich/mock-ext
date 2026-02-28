@@ -24,9 +24,14 @@ export class ErrorBoundary extends Component<Props, State> {
     // Log to console for debugging
     console.error('[Moq] Component error:', error, errorInfo);
 
-    // Store error logs in chrome.storage for debugging
-    chrome.storage.local.get(['errorLog'], (result) => {
-      const errors = result.errorLog || [];
+    // Store error logs in browser.storage for debugging
+    browser.storage.local.get(['errorLog'], (result) => {
+      const errors = (result.errorLog || []) as Array<{
+        error: string;
+        stack?: string;
+        componentStack?: string | null;
+        timestamp: number;
+      }>;
       errors.push({
         error: error.message,
         stack: error.stack,
@@ -34,7 +39,7 @@ export class ErrorBoundary extends Component<Props, State> {
         timestamp: Date.now(),
       });
       // Keep only last 10 errors to prevent storage bloat
-      chrome.storage.local.set({ errorLog: errors.slice(-10) });
+      browser.storage.local.set({ errorLog: errors.slice(-10) });
     });
   }
 

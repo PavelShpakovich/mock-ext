@@ -35,8 +35,8 @@ export class Storage {
    */
   static async migrateStorageSchema(): Promise<void> {
     try {
-      const result = await chrome.storage.local.get(this.SCHEMA_VERSION_KEY);
-      const storedVersion: number = result[this.SCHEMA_VERSION_KEY] ?? 1;
+      const result = (await browser.storage.local.get(this.SCHEMA_VERSION_KEY)) as { [key: string]: unknown };
+      const storedVersion: number = (result[this.SCHEMA_VERSION_KEY] as number) ?? 1;
 
       if (storedVersion >= this.CURRENT_SCHEMA_VERSION) return; // Already up to date
 
@@ -44,14 +44,14 @@ export class Storage {
         const [folders, rules] = await Promise.all([this.getFolders(), this.getRules()]);
         const migrated = migrateFoldersAndRules(folders, rules);
         await Promise.all([
-          chrome.storage.local.set({ [this.FOLDERS_KEY]: migrated.folders }),
-          chrome.storage.local.set({ [this.RULES_KEY]: migrated.rules }),
+          browser.storage.local.set({ [this.FOLDERS_KEY]: migrated.folders }),
+          browser.storage.local.set({ [this.RULES_KEY]: migrated.rules }),
         ]);
         // eslint-disable-next-line no-console
         console.log('[Moq] Storage migrated to schema v2 (order fields added)');
       }
 
-      await chrome.storage.local.set({ [this.SCHEMA_VERSION_KEY]: this.CURRENT_SCHEMA_VERSION });
+      await browser.storage.local.set({ [this.SCHEMA_VERSION_KEY]: this.CURRENT_SCHEMA_VERSION });
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error('[Moq] Storage migration failed:', error);
@@ -60,44 +60,44 @@ export class Storage {
 
   // Rules operations
   static async getRules(): Promise<MockRule[]> {
-    const result = await chrome.storage.local.get(this.RULES_KEY);
-    return result[this.RULES_KEY] || [];
+    const result = (await browser.storage.local.get(this.RULES_KEY)) as { [key: string]: unknown };
+    return (result[this.RULES_KEY] as MockRule[]) || [];
   }
 
   static async saveRules(rules: MockRule[]): Promise<void> {
-    await chrome.storage.local.set({ [this.RULES_KEY]: rules });
+    await browser.storage.local.set({ [this.RULES_KEY]: rules });
   }
 
   // Folders operations
   static async getFolders(): Promise<Folder[]> {
-    const result = await chrome.storage.local.get(this.FOLDERS_KEY);
-    return result[this.FOLDERS_KEY] || [];
+    const result = (await browser.storage.local.get(this.FOLDERS_KEY)) as { [key: string]: unknown };
+    return (result[this.FOLDERS_KEY] as Folder[]) || [];
   }
 
   static async saveFolders(folders: Folder[]): Promise<void> {
-    await chrome.storage.local.set({ [this.FOLDERS_KEY]: folders });
+    await browser.storage.local.set({ [this.FOLDERS_KEY]: folders });
   }
 
   // Settings operations
   static async getSettings(): Promise<Settings> {
-    const result = await chrome.storage.local.get(this.SETTINGS_KEY);
-    return result[this.SETTINGS_KEY] || DEFAULT_SETTINGS;
+    const result = (await browser.storage.local.get(this.SETTINGS_KEY)) as { [key: string]: unknown };
+    return (result[this.SETTINGS_KEY] as Settings) || DEFAULT_SETTINGS;
   }
 
   static async saveSettings(settings: Settings): Promise<void> {
-    await chrome.storage.local.set({ [this.SETTINGS_KEY]: settings });
+    await browser.storage.local.set({ [this.SETTINGS_KEY]: settings });
   }
 
   // Request log operations
   static async getRequestLog(): Promise<RequestLog[]> {
-    const result = await chrome.storage.session.get(this.LOG_KEY);
-    const storedLog = result[this.LOG_KEY] || [];
+    const result = (await browser.storage.session.get(this.LOG_KEY)) as { [key: string]: unknown };
+    const storedLog = (result[this.LOG_KEY] as RequestLog[]) || [];
     // Prepend buffered entries (they are the most recent)
     return [...logBuffer, ...storedLog];
   }
 
   static async saveRequestLog(log: RequestLog[]): Promise<void> {
-    await chrome.storage.session.set({ [this.LOG_KEY]: log });
+    await browser.storage.session.set({ [this.LOG_KEY]: log });
   }
 
   static async addToRequestLog(entry: RequestLog): Promise<void> {
@@ -108,7 +108,7 @@ export class Storage {
   static async clearRequestLog(): Promise<void> {
     this.cancelLogFlush();
     logBuffer = [];
-    await chrome.storage.session.remove(this.LOG_KEY);
+    await browser.storage.session.remove(this.LOG_KEY);
   }
 
   // Buffer management
@@ -137,8 +137,8 @@ export class Storage {
     this.cancelLogFlush();
 
     try {
-      const result = await chrome.storage.session.get(this.LOG_KEY);
-      const existingLog = result[this.LOG_KEY] || [];
+      const result = (await browser.storage.session.get(this.LOG_KEY)) as { [key: string]: unknown };
+      const existingLog = (result[this.LOG_KEY] as RequestLog[]) || [];
       const combinedLog = [...currentBuffer, ...existingLog].slice(0, MAX_LOG_ENTRIES);
 
       // Enforce byte size limit
@@ -146,7 +146,7 @@ export class Storage {
         combinedLog.pop();
       }
 
-      await chrome.storage.session.set({ [this.LOG_KEY]: combinedLog });
+      await browser.storage.session.set({ [this.LOG_KEY]: combinedLog });
     } catch (error) {
       console.error('[Moq] Error flushing log buffer:', error);
     }
@@ -167,20 +167,20 @@ export class Storage {
 
   // Draft operations
   static async saveDraft(draft: unknown): Promise<void> {
-    await chrome.storage.local.set({ [this.DRAFT_KEY]: draft });
+    await browser.storage.local.set({ [this.DRAFT_KEY]: draft });
   }
 
   static async getDraft(): Promise<unknown> {
-    const result = await chrome.storage.local.get(this.DRAFT_KEY);
+    const result = await browser.storage.local.get(this.DRAFT_KEY);
     return result[this.DRAFT_KEY] || null;
   }
 
   static async clearDraft(): Promise<void> {
-    await chrome.storage.local.remove(this.DRAFT_KEY);
+    await browser.storage.local.remove(this.DRAFT_KEY);
   }
 
   /** Reset schema version (for testing only) */
   static async _resetSchemaVersion(): Promise<void> {
-    await chrome.storage.local.remove(this.SCHEMA_VERSION_KEY);
+    await browser.storage.local.remove(this.SCHEMA_VERSION_KEY);
   }
 }

@@ -17,7 +17,7 @@ interface UseRecordingReturn {
   activeTabTitle: string;
   loadSettings: () => Promise<void>;
   loadRequestLog: () => Promise<void>;
-  startRecording: (tab: chrome.tabs.Tab) => Promise<{ success: boolean; reloaded?: boolean }>;
+  startRecording: (tab: Browser.tabs.Tab) => Promise<{ success: boolean; reloaded?: boolean }>;
   stopRecording: () => Promise<void>;
   handleGlobalToggle: (enabled: boolean) => Promise<void>;
   handleRecordingToggle: (logRequests: boolean) => Promise<{ reloaded?: boolean }>;
@@ -54,7 +54,7 @@ export const useRecording = (): UseRecordingReturn => {
   }, []);
 
   const startRecording = useCallback(
-    async (tab: chrome.tabs.Tab): Promise<{ success: boolean; reloaded?: boolean }> => {
+    async (tab: Browser.tabs.Tab): Promise<{ success: boolean; reloaded?: boolean }> => {
       const response = await withContextCheck(() => sendStartRecordingMessage(tab.id!), { success: false });
 
       if (response?.success) {
@@ -64,7 +64,7 @@ export const useRecording = (): UseRecordingReturn => {
         setActiveTabTitle(tab.title || 'Unknown Tab');
 
         // Notify other contexts about recording state change
-        chrome.runtime.sendMessage({ action: MessageActionType.SettingsUpdated }).catch(() => {});
+        browser.runtime.sendMessage({ action: MessageActionType.SettingsUpdated }).catch(() => {});
 
         return { success: true, reloaded: response.data?.reloaded };
       }
@@ -82,7 +82,7 @@ export const useRecording = (): UseRecordingReturn => {
     setActiveTabTitle('');
 
     // Notify other contexts about recording state change
-    chrome.runtime.sendMessage({ action: MessageActionType.SettingsUpdated }).catch(() => {});
+    browser.runtime.sendMessage({ action: MessageActionType.SettingsUpdated }).catch(() => {});
   }, [settings]);
 
   const handleGlobalToggle = useCallback(
@@ -92,11 +92,11 @@ export const useRecording = (): UseRecordingReturn => {
       setSettings(newSettings);
       await Storage.saveSettings(newSettings);
       await withContextCheck(() =>
-        chrome.runtime.sendMessage({ action: MessageActionType.ToggleMocking, enabled })
+        browser.runtime.sendMessage({ action: MessageActionType.ToggleMocking, enabled })
       ).catch(() => {});
 
       // Notify other contexts about settings change
-      chrome.runtime.sendMessage({ action: MessageActionType.SettingsUpdated }).catch(() => {});
+      browser.runtime.sendMessage({ action: MessageActionType.SettingsUpdated }).catch(() => {});
 
       if (!enabled && settings.logRequests) {
         setActiveTabTitle('');
@@ -135,11 +135,11 @@ export const useRecording = (): UseRecordingReturn => {
       setSettings(newSettings);
       await Storage.saveSettings(newSettings);
       await withContextCheck(() =>
-        chrome.runtime.sendMessage({ action: MessageActionType.UpdateSettings, settings: newSettings })
+        browser.runtime.sendMessage({ action: MessageActionType.UpdateSettings, settings: newSettings })
       ).catch(() => {});
 
       // Notify other contexts about settings change
-      chrome.runtime.sendMessage({ action: MessageActionType.SettingsUpdated }).catch(() => {});
+      browser.runtime.sendMessage({ action: MessageActionType.SettingsUpdated }).catch(() => {});
     },
     [settings]
   );
@@ -149,7 +149,7 @@ export const useRecording = (): UseRecordingReturn => {
     setRequestLog([]);
 
     // Notify other contexts about request log clear
-    chrome.runtime.sendMessage({ action: MessageActionType.RequestLogUpdated }).catch(() => {});
+    browser.runtime.sendMessage({ action: MessageActionType.RequestLogUpdated }).catch(() => {});
   }, []);
 
   const setSettingsDirectly = useCallback((updatedSettings: Settings) => {
@@ -169,7 +169,7 @@ export const useRecording = (): UseRecordingReturn => {
           const response = await withContextCheck(() => getRecordingStatus(), { success: false });
           if (response.success && response.data?.tabId) {
             try {
-              const tab = await chrome.tabs.get(response.data.tabId);
+              const tab = await browser.tabs.get(response.data.tabId);
               setActiveTabTitle(tab.title || 'Unknown Tab');
             } catch (error) {
               // Recording tab no longer exists or is invalid
@@ -216,10 +216,10 @@ export const useRecording = (): UseRecordingReturn => {
       }
     };
 
-    chrome.runtime.onMessage.addListener(messageListener);
+    browser.runtime.onMessage.addListener(messageListener);
 
     return () => {
-      chrome.runtime.onMessage.removeListener(messageListener);
+      browser.runtime.onMessage.removeListener(messageListener);
     };
   }, []);
 

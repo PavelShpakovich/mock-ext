@@ -40,7 +40,7 @@ export const useRulesManager = (): UseRulesManagerReturn => {
 
       await Storage.saveRules(updatedRules);
       await withContextCheck(() =>
-        chrome.runtime.sendMessage({ action: MessageActionType.UpdateRules, rules: updatedRules })
+        browser.runtime.sendMessage({ action: MessageActionType.UpdateRules, rules: updatedRules })
       ).catch(() => {});
     },
     [validateAndUpdateWarnings]

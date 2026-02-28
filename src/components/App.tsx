@@ -217,7 +217,7 @@ const App: React.FC = () => {
         // Update all rules at once through background script
         rulesManager.setRulesDirectly(updatedRules);
         await withContextCheck(() =>
-          chrome.runtime.sendMessage({ action: MessageActionType.UpdateRules, rules: updatedRules })
+          browser.runtime.sendMessage({ action: MessageActionType.UpdateRules, rules: updatedRules })
         ).catch(() => {});
 
         setImportDialogData(null);

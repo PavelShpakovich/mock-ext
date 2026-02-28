@@ -10,14 +10,16 @@ export type ExtensionContext = 'devtools' | 'window' | 'popup';
  * Detect current extension context
  */
 export function getExtensionContext(): ExtensionContext {
-  // Check if running in DevTools panel
-  if (chrome.devtools && chrome.devtools.inspectedWindow) {
+  // Check URL to distinguish between contexts
+  const url = window.location.href;
+  const urlParams = new URLSearchParams(window.location.search);
+
+  // DevTools panel has tabId query parameter
+  if (url.includes('window.html') && urlParams.has('tabId')) {
     return 'devtools';
   }
 
-  // Check URL to distinguish between standalone window and popup
-  const url = window.location.href;
-
+  // Standalone window
   if (url.includes('window.html')) {
     return 'window';
   }
@@ -52,7 +54,7 @@ export function isPopup(): boolean {
  */
 export async function openStandaloneWindow(language?: Language): Promise<void> {
   try {
-    await chrome.runtime.sendMessage({ action: 'openStandaloneWindow', language });
+    await browser.runtime.sendMessage({ action: 'openStandaloneWindow', language });
   } catch (error) {
     console.error('[Moq] Failed to open standalone window:', error);
   }

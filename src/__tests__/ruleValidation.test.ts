@@ -347,7 +347,7 @@ describe('Rule Validation', () => {
       headers: [{ key: 'X-Custom', value: 'value' }],
     });
 
-    const mockT = (key: string, params?: Record<string, string>) => {
+    const mockT = (key: string, params?: Record<string, string | number>) => {
       if (params) {
         return `${key}: ${params.error || ''}`;
       }

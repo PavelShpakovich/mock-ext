@@ -81,6 +81,7 @@ export type MessageAction =
   | { action: MessageActionType.StartRecording; tabId: number; tabTitle: string }
   | { action: MessageActionType.StopRecording }
   | { action: MessageActionType.GetRecordingStatus }
+  | { action: MessageActionType.GetTabById; tabId: number }
   | { action: MessageActionType.UpdateRulesInPage; rules: MockRule[]; settings: Settings }
   | { action: MessageActionType.LogMockedRequest; url: string; method: string; ruleId: string; timestamp: number }
   | {

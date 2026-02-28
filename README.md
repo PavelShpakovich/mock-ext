@@ -1,6 +1,51 @@
 # Moq
 
-A powerful Chrome DevTools extension for mocking API requests during development and testing. Intercepts HTTP requests at the JavaScript level and responds with custom data, status codes, and delays without modifying your application code.
+A powerful **cross-browser** extension for mocking API requests during development and testing. Intercepts HTTP requests at the JavaScript level and responds with custom data, status codes, and delays without modifying your application code.
+
+> 🚀 **Now built with [WXT](https://wxt.dev/)** - A modern framework for browser extensions with support for Chrome, Firefox, Safari, and Edge!
+
+## Browser Support
+
+| Browser    | Support        | Manifest Version |
+| ---------- | -------------- | ---------------- |
+| 🟢 Chrome  | ✅ Full        | MV3              |
+| 🟠 Firefox | ✅ Full        | MV3              |
+| 🟣 Edge    | ✅ Full        | MV3              |
+| 🔵 Safari  | ⚙️ Build Ready | MV3              |
+
+## Development
+
+```bash
+# Chrome development
+npm run dev
+
+# Firefox development
+npm run dev:firefox
+
+# Build for production
+npm run build              # Chrome (default - also works for Edge)
+npm run build:firefox      # Firefox
+npm run build:safari       # Safari
+
+# Create distribution packages (saved to releases/ folder)
+npm run package            # Builds all browsers and creates release zips
+
+# Or create individual zips
+npm run zip                # Chrome
+npm run zip:firefox        # Firefox
+npm run zip:safari         # Safari
+```
+
+**Note:** Edge uses the same Chrome build (both are Chromium-based with MV3).
+
+**Output directories:**
+
+- Chrome/Edge: `build/chrome-mv3/`
+- Firefox: `build/firefox-mv3/`
+- Safari: `build/safari-mv3/`
+- Release packages: `releases/moq-extension-{browser}-v{version}.zip`
+
+See [WXT_MIGRATION.md](WXT_MIGRATION.md) for detailed migration notes and development workflow.
 
 ## What's New in v2.10.6
 

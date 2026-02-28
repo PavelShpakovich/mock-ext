@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { MockRule, RequestLog, Folder, ResponseMode } from '../types';
 import { ButtonVariant } from '../enums';
@@ -72,6 +72,30 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, mockRequest, folders, onS
 
   useBodyScrollLock(isExpanded || isHookExpanded);
 
+  const validateResponseHookField = useCallback(
+    async (hookCode: string) => {
+      if (hookValidationTimeoutRef.current) {
+        clearTimeout(hookValidationTimeoutRef.current);
+      }
+
+      hookValidationTimeoutRef.current = window.setTimeout(async () => {
+        // Lazy load validation
+        const { validateResponseHookLazy } = await import('../helpers/lazyValidation');
+        const hookError = await validateResponseHookLazy(hookCode, t);
+        if (hookError) {
+          setErrors((prev) => ({ ...prev, responseHook: hookError }));
+        } else {
+          setErrors((prev) => {
+            const newErrors = { ...prev };
+            delete newErrors.responseHook;
+            return newErrors;
+          });
+        }
+      }, VALIDATION_DEBOUNCE_MS);
+    },
+    [t]
+  );
+
   useEffect(() => {
     const newFormData = getInitialFormData(rule, mockRequest);
     setFormData(newFormData);
@@ -88,7 +112,7 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, mockRequest, folders, onS
     if (newFormData.responseHook && newFormData.responseHook.trim()) {
       validateResponseHookField(newFormData.responseHook);
     }
-  }, [rule, mockRequest]);
+  }, [rule, mockRequest, validateResponseHookField]);
 
   const handleChange = (field: keyof RuleFormData, value: string | number | boolean | HeaderEntry[]) => {
     setFormData((prev) => {
@@ -124,27 +148,6 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rule, mockRequest, folders, onS
         setJsonValidation(validateJSONDetailed(body));
       } else {
         setJsonValidation(null);
-      }
-    }, VALIDATION_DEBOUNCE_MS);
-  };
-
-  const validateResponseHookField = async (hookCode: string) => {
-    if (hookValidationTimeoutRef.current) {
-      clearTimeout(hookValidationTimeoutRef.current);
-    }
-
-    hookValidationTimeoutRef.current = window.setTimeout(async () => {
-      // Lazy load validation
-      const { validateResponseHookLazy } = await import('../helpers/lazyValidation');
-      const hookError = await validateResponseHookLazy(hookCode, t);
-      if (hookError) {
-        setErrors((prev) => ({ ...prev, responseHook: hookError }));
-      } else {
-        setErrors((prev) => {
-          const newErrors = { ...prev };
-          delete newErrors.responseHook;
-          return newErrors;
-        });
       }
     }, VALIDATION_DEBOUNCE_MS);
   };

@@ -131,8 +131,13 @@ describe('I18n Translations', () => {
   });
 
   describe('Translation key validation', () => {
-    const getNestedValue = (obj: any, path: string): any => {
-      return path.split('.').reduce((current, key) => current?.[key], obj);
+    const getNestedValue = (obj: Record<string, unknown>, path: string): unknown => {
+      return path.split('.').reduce((current: unknown, key) => {
+        if (current && typeof current === 'object' && key in current) {
+          return (current as Record<string, unknown>)[key];
+        }
+        return undefined;
+      }, obj);
     };
 
     it('should retrieve nested translation keys', () => {
@@ -153,14 +158,14 @@ describe('I18n Translations', () => {
   });
 
   describe('Language coverage', () => {
-    const getAllKeys = (obj: any, prefix = ''): string[] => {
+    const getAllKeys = (obj: Record<string, unknown>, prefix = ''): string[] => {
       let keys: string[] = [];
 
       for (const key in obj) {
         const fullKey = prefix ? `${prefix}.${key}` : key;
 
         if (typeof obj[key] === 'object' && obj[key] !== null && !Array.isArray(obj[key])) {
-          keys = keys.concat(getAllKeys(obj[key], fullKey));
+          keys = keys.concat(getAllKeys(obj[key] as Record<string, unknown>, fullKey));
         } else {
           keys.push(fullKey);
         }
@@ -184,12 +189,12 @@ describe('I18n Translations', () => {
     });
 
     it('should not have empty translation values', () => {
-      const checkForEmpty = (obj: any, lang: string, path = ''): void => {
+      const checkForEmpty = (obj: Record<string, unknown>, lang: string, path = ''): void => {
         for (const key in obj) {
           const fullPath = path ? `${path}.${key}` : key;
 
           if (typeof obj[key] === 'object' && obj[key] !== null) {
-            checkForEmpty(obj[key], lang, fullPath);
+            checkForEmpty(obj[key] as Record<string, unknown>, lang, fullPath);
           } else if (typeof obj[key] === 'string') {
             expect(obj[key].trim()).not.toBe('');
           }

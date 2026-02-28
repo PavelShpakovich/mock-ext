@@ -1,7 +1,10 @@
 /**
  * Format timestamp to relative time (e.g., "2 minutes ago")
  */
-export function formatRelativeTime(timestamp: number, t: (key: string, params?: any) => string): string {
+export function formatRelativeTime(
+  timestamp: number,
+  t: (key: string, params?: Record<string, string | number>) => string
+): string {
   const now = Date.now();
   const diff = now - timestamp;
   const seconds = Math.floor(diff / 1000);
