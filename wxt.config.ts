@@ -42,6 +42,9 @@ export default defineConfig({
         id: 'moq-mock-api@mozilla.org',
       },
     },
+    data_collection_permissions: {
+      cookies: false,
+    },
   },
   vite: () => ({
     build: {
