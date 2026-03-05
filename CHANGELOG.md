@@ -5,6 +5,13 @@ All notable changes to Moq Extension will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.14.1] - 2026-03-05
+
+### Fixed
+- **Group Enable/Disable Persistence**: Fixed issue where disabling all rules in a group would revert on page refresh
+  - Group enable/disable operations now properly save to storage using `saveRules()` instead of `setRulesDirectly()`
+  - Changes are now persisted across page refreshes and browser restarts
+
 ## [2.14.0] - 2026-02-28
 
 ### Changed

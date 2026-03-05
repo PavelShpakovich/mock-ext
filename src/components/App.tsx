@@ -287,7 +287,7 @@ const App: React.FC = () => {
   const handleEnableFolderRules = useCallback(
     async (folderId: string) => {
       const updatedRules = await foldersManager.enableFolderRules(rulesManager.rules, folderId);
-      rulesManager.setRulesDirectly(updatedRules);
+      await rulesManager.saveRules(updatedRules);
     },
     [foldersManager, rulesManager]
   );
@@ -295,7 +295,7 @@ const App: React.FC = () => {
   const handleDisableFolderRules = useCallback(
     async (folderId: string) => {
       const updatedRules = await foldersManager.disableFolderRules(rulesManager.rules, folderId);
-      rulesManager.setRulesDirectly(updatedRules);
+      await rulesManager.saveRules(updatedRules);
     },
     [foldersManager, rulesManager]
   );
