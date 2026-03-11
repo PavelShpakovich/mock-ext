@@ -1,5 +1,6 @@
 import React from 'react';
 import clsx from 'clsx';
+import { ArrowRightLeft } from 'lucide-react';
 import { BadgeVariant } from '../../enums';
 
 interface BadgeProps {
@@ -50,6 +51,13 @@ export const MethodBadge: React.FC<{ method: string }> = ({ method }) => {
 
   return <Badge variant={getVariant(method)}>{method}</Badge>;
 };
+
+export const ProxyBadge: React.FC = () => (
+  <Badge variant={BadgeVariant.Purple} className='inline-flex items-center gap-1'>
+    <ArrowRightLeft className='w-3 h-3' />
+    Proxy
+  </Badge>
+);
 
 export const StatusCodeBadge: React.FC<{ code: number }> = ({ code }) => {
   const getColorClass = (c: number) => {

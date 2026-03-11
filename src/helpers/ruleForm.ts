@@ -67,7 +67,7 @@ export function getInitialFormData(rule: MockRule | null, mockRequest: RequestLo
   return {
     name: '',
     urlPattern: '',
-    matchType: MatchType.Wildcard,
+    matchType: MatchType.Exact,
     method: '' as HttpMethod,
     statusCode: 200,
     contentType: 'application/json',

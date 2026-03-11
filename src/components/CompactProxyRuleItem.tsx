@@ -2,10 +2,10 @@ import React from 'react';
 import clsx from 'clsx';
 import { ProxyRule } from '../types';
 import { Card } from './ui/Card';
-import { MethodBadge } from './ui/Badge';
+import { MethodBadge, ProxyBadge } from './ui/Badge';
 import { Toggle } from './ui/Toggle';
 import { IconButton } from './ui/IconButton';
-import { Copy, Edit, Trash2, AlertTriangle, ArrowRightLeft } from 'lucide-react';
+import { Copy, Edit, Trash2, AlertTriangle } from 'lucide-react';
 import { IconButtonVariant, IconButtonSize } from '../enums';
 import { useI18n } from '../contexts/I18nContext';
 
@@ -45,10 +45,7 @@ export const CompactProxyRuleItem: React.FC<CompactProxyRuleItemProps> = ({
             <span className='text-xs text-gray-500 dark:text-gray-400 shrink-0'>({rule.matchCount})</span>
           )}
           {rule.method && <MethodBadge method={rule.method} />}
-          <span className='inline-flex items-center gap-1 px-1.5 py-0.5 text-xs font-medium rounded-md bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-400'>
-            <ArrowRightLeft className='w-3 h-3' />
-            Proxy
-          </span>
+          <ProxyBadge />
           {hasConflict && (
             <span title={t('proxy.conflictWarning', { name: '' })}>
               <AlertTriangle className='w-3.5 h-3.5 text-yellow-600 dark:text-yellow-400 shrink-0' />

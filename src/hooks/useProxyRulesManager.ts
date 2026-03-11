@@ -24,7 +24,7 @@ export const useProxyRulesManager = (): UseProxyRulesManagerReturn => {
     setProxyRules(updatedRules);
     await Storage.saveProxyRules(updatedRules);
     await withContextCheck(() =>
-      browser.runtime.sendMessage({ action: MessageActionType.UpdateProxyRules, rules: updatedRules })
+      browser.runtime.sendMessage({ action: MessageActionType.UpdateProxyRules, proxyRules: updatedRules })
     ).catch(() => {});
   }, []);
 

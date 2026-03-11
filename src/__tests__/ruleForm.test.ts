@@ -183,7 +183,7 @@ describe('Rule Form Helpers', () => {
 
       expect(result.name).toBe('');
       expect(result.urlPattern).toBe('');
-      expect(result.matchType).toBe(MatchType.Wildcard);
+      expect(result.matchType).toBe(MatchType.Exact);
       expect(result.method).toBe('');
       expect(result.statusCode).toBe(200);
       expect(result.contentType).toBe('application/json');

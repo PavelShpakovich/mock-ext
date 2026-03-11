@@ -69,6 +69,7 @@ const RuleItem: React.FC<RuleItemProps> = ({
   return (
     <Card
       className={clsx(
+        'relative',
         {
           'opacity-40': isDragging,
           'ring-2 ring-blue-500 ring-offset-1': isDropTarget,
@@ -89,12 +90,7 @@ const RuleItem: React.FC<RuleItemProps> = ({
         )}
         <div className='flex-1 min-w-0 flex flex-col gap-2'>
           <div className='flex items-center justify-between'>
-            <h3 className='font-bold text-gray-800 dark:text-white text-base flex items-center gap-2'>
-              {rule.name}
-              {(rule.matchCount ?? 0) > 0 && (
-                <span className='text-sm font-normal text-gray-500 dark:text-gray-400'>({rule.matchCount})</span>
-              )}
-            </h3>
+            <h3 className='font-bold text-gray-800 dark:text-white text-base line-clamp-2'>{rule.name}</h3>
             <div className='flex items-center gap-2'>
               {rule.method && <MethodBadge method={rule.method} />}
               <StatusCodeBadge code={rule.statusCode} />
@@ -153,6 +149,11 @@ const RuleItem: React.FC<RuleItemProps> = ({
           <Toggle checked={rule.enabled} onChange={onToggle} />
         </div>
       </div>
+      {(rule.matchCount ?? 0) > 0 && (
+        <span className='absolute bottom-3 right-3 min-w-[1.375rem] h-[1.375rem] rounded-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs font-bold flex items-center justify-center px-1'>
+          {rule.matchCount}
+        </span>
+      )}
     </Card>
   );
 };

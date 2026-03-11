@@ -58,7 +58,7 @@ function getInitialFormData(rule: ProxyRule | null, mockRequest?: RequestLog | n
     return {
       name: `Proxy: ${mockRequest.method} ${new URL(mockRequest.url).pathname}`,
       urlPattern: mockRequest.url.replace(/[?#].*$/, '*'),
-      matchType: 'wildcard',
+      matchType: 'exact',
       method: mockRequest.method,
       proxyTarget: '',
       pathRewriteFrom: '',
@@ -72,7 +72,7 @@ function getInitialFormData(rule: ProxyRule | null, mockRequest?: RequestLog | n
   return {
     name: '',
     urlPattern: '',
-    matchType: 'wildcard',
+    matchType: 'exact',
     method: '',
     proxyTarget: '',
     pathRewriteFrom: '',

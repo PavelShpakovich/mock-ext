@@ -2,12 +2,11 @@ import React from 'react';
 import clsx from 'clsx';
 import { ProxyRule } from '../types';
 import { Card } from './ui/Card';
-import { MethodBadge } from './ui/Badge';
+import { MethodBadge, ProxyBadge } from './ui/Badge';
 import { Toggle } from './ui/Toggle';
 import { IconButton } from './ui/IconButton';
 import { Clock, Copy, Edit, Trash2, ArrowRightLeft, AlertTriangle } from 'lucide-react';
 import { useI18n } from '../contexts/I18nContext';
-import { formatRelativeTime } from '../helpers/time';
 import { IconButtonVariant } from '../enums';
 
 interface ProxyRuleItemProps {
@@ -31,7 +30,7 @@ const ProxyRuleItem: React.FC<ProxyRuleItemProps> = ({
 
   return (
     <Card
-      className={clsx({
+      className={clsx('relative', {
         'opacity-60 bg-gray-100/50 dark:bg-gray-800/50': !rule.enabled,
         'border-green-600 dark:border-green-500/40': rule.enabled,
       })}
@@ -41,18 +40,10 @@ const ProxyRuleItem: React.FC<ProxyRuleItemProps> = ({
         <div className='flex-1 min-w-0 flex flex-col gap-2'>
           {/* Name row */}
           <div className='flex items-center justify-between'>
-            <h3 className='font-bold text-gray-800 dark:text-white text-base flex items-center gap-2'>
-              {rule.name}
-              {(rule.matchCount ?? 0) > 0 && (
-                <span className='text-sm font-normal text-gray-500 dark:text-gray-400'>({rule.matchCount})</span>
-              )}
-            </h3>
+            <h3 className='font-bold text-gray-800 dark:text-white text-base line-clamp-2'>{rule.name}</h3>
             <div className='flex items-center gap-2'>
               {rule.method && <MethodBadge method={rule.method} />}
-              <span className='inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-md bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-400'>
-                <ArrowRightLeft className='w-3 h-3' />
-                Proxy
-              </span>
+              <ProxyBadge />
             </div>
           </div>
 
@@ -78,13 +69,6 @@ const ProxyRuleItem: React.FC<ProxyRuleItemProps> = ({
               <Clock className='w-3 h-3' />
               {t('rules.delayMs', { delay: rule.delay })}
             </div>
-          )}
-
-          {/* Last matched */}
-          {rule.lastMatched && (
-            <span className='text-xs text-blue-700 dark:text-blue-400/80 font-medium flex items-center gap-2'>
-              {t('rules.lastMatched')}: {formatRelativeTime(rule.lastMatched, t)}
-            </span>
           )}
 
           {/* Conflict warnings */}
@@ -119,6 +103,11 @@ const ProxyRuleItem: React.FC<ProxyRuleItemProps> = ({
           <Toggle checked={rule.enabled} onChange={onToggle} />
         </div>
       </div>
+      {(rule.matchCount ?? 0) > 0 && (
+        <span className='absolute bottom-3 right-3 min-w-[1.375rem] h-[1.375rem] rounded-full bg-purple-200 dark:bg-purple-700/50 text-purple-700 dark:text-purple-300 text-xs font-bold flex items-center justify-center px-1'>
+          {rule.matchCount}
+        </span>
+      )}
     </Card>
   );
 };
