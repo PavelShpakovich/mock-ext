@@ -26,9 +26,23 @@ export default defineContentScript({
       headers?: Record<string, string>;
       matchCount?: number;
       lastMatched?: number;
-      responseHook?: string; // Optional JavaScript code to modify response
-      responseHookEnabled?: boolean; // Whether the hook is active (default: true if hook exists)
-      responseMode?: 'mock' | 'passthrough'; // Note: Cannot use enum in MAIN world - values must match ResponseMode enum
+      responseHook?: string;
+      responseHookEnabled?: boolean;
+      responseMode?: 'mock' | 'passthrough';
+    }
+
+    interface ProxyRule {
+      id: string;
+      enabled: boolean;
+      urlPattern: string;
+      matchType: 'wildcard' | 'exact' | 'regex';
+      method: string;
+      proxyTarget: string;
+      pathRewriteFrom?: string;
+      pathRewriteTo?: string;
+      delay: number;
+      responseHook?: string;
+      responseHookEnabled?: boolean;
     }
 
     interface Settings {
@@ -41,6 +55,7 @@ export default defineContentScript({
 
     class RequestInterceptor {
       private rules: MockRule[] = [];
+      private proxyRules: ProxyRule[] = [];
       private regexCache: Map<string, RegExp> = new Map();
       private settings: Settings = {
         enabled: true,
@@ -61,6 +76,17 @@ export default defineContentScript({
 
       private matchesRule(url: string, method: string): MockRule | null {
         for (const rule of this.rules) {
+          if (!rule.enabled) continue;
+          if (rule.method && rule.method !== method) continue;
+          if (this.matchesPattern(url, rule.urlPattern, rule.matchType)) {
+            return rule;
+          }
+        }
+        return null;
+      }
+
+      private matchesProxyRule(url: string, method: string): ProxyRule | null {
+        for (const rule of this.proxyRules) {
           if (!rule.enabled) continue;
           if (rule.method && rule.method !== method) continue;
           if (this.matchesPattern(url, rule.urlPattern, rule.matchType)) {
@@ -210,6 +236,77 @@ export default defineContentScript({
           console.error('[Moq] Passthrough mode failed:', error);
           // Fallback to mock response on error
           return this.createMockResponse(rule, url, method, init);
+        }
+      }
+
+      private buildProxyUrl(originalUrl: string, rule: ProxyRule): string {
+        try {
+          const original = new URL(originalUrl);
+          const target = rule.proxyTarget.replace(/\/+$/, '');
+          let pathname = original.pathname;
+          if (rule.pathRewriteFrom) {
+            pathname = pathname.replace(rule.pathRewriteFrom, rule.pathRewriteTo || '');
+          }
+          return target + pathname + original.search;
+        } catch {
+          const path = originalUrl.replace(/^https?:\/\/[^/]+/, '');
+          let rewrittenPath = path;
+          if (rule.pathRewriteFrom) {
+            rewrittenPath = path.replace(rule.pathRewriteFrom, rule.pathRewriteTo || '');
+          }
+          return rule.proxyTarget.replace(/\/+$/, '') + rewrittenPath;
+        }
+      }
+
+      private async createProxyResponse(
+        rule: ProxyRule,
+        init: RequestInit | undefined,
+        url: string,
+        method: string,
+        originalFetch: typeof fetch
+      ): Promise<Response> {
+        try {
+          await this.applyDelay(rule.delay);
+
+          const proxyUrl = this.buildProxyUrl(url, rule);
+          const proxyInit = { ...init, method };
+
+          const realResponse = await originalFetch.call(window, proxyUrl, proxyInit);
+          const realBody = await realResponse.text();
+
+          let modifiedBody = realBody;
+          const hookEnabled = rule.responseHookEnabled !== false;
+          if (rule.responseHook && rule.responseHook.trim() !== '' && hookEnabled) {
+            try {
+              const modifiedResponse = this.executeResponseHook(rule.responseHook, realBody, url, method, init);
+              modifiedBody = typeof modifiedResponse === 'string' ? modifiedResponse : JSON.stringify(modifiedResponse);
+            } catch (error) {
+              console.error('[Moq] Proxy hook failed:', error);
+              modifiedBody = realBody;
+            }
+          }
+
+          const statusCode = realResponse.status;
+          const headers: Record<string, string> = {
+            'X-Moq': 'true',
+            'X-Moq-Proxy': 'true',
+          };
+          realResponse.headers.forEach((value, key) => {
+            headers[key] = value;
+          });
+
+          return new Response(modifiedBody, {
+            status: statusCode,
+            statusText: this.getStatusText(statusCode),
+            headers,
+          });
+        } catch (error) {
+          console.error('[Moq] Proxy mode failed:', error);
+          return new Response(JSON.stringify({ error: 'Proxy request failed' }), {
+            status: 502,
+            statusText: 'Bad Gateway',
+            headers: { 'Content-Type': 'application/json', 'X-Moq': 'true' },
+          });
         }
       }
 
@@ -585,8 +682,10 @@ export default defineContentScript({
       private interceptFetch() {
         const originalFetch = this.originalFetch;
         const matchesRule = this.matchesRule.bind(this);
+        const matchesProxyRule = this.matchesProxyRule.bind(this);
         const createMockResponse = this.createMockResponse.bind(this);
         const createPassthroughResponse = this.createPassthroughResponse.bind(this);
+        const createProxyResponse = this.createProxyResponse.bind(this);
         const captureResponse = this.captureResponse.bind(this);
         const notifyInterception = this.notifyInterception.bind(this);
 
@@ -609,6 +708,7 @@ export default defineContentScript({
           // Normalize method to uppercase for consistency
           method = method.toUpperCase();
 
+          // Mock rules take priority
           const rule = matchesRule(url, method);
 
           if (rule) {
@@ -623,7 +723,14 @@ export default defineContentScript({
             return createMockResponse(rule, url, method, init);
           }
 
-          // Not mocked - proceed with real request and capture response for logging
+          // Check proxy rules (lower priority than mock rules)
+          const proxyRule = matchesProxyRule(url, method);
+          if (proxyRule) {
+            notifyInterception(url, method, proxyRule.id, 0);
+            return createProxyResponse(proxyRule, init, url, method, originalFetch);
+          }
+
+          // Not mocked or proxied - proceed with real request and capture response for logging
           const response = await originalFetch.call(this, input, init);
           await captureResponse(response, url, method);
           return response;
@@ -853,11 +960,108 @@ export default defineContentScript({
         }
       }
 
+      private async handleXHRProxy(
+        mockXhr: XMLHttpRequest,
+        rule: ProxyRule,
+        url: string,
+        method: string,
+        requestBody: Document | XMLHttpRequestBodyInit | null | undefined,
+        getStatusText: (code: number) => string,
+        requestHeaders?: Record<string, string>
+      ): Promise<void> {
+        this.notifyInterception(url, method, rule.id, 0);
+        try {
+          await this.applyDelay(rule.delay);
+
+          const proxyUrl = this.buildProxyUrl(url, rule);
+          const realXhr = new this.originalXHR();
+          realXhr.open(method, proxyUrl, true);
+
+          if (requestHeaders) {
+            for (const [header, value] of Object.entries(requestHeaders)) {
+              realXhr.setRequestHeader(header, value);
+            }
+          }
+
+          await new Promise<void>((resolve, reject) => {
+            realXhr.onload = () => resolve();
+            realXhr.onerror = () => reject(new Error('XHR proxy request failed'));
+            realXhr.send(requestBody);
+          });
+
+          let realBody = realXhr.responseText;
+
+          const hookEnabled = rule.responseHookEnabled !== false;
+          if (rule.responseHook && rule.responseHook.trim() !== '' && hookEnabled) {
+            try {
+              const modifiedResponse = this.executeResponseHookForXHR(
+                rule.responseHook,
+                realBody,
+                url,
+                method,
+                requestBody
+              );
+              realBody = typeof modifiedResponse === 'string' ? modifiedResponse : JSON.stringify(modifiedResponse);
+            } catch (error) {
+              console.error('[Moq] XHR proxy hook failed:', error);
+            }
+          }
+
+          const statusCode = realXhr.status;
+          Object.defineProperty(mockXhr, 'readyState', { value: 4, writable: false, configurable: true });
+          Object.defineProperty(mockXhr, 'status', { value: statusCode, writable: false, configurable: true });
+          Object.defineProperty(mockXhr, 'statusText', {
+            value: getStatusText(statusCode),
+            writable: false,
+            configurable: true,
+          });
+          Object.defineProperty(mockXhr, 'responseText', { value: realBody, writable: false, configurable: true });
+          Object.defineProperty(mockXhr, 'response', { value: realBody, writable: false, configurable: true });
+          Object.defineProperty(mockXhr, 'responseType', { value: '', writable: false, configurable: true });
+          Object.defineProperty(mockXhr, 'responseURL', {
+            value: realXhr.responseURL,
+            writable: false,
+            configurable: true,
+          });
+
+          // Use real response headers plus proxy marker
+          const allHeaders: string[] = ['X-Moq: true', 'X-Moq-Proxy: true'];
+          const headerMap: Record<string, string> = { 'x-moq': 'true', 'x-moq-proxy': 'true' };
+          const rawHeaders = realXhr.getAllResponseHeaders();
+          if (rawHeaders) {
+            rawHeaders.split('\r\n').forEach((line: string) => {
+              const idx = line.indexOf(':');
+              if (idx > 0) {
+                const key = line.substring(0, idx).trim();
+                const val = line.substring(idx + 1).trim();
+                allHeaders.push(`${key}: ${val}`);
+                headerMap[key.toLowerCase()] = val;
+              }
+            });
+          }
+          mockXhr.getResponseHeader = (name: string) => headerMap[name.toLowerCase()] ?? null;
+          mockXhr.getAllResponseHeaders = () => allHeaders.join('\r\n');
+
+          this.triggerXHREvents(mockXhr, realBody);
+        } catch (error) {
+          console.error('[Moq] XHR proxy failed:', error);
+          const errorBody = JSON.stringify({ error: 'Proxy request failed' });
+          Object.defineProperty(mockXhr, 'readyState', { value: 4, writable: false, configurable: true });
+          Object.defineProperty(mockXhr, 'status', { value: 502, writable: false, configurable: true });
+          Object.defineProperty(mockXhr, 'statusText', { value: 'Bad Gateway', writable: false, configurable: true });
+          Object.defineProperty(mockXhr, 'responseText', { value: errorBody, writable: false, configurable: true });
+          Object.defineProperty(mockXhr, 'response', { value: errorBody, writable: false, configurable: true });
+          this.triggerXHREvents(mockXhr, errorBody);
+        }
+      }
+
       private interceptXHR() {
         const matchesRule = this.matchesRule.bind(this);
+        const matchesProxyRule = this.matchesProxyRule.bind(this);
         const applyDynamicVariables = this.applyDynamicVariables.bind(this);
         const getStatusText = this.getStatusText.bind(this);
         const handleXHRMock = this.handleXHRMock.bind(this);
+        const handleXHRProxy = this.handleXHRProxy.bind(this);
         const captureXHRResponse = this.captureXHRResponse.bind(this);
         const OriginalXHR = this.originalXHR;
 
@@ -889,11 +1093,21 @@ export default defineContentScript({
           };
 
           xhr.send = function (_body?: Document | XMLHttpRequestBodyInit | null) {
+            // Mock rules take priority
             const rule = matchesRule(url, method);
 
             if (rule) {
               setTimeout(() => {
                 handleXHRMock(xhr, rule, url, method, applyDynamicVariables, getStatusText, _body, requestHeaders);
+              }, 0);
+              return;
+            }
+
+            // Check proxy rules
+            const proxyRule = matchesProxyRule(url, method);
+            if (proxyRule) {
+              setTimeout(() => {
+                handleXHRProxy(xhr, proxyRule, url, method, _body, getStatusText, requestHeaders);
               }, 0);
               return;
             }
@@ -918,6 +1132,7 @@ export default defineContentScript({
           if (event.source !== window) return;
           if (event.data.type === 'MOQ_UPDATE_RULES') {
             this.rules = event.data.rules;
+            this.proxyRules = event.data.proxyRules || [];
             this.regexCache.clear(); // Clear cache when rules are updated
             if (event.data.settings) {
               this.settings = event.data.settings;

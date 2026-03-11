@@ -1,4 +1,4 @@
-import { MockRule } from '../types';
+import { MockRule, ProxyRule } from '../types';
 
 export interface ValidationResult {
   valid: boolean;
@@ -104,4 +104,37 @@ export function calculateAllImportStats(existingRules: MockRule[], importedRules
   const replaceStats = calculateReplaceStats(existingRules, importedRules);
 
   return { merge: mergeStats, replace: replaceStats };
+}
+
+// ============================================================================
+// Proxy Rule Import/Export
+// ============================================================================
+
+export function exportProxyRulesToJSON(rules: ProxyRule[]): string {
+  return JSON.stringify(rules, null, 2);
+}
+
+export function generateProxyExportFilename(): string {
+  return `moq-proxy-rules-${new Date().toISOString().split('T')[0]}.json`;
+}
+
+export function validateImportedProxyRules(data: unknown): ValidationResult {
+  if (!Array.isArray(data)) {
+    return { valid: false, error: 'Invalid format - expected array' };
+  }
+  const hasRequiredFields = data.every((rule) => rule.id && rule.name && rule.urlPattern && rule.proxyTarget);
+  if (!hasRequiredFields) {
+    return { valid: false, error: 'Missing required fields (id, name, urlPattern, proxyTarget)' };
+  }
+  return { valid: true };
+}
+
+export function mergeProxyRules(existing: ProxyRule[], imported: ProxyRule[]): ProxyRule[] {
+  const existingIds = new Set(existing.map((r) => r.id));
+  return [...existing, ...imported.filter((r) => !existingIds.has(r.id))];
+}
+
+export async function parseImportProxyFile(file: File): Promise<ProxyRule[]> {
+  const text = await file.text();
+  return JSON.parse(text);
 }

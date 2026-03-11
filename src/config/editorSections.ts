@@ -5,7 +5,7 @@
 
 export const EDITOR_SECTIONS_CONFIG = {
   matching: {
-    defaultOpen: false,
+    defaultOpen: true,
   },
   responseConfig: {
     defaultOpen: false,
@@ -14,6 +14,18 @@ export const EDITOR_SECTIONS_CONFIG = {
     defaultOpen: false,
   },
   responseBody: {
+    defaultOpen: true,
+  },
+  responseHook: {
+    defaultOpen: false,
+  },
+} as const;
+
+export const PROXY_EDITOR_SECTIONS_CONFIG = {
+  matching: {
+    defaultOpen: true,
+  },
+  proxyConfig: {
     defaultOpen: true,
   },
   responseHook: {

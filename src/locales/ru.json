@@ -12,11 +12,13 @@
     "stop": "Стоп",
     "corsAutoFix": "CORS",
     "corsAutoFixTooltip": "Автоматически добавлять CORS заголовки для обхода ограничений cross-origin",
-    "openWindow": "Открыть в отдельном окне"
+    "openWindow": "Открыть в отдельном окне",
+    "controls": "Управление"
   },
   "tabs": {
     "rules": "Правила",
-    "requests": "Запросы"
+    "requests": "Запросы",
+    "proxy": "Прокси"
   },
   "rules": {
     "title": "Правила мокирования",
@@ -66,6 +68,26 @@
     "disableAll": "Отключить все правила",
     "ungrouped": "Без группы"
   },
+  "proxy": {
+    "title": "Правила проксирования",
+    "empty": "Нет правил проксирования",
+    "emptyDesc": "Создайте правило проксирования для перенаправления запросов на другой сервер",
+    "createNew": "Создать правило прокси",
+    "search": "Поиск правил прокси...",
+    "targetLabel": "URL прокси-цели",
+    "targetPlaceholder": "Например, http://localhost:3000",
+    "pathRewriteFrom": "Замена пути (из)",
+    "pathRewriteTo": "Замена пути (в)",
+    "pathRewriteFromPlaceholder": "/v1",
+    "pathRewriteToPlaceholder": "/v2",
+    "createRule": "Создать правило прокси",
+    "updateRule": "Обновить правило прокси",
+    "conflictWarning": "Этот URL также совпадает с мок-правилом '{{name}}'. Мок-правила имеют приоритет.",
+    "deleteConfirm": "Вы уверены, что хотите удалить правило прокси '{{name}}'?",
+    "matchingSection": "Сопоставление запросов",
+    "proxyConfigSection": "Настройка проксирования",
+    "hookSection": "Хук ответа"
+  },
   "import": {
     "previewTitle": "Импорт правил",
     "foundRules": "Найдено правил",
@@ -97,7 +119,9 @@
     "folderNameDuplicate": "Папка с таким именем уже существует",
     "nameRequired": "Требуется имя",
     "urlPatternRequired": "Требуется шаблон URL",
-    "invalidRegexPattern": "Некорректное регулярное выражение"
+    "invalidRegexPattern": "Некорректное регулярное выражение",
+    "proxyTargetRequired": "Требуется URL прокси-цели",
+    "proxyTargetInvalid": "URL прокси-цели должен быть корректным URL (например, http://localhost:3000)"
   },
   "requests": {
     "title": "Журнал запросов",
@@ -106,6 +130,7 @@
     "noRequests": "Нет записанных запросов",
     "noRequestsDesc": "Нажмите кнопку Запись и взаимодействуйте со страницей для захвата запросов",
     "mockThis": "Мокировать",
+    "proxyThis": "Проксировать",
     "mocked": "Замокировано",
     "time": "Время",
     "filters": "Фильтры",

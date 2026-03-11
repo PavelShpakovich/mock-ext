@@ -5,6 +5,37 @@ All notable changes to Moq Extension will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.15.0] - 2026-03-11
+
+### Added
+- **Proxy Tab Import/Export**: Backup and restore proxy rules via JSON file
+  - Export all proxy rules to a dated file (`moq-proxy-rules-YYYY-MM-DD.json`)
+  - Import with smart merge strategy — duplicate IDs are skipped automatically
+  - Security warning displayed when importing proxy rules containing response hooks
+- **Proxy Compact View**: Toggle between detailed and compact layouts in the Proxy tab
+  - Compact view shows each rule as a single row with name, match count, method badge, and action buttons
+  - View preference persists for the session
+  - Toolbar icons for switching views (matches Rules tab UX)
+- **Path Rewrite for Proxy Rules**: Optionally rewrite the URL path when proxying
+  - Configure a `from` pattern (plain string or regex) and a `to` replacement in the Proxy rule editor
+  - Path rewrite is shown inline on the proxy rule card
+
+### Changed
+- **Controls Menu**: Replaced inline header toggles with a compact dropdown (⧉ icon)
+  - Single entry point for Enable/Disable Moq, CORS Auto Fix (with live status text), Record, and Stop
+  - Icon border turns red during recording and green when the extension is enabled
+  - Reduces visual clutter in the header for small panel widths
+- **ProxyRuleItem Redesign**: Proxy rule cards now match the layout and visual language of mock rule cards
+  - Green card border when enabled, faded when disabled
+  - URL displayed in a monospace code box
+  - Proxy target shown with ArrowRightLeft icon in purple
+  - Conflict warnings styled as amber bordered pills (matching validation warnings)
+  - Match count and last-matched timestamp displayed consistently
+- **ProxyEditor Collapsible Sections**: Section open/closed defaults now driven by `PROXY_EDITOR_SECTIONS_CONFIG` in `editorSections.ts` — same pattern as the Rule editor
+
+### Fixed
+- **Proxy Import Toast**: Success message now correctly shows the imported rule count instead of the literal `{count}` placeholder
+
 ## [2.14.1] - 2026-03-05
 
 ### Fixed

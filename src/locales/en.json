@@ -12,11 +12,13 @@
     "stop": "Stop",
     "corsAutoFix": "CORS",
     "corsAutoFixTooltip": "Auto-inject CORS headers to bypass cross-origin restrictions",
-    "openWindow": "Open in standalone window"
+    "openWindow": "Open in standalone window",
+    "controls": "Controls"
   },
   "tabs": {
     "rules": "Rules",
-    "requests": "Requests"
+    "requests": "Requests",
+    "proxy": "Proxy"
   },
   "rules": {
     "title": "Mock Rules",
@@ -66,6 +68,26 @@
     "disableAll": "Disable all rules",
     "ungrouped": "Ungrouped Rules"
   },
+  "proxy": {
+    "title": "Proxy Rules",
+    "empty": "No proxy rules yet",
+    "emptyDesc": "Create a proxy rule to forward requests to a different target server",
+    "createNew": "Create Proxy Rule",
+    "search": "Search proxy rules...",
+    "targetLabel": "Proxy Target URL",
+    "targetPlaceholder": "E.g., http://localhost:3000",
+    "pathRewriteFrom": "Path Rewrite (from)",
+    "pathRewriteTo": "Path Rewrite (to)",
+    "pathRewriteFromPlaceholder": "/v1",
+    "pathRewriteToPlaceholder": "/v2",
+    "createRule": "Create Proxy Rule",
+    "updateRule": "Update Proxy Rule",
+    "conflictWarning": "This URL also matches mock rule '{{name}}'. Mock rules take priority.",
+    "deleteConfirm": "Are you sure you want to delete proxy rule '{{name}}'?",
+    "matchingSection": "Request Matching",
+    "proxyConfigSection": "Proxy Configuration",
+    "hookSection": "Response Hook"
+  },
   "import": {
     "previewTitle": "Import Rules",
     "foundRules": "Found rules",
@@ -97,7 +119,9 @@
     "folderNameDuplicate": "A folder with this name already exists",
     "nameRequired": "Name is required",
     "urlPatternRequired": "URL pattern is required",
-    "invalidRegexPattern": "Invalid regex pattern"
+    "invalidRegexPattern": "Invalid regex pattern",
+    "proxyTargetRequired": "Proxy target URL is required",
+    "proxyTargetInvalid": "Proxy target must be a valid URL (e.g., http://localhost:3000)"
   },
   "requests": {
     "title": "Request Log",
@@ -106,6 +130,7 @@
     "noRequests": "No requests logged",
     "noRequestsDesc": "Click Record button and interact with the page to capture requests",
     "mockThis": "Mock This",
+    "proxyThis": "Proxy This",
     "mocked": "Mocked",
     "time": "Time",
     "filters": "Filters",

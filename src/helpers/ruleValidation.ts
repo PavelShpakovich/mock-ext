@@ -3,6 +3,7 @@ import { ValidationWarningType, ValidationSeverity } from '../enums';
 import { matchURL } from './urlMatching';
 import { isValidJSON } from './validation';
 import { UNUSED_RULE_DAYS_THRESHOLD } from '../constants';
+import type { ProxyRule } from '../types';
 
 const REGEX_TIMEOUT_MS = 100;
 
@@ -358,4 +359,105 @@ export function validateAllRules(rules: MockRule[]): Map<string, ValidationWarni
   }
 
   return warningsMap;
+}
+
+/**
+ * Validate proxy rule editor form data
+ */
+export async function validateProxyRuleForm(
+  formData: {
+    name: string;
+    urlPattern: string;
+    matchType: string;
+    proxyTarget: string;
+    responseHook?: string;
+  },
+  t: (key: string, params?: Record<string, string | number>) => string
+): Promise<FormValidationErrors> {
+  const errors: FormValidationErrors = {};
+
+  if (!formData.name.trim()) {
+    errors.name = t('validation.nameRequired');
+  }
+
+  if (!formData.urlPattern.trim()) {
+    errors.urlPattern = t('validation.urlPatternRequired');
+  }
+
+  if (formData.matchType === 'regex' && !validateRegexPattern(formData.urlPattern)) {
+    errors.urlPattern = t('validation.invalidRegexPattern');
+  }
+
+  if (!formData.proxyTarget || !formData.proxyTarget.trim()) {
+    errors.proxyTarget = t('validation.proxyTargetRequired');
+  } else {
+    try {
+      const parsed = new URL(formData.proxyTarget);
+      if (!['http:', 'https:'].includes(parsed.protocol)) {
+        errors.proxyTarget = t('validation.proxyTargetInvalid');
+      }
+    } catch {
+      errors.proxyTarget = t('validation.proxyTargetInvalid');
+    }
+  }
+
+  if (formData.responseHook && formData.responseHook.trim()) {
+    const { validateResponseHookLazy } = await import('./lazyValidation');
+    const hookError = await validateResponseHookLazy(formData.responseHook, t);
+    if (hookError) {
+      errors.responseHook = hookError;
+    }
+  }
+
+  return errors;
+}
+
+/**
+ * Find mock rules that conflict with a proxy rule (match the same URL pattern).
+ * Returns a map of proxyRuleId → array of conflicting mock rule names.
+ */
+export function findConflictingRules(proxyRules: ProxyRule[], mockRules: MockRule[]): Map<string, string[]> {
+  const conflicts = new Map<string, string[]>();
+  const enabledMockRules = mockRules.filter((r) => r.enabled);
+
+  for (const proxyRule of proxyRules) {
+    if (!proxyRule.enabled) continue;
+    const conflictingNames: string[] = [];
+
+    for (const mockRule of enabledMockRules) {
+      if (proxyRule.method && mockRule.method && proxyRule.method !== mockRule.method) {
+        continue;
+      }
+      // Check if patterns could overlap using test URLs
+      try {
+        const testUrls = generateTestUrls(proxyRule.urlPattern, proxyRule.matchType);
+        for (const testUrl of testUrls) {
+          if (matchURL(testUrl, mockRule.urlPattern, mockRule.matchType)) {
+            conflictingNames.push(mockRule.name);
+            break;
+          }
+        }
+      } catch {
+        // Skip on pattern errors
+      }
+    }
+
+    if (conflictingNames.length > 0) {
+      conflicts.set(proxyRule.id, conflictingNames);
+    }
+  }
+
+  return conflicts;
+}
+
+function generateTestUrls(pattern: string, matchType: string): string[] {
+  if (matchType === 'exact') {
+    return [pattern];
+  }
+  if (matchType === 'wildcard') {
+    // Replace wildcards with a plausible test segment
+    return [pattern.replace(/\*/g, 'test')];
+  }
+  // For regex, we can't reliably generate test URLs — skip
+  return [];
 }

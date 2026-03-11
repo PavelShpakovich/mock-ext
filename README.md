@@ -47,13 +47,22 @@ npm run zip:safari         # Safari
 
 See [WXT_MIGRATION.md](WXT_MIGRATION.md) for detailed migration notes and development workflow.
 
-## What's New in v2.10.6
+## What's New in v2.15.0
 
-🔧 **CORS Auto Fix UI Consistency**
+🔀 **Proxy Tab — Import/Export & Compact View**
 
-- **UI State Synchronization**: Fixed visual inconsistency where CORS toggle could appear enabled when extension was disabled
-- **Race Condition Resolved**: Background script now properly syncs with frontend settings changes
-- **Reliable State Management**: CORS toggle accurately reflects actual network-level CORS state
+- **Import/Export**: Backup and restore proxy rules to and from JSON. Import merges intelligently — duplicate IDs are skipped. Security warning shown when importing rules with response hooks
+- **Compact View**: Toggle between detailed cards and a single-row compact layout per proxy rule — same UX as the Rules tab
+- **Path Rewrite**: Configure a `from`/`to` path rewrite directly on a proxy rule
+
+🎛️ **Controls Menu**
+
+- Inline header toggles replaced by a single compact dropdown
+- Shows live CORS status text, turns red during recording and green when enabled
+
+🎨 **ProxyRuleItem Redesign**
+
+- Proxy rule cards now match the visual design of mock rule cards — color-coded borders, URL code box, conflict warnings, match counters
 
 ## Features
 
@@ -184,15 +193,30 @@ Example:
 - **Keyboard Shortcut Access**: Quick access via Cmd+Option+I (Mac) or Ctrl+Shift+I (Windows/Linux)
 - **Visual Prompt**: Helpful notification when extension icon is clicked, guiding you to open DevTools
 
+### Proxy Tab
+
+Route matching requests through a custom proxy target instead of (or in addition to) returning a mock response:
+
+- **URL Pattern Matching**: Same wildcard, exact, and regex matching as mock rules
+- **Proxy Target**: Redirect matched requests to any base URL
+- **Path Rewrite**: Optionally rewrite the URL path with a `from`/`to` pattern (plain string or regex)
+- **Response Hook**: Attach JavaScript hooks to modify proxied responses dynamically
+- **Conflict Detection**: Warns when a proxy rule overlaps with an existing mock rule
+- **Match Counter**: Track how many times each proxy rule has been triggered
+- **Compact / Detailed Views**: Toggle between a single-row compact layout and full card view
+- **Import/Export**: Backup and restore proxy rules to/from JSON (with merge strategy)
+- **Enable/Disable**: Toggle individual proxy rules without deleting them
+
 ### User Interface
 
 - **Clean Dark Theme**: Modern, minimalist design optimized for developer workflows
-- **Two Tabs**: "Rules" for managing mocks, "Requests" for viewing captured requests
-- **Toggle Controls**: Enable/disable individual rules or global mocking
-- **Visual Feedback**: Clear indicators for enabled/disabled rules and recording status
+- **Three Tabs**: "Rules" for mock rules, "Proxy" for proxy routing, "Requests" for captured traffic
+- **Controls Menu**: Compact dropdown for Enable/Disable, CORS Auto Fix, and recording controls — with live status indicators
+- **Visual Feedback**: Color-coded rule cards (green border = enabled, faded = disabled, red = recording)
 - **Real-time JSON Validation**: Instant feedback on JSON syntax with throttled validation
 - **JSON Beautifier**: One-click JSON formatting
 - **Search**: Filter rules and requests instantly
+- **Compact Views**: Single-row compact layout available for both Rules and Proxy tabs
 - **Cursor Pointer**: All interactive elements have proper cursor styling
 
 ## Installation

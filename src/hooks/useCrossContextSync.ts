@@ -3,6 +3,7 @@ import { MessageActionType } from '../enums';
 
 interface SyncCallbacks {
   onRulesUpdated: () => void;
+  onProxyRulesUpdated: () => void;
   onSettingsUpdated: () => void;
   onFoldersUpdated: () => void;
   onRequestLogUpdated: () => void;
@@ -14,6 +15,7 @@ interface SyncCallbacks {
  */
 export const useCrossContextSync = ({
   onRulesUpdated,
+  onProxyRulesUpdated,
   onSettingsUpdated,
   onFoldersUpdated,
   onRequestLogUpdated,
@@ -23,6 +25,9 @@ export const useCrossContextSync = ({
       switch (message.action) {
         case MessageActionType.RulesUpdated:
           onRulesUpdated();
+          break;
+        case MessageActionType.ProxyRulesUpdated:
+          onProxyRulesUpdated();
           break;
         case MessageActionType.SettingsUpdated:
           onSettingsUpdated();
@@ -41,5 +46,5 @@ export const useCrossContextSync = ({
     return () => {
       browser.runtime.onMessage.removeListener(messageListener);
     };
-  }, [onRulesUpdated, onSettingsUpdated, onFoldersUpdated, onRequestLogUpdated]);
+  }, [onRulesUpdated, onProxyRulesUpdated, onSettingsUpdated, onFoldersUpdated, onRequestLogUpdated]);
 };

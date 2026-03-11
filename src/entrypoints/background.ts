@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
 import { Storage } from '../storage';
-import { MockRule, Settings, MessageAction, MessageResponse } from '../types';
+import { MockRule, Settings, MessageAction, MessageResponse, ProxyRule } from '../types';
 import { MatchType, HttpMethod, Language, MessageActionType } from '../enums';
 import { findMatchingRule } from '../helpers/urlMatching';
 
@@ -10,6 +10,7 @@ const WINDOW_ID_NONE = -1;
 
 export default defineBackground(() => {
   let mockRules: MockRule[] = [];
+  let proxyRules: ProxyRule[] = [];
   let settings: Settings = {
     enabled: true,
     logRequests: false,
@@ -24,6 +25,7 @@ export default defineBackground(() => {
   async function initialize(): Promise<void> {
     try {
       mockRules = await Storage.getRules();
+      proxyRules = await Storage.getProxyRules();
       settings = await Storage.getSettings();
 
       // Clear logRequests if no recording tab is active
@@ -136,6 +138,7 @@ export default defineBackground(() => {
       await browser.tabs.sendMessage(tabId, {
         action: MessageActionType.UpdateRulesInPage,
         rules,
+        proxyRules: getEnabledProxyRules(),
         settings,
       });
     } catch {
@@ -149,21 +152,29 @@ export default defineBackground(() => {
     return settings.enabled ? mockRules.filter((rule) => rule.enabled) : [];
   }
 
+  function getEnabledProxyRules(): ProxyRule[] {
+    return settings.enabled ? proxyRules.filter((rule) => rule.enabled) : [];
+  }
+
   // Helper: Increment rule match counter
   async function incrementRuleCounter(ruleId: string): Promise<void> {
-    const rule = mockRules.find((r) => r.id === ruleId);
-    if (!rule) return;
+    // Check mock rules first, then proxy rules
+    const mockRule = mockRules.find((r) => r.id === ruleId);
+    if (mockRule) {
+      mockRule.matchCount = (mockRule.matchCount || 0) + 1;
+      mockRule.lastMatched = Date.now();
+      await Storage.saveRules(mockRules);
+      browser.runtime.sendMessage({ action: MessageActionType.RulesUpdated }).catch(() => {});
+      return;
+    }
 
-    rule.matchCount = (rule.matchCount || 0) + 1;
-    rule.lastMatched = Date.now();
-
-    // Save updated rules
-    await Storage.saveRules(mockRules);
-
-    // Notify popup to reload rules for real-time counter updates
-    browser.runtime.sendMessage({ action: MessageActionType.RulesUpdated }).catch(() => {
-      // Popup might not be open, ignore
-    });
+    const proxyRule = proxyRules.find((r) => r.id === ruleId);
+    if (proxyRule) {
+      proxyRule.matchCount = (proxyRule.matchCount || 0) + 1;
+      proxyRule.lastMatched = Date.now();
+      await Storage.saveProxyRules(proxyRules);
+      browser.runtime.sendMessage({ action: MessageActionType.ProxyRulesUpdated }).catch(() => {});
+    }
   }
 
   // Update rules in all tabs via content script
@@ -177,7 +188,8 @@ export default defineBackground(() => {
     await Promise.allSettled(sendPromises);
 
     // Update badge
-    updateBadge(settings.enabled && enabledRules.length > 0, enabledRules.length);
+    const totalActive = enabledRules.length + getEnabledProxyRules().length;
+    updateBadge(settings.enabled && totalActive > 0, totalActive);
   }
 
   // Helper: Set badge appearance
@@ -317,6 +329,15 @@ export default defineBackground(() => {
 
       case MessageActionType.GetStandaloneWindowStatus:
         return { success: true, data: { isOpen: standaloneWindowId !== null } };
+
+      case MessageActionType.UpdateProxyRules:
+        if (message.proxyRules) {
+          proxyRules = message.proxyRules;
+          await Storage.saveProxyRules(proxyRules);
+          await updateRulesInAllTabs();
+          return { success: true };
+        }
+        return { success: false, error: 'No proxy rules provided' };
 
       default:
         return { success: false, error: 'Unknown action' };

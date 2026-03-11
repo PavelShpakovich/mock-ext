@@ -3,7 +3,7 @@ import { RequestLog } from '../types';
 import { MethodBadge, StatusCodeBadge, Badge } from './ui/Badge';
 import { IconButton } from './ui/IconButton';
 import { Card } from './ui/Card';
-import { Clock, FilePlus } from 'lucide-react';
+import { Clock, FilePlus, ArrowRightLeft } from 'lucide-react';
 import { useI18n } from '../contexts/I18nContext';
 import { formatTime } from '../helpers/formatting';
 import { BadgeVariant, IconButtonVariant } from '../enums';
@@ -11,9 +11,10 @@ import { BadgeVariant, IconButtonVariant } from '../enums';
 interface RequestItemProps {
   request: RequestLog;
   onMock: () => void;
+  onProxy: () => void;
 }
 
-const RequestItem: React.FC<RequestItemProps> = ({ request, onMock }) => {
+const RequestItem: React.FC<RequestItemProps> = ({ request, onMock, onProxy }) => {
   const { t } = useI18n();
 
   return (
@@ -37,6 +38,9 @@ const RequestItem: React.FC<RequestItemProps> = ({ request, onMock }) => {
         <div className='flex items-center gap-2 pl-4 shrink-0'>
           <IconButton variant={IconButtonVariant.Primary} onClick={onMock} title={t('requests.mockThis')}>
             <FilePlus className='w-5 h-5' />
+          </IconButton>
+          <IconButton onClick={onProxy} title={t('requests.proxyThis')}>
+            <ArrowRightLeft className='w-5 h-5' />
           </IconButton>
         </div>
       </div>

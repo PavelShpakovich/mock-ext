@@ -16,6 +16,7 @@ interface RequestsTabProps {
   onSearchChange: (term: string) => void;
   onClearLog: () => void;
   onMockRequest: (request: RequestLog) => void;
+  onProxyRequest: (request: RequestLog) => void;
   logRequests: boolean;
 }
 
@@ -25,6 +26,7 @@ const RequestsTab: React.FC<RequestsTabProps> = ({
   onSearchChange,
   onClearLog,
   onMockRequest,
+  onProxyRequest,
   logRequests,
 }) => {
   const { t } = useI18n();
@@ -128,7 +130,12 @@ const RequestsTab: React.FC<RequestsTabProps> = ({
               {!logRequests && ' (recording stopped)'}
             </div>
             {filteredRequests.map((request) => (
-              <RequestItem key={request.id} request={request} onMock={() => onMockRequest(request)} />
+              <RequestItem
+                key={request.id}
+                request={request}
+                onMock={() => onMockRequest(request)}
+                onProxy={() => onProxyRequest(request)}
+              />
             ))}
           </div>
         )

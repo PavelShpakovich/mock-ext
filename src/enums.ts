@@ -5,6 +5,7 @@
 export enum Tab {
   Rules = 'rules',
   Requests = 'requests',
+  Proxy = 'proxy',
 }
 
 export enum RulesView {
@@ -121,6 +122,8 @@ export enum MessageActionType {
   UpdateFolders = 'updateFolders',
   OpenStandaloneWindow = 'openStandaloneWindow',
   GetStandaloneWindowStatus = 'getStandaloneWindowStatus',
+  UpdateProxyRules = 'updateProxyRules',
+  ProxyRulesUpdated = 'proxyRulesUpdated',
   Ping = 'ping',
 }
 

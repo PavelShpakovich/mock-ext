@@ -1,5 +1,5 @@
 import { Storage } from '../storage';
-import { MockRule, Settings } from '../types';
+import { MockRule, Settings, ProxyRule } from '../types';
 import { withContextCheck } from '../contextHandler';
 import { MessageActionType } from '../enums';
 
@@ -13,6 +13,7 @@ export default defineContentScript({
     interface RuntimeMessage {
       action: MessageActionType.UpdateRulesInPage | MessageActionType.OpenDevTools | MessageActionType.Ping;
       rules?: MockRule[];
+      proxyRules?: ProxyRule[];
       settings?: Settings;
       language?: string;
     }
@@ -56,7 +57,7 @@ export default defineContentScript({
         }
 
         if (message.action === MessageActionType.UpdateRulesInPage) {
-          this.updatePageRules(message.rules ?? [], message.settings);
+          this.updatePageRules(message.rules ?? [], message.proxyRules ?? [], message.settings);
           sendResponse({ success: true });
           return true;
         }
@@ -89,6 +90,7 @@ export default defineContentScript({
       private async loadAndSendInitialRules(): Promise<void> {
         try {
           const rules = await withContextCheck(() => Storage.getRules(), []);
+          const proxyRules = await withContextCheck(() => Storage.getProxyRules(), []);
           const settings = await withContextCheck(() => Storage.getSettings(), {
             enabled: false,
             logRequests: false,
@@ -99,6 +101,7 @@ export default defineContentScript({
           if (settings.enabled) {
             this.updatePageRules(
               rules.filter((r) => r.enabled),
+              proxyRules.filter((r) => r.enabled),
               settings
             );
           }
@@ -155,11 +158,12 @@ export default defineContentScript({
           });
       }
 
-      private updatePageRules(rules: MockRule[], settings?: Settings) {
+      private updatePageRules(rules: MockRule[], proxyRules: ProxyRule[], settings?: Settings) {
         window.postMessage(
           {
             type: 'MOQ_UPDATE_RULES',
             rules: rules,
+            proxyRules: proxyRules,
             settings: settings,
           },
           '*'

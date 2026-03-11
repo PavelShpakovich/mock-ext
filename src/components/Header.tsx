@@ -1,12 +1,10 @@
 import React from 'react';
-import clsx from 'clsx';
-import { Button } from './ui/Button';
-import { Toggle } from './ui/Toggle';
+import { ControlsMenu } from './ui/ControlsMenu';
 import { SettingsMenu } from './ui/SettingsMenu';
-import { Circle, Square } from 'lucide-react';
+import { Circle } from 'lucide-react';
 import { useI18n } from '../contexts/I18nContext';
 import { useTheme } from '../contexts/ThemeContext';
-import { ButtonVariant, ButtonSize, Language, Theme, ResolvedTheme } from '../enums';
+import { Language, Theme, ResolvedTheme } from '../enums';
 import { isDevTools, openStandaloneWindow } from '../helpers/context';
 
 type LanguageOption = Language;
@@ -33,10 +31,6 @@ const Header: React.FC<HeaderProps> = ({
   const { t, language, setLanguage } = useI18n();
   const { theme, resolvedTheme, setTheme } = useTheme();
   const showOpenWindowButton = isDevTools();
-
-  const handleRecordingClick = () => {
-    onToggleRecording(!logRequests);
-  };
 
   const handleThemeChange = (newTheme: Theme) => {
     setTheme(newTheme);
@@ -69,74 +63,42 @@ const Header: React.FC<HeaderProps> = ({
           )}
         </div>
 
-        <div className='flex items-center gap-4 flex-wrap'>
-          <div className='flex items-center gap-2'>
-            <div className='flex items-center gap-2'>
-              <Toggle checked={enabled} onChange={() => onToggleEnabled(!enabled)} />
-              <span
-                className={clsx('text-xs font-medium', {
-                  'text-green-600 dark:text-green-400': enabled,
-                  'text-gray-500 dark:text-gray-500': !enabled,
-                })}
-              >
-                {enabled ? t('header.enabled') : t('header.disabled')}
-              </span>
-            </div>
+        <div className='flex items-center gap-2'>
+          <ControlsMenu
+            enabled={enabled}
+            logRequests={logRequests}
+            corsAutoFix={corsAutoFix}
+            onToggleEnabled={onToggleEnabled}
+            onToggleRecording={onToggleRecording}
+            onToggleCors={onToggleCors}
+            translations={{
+              controls: t('header.controls'),
+              appName: t('app.name'),
+              enabled: t('header.enabled'),
+              disabled: t('header.disabled'),
+              corsAutoFix: t('header.corsAutoFix'),
+              record: t('header.record'),
+              stop: t('header.stop'),
+            }}
+          />
 
-            <div className='flex items-center gap-2' title={t('header.corsAutoFixTooltip')}>
-              <Toggle checked={corsAutoFix} onChange={() => onToggleCors(!corsAutoFix)} disabled={!enabled} />
-              <span
-                className={clsx('text-xs font-medium', {
-                  'text-green-600 dark:text-green-400': corsAutoFix && enabled,
-                  'text-gray-500 dark:text-gray-500': !corsAutoFix || !enabled,
-                })}
-              >
-                {t('header.corsAutoFix')}
-              </span>
-            </div>
-
-            <div className='w-px h-6 bg-gray-300 dark:bg-gray-700'></div>
-
-            <Button
-              onClick={handleRecordingClick}
-              variant={logRequests ? ButtonVariant.Danger : ButtonVariant.Secondary}
-              size={ButtonSize.Small}
-              className='flex items-center gap-1.5'
-              disabled={!enabled}
-            >
-              {logRequests ? (
-                <>
-                  <Square className='w-3.5 h-3.5' fill='currentColor' />
-                  {t('header.stop')}
-                </>
-              ) : (
-                <>
-                  <Circle className='w-3.5 h-3.5' />
-                  {t('header.record')}
-                </>
-              )}
-            </Button>
-
-            <div className='w-px h-6 bg-gray-300 dark:bg-gray-700'></div>
-
-            <SettingsMenu
-              theme={theme}
-              language={language}
-              onThemeChange={handleThemeChange}
-              onLanguageChange={(lang) => handleLanguageChange(lang as Language)}
-              showOpenWindow={showOpenWindowButton}
-              onOpenWindow={handleOpenWindow}
-              translations={{
-                settings: t('settings.settings'),
-                theme: t('settings.theme'),
-                themeSystem: t('settings.themeSystem'),
-                themeLight: t('settings.themeLight'),
-                themeDark: t('settings.themeDark'),
-                language: t('settings.language'),
-                openWindow: t('header.openWindow'),
-              }}
-            />
-          </div>
+          <SettingsMenu
+            theme={theme}
+            language={language}
+            onThemeChange={handleThemeChange}
+            onLanguageChange={(lang) => handleLanguageChange(lang as Language)}
+            showOpenWindow={showOpenWindowButton}
+            onOpenWindow={handleOpenWindow}
+            translations={{
+              settings: t('settings.settings'),
+              theme: t('settings.theme'),
+              themeSystem: t('settings.themeSystem'),
+              themeLight: t('settings.themeLight'),
+              themeDark: t('settings.themeDark'),
+              language: t('settings.language'),
+              openWindow: t('header.openWindow'),
+            }}
+          />
         </div>
       </div>
     </div>

@@ -1,4 +1,4 @@
-import { MockRule, Settings, StorageData, RequestLog, Folder } from './types';
+import { MockRule, Settings, StorageData, RequestLog, Folder, ProxyRule } from './types';
 import { Theme, RulesView } from './enums';
 import { migrateFoldersAndRules } from './helpers/folderManagement';
 
@@ -26,8 +26,9 @@ export class Storage {
   private static readonly LOG_KEY = 'requestLog';
   private static readonly DRAFT_KEY = 'ruleDraft';
   private static readonly FOLDERS_KEY = 'folders';
+  private static readonly PROXY_RULES_KEY = 'proxyRules';
   private static readonly SCHEMA_VERSION_KEY = 'schemaVersion';
-  private static readonly CURRENT_SCHEMA_VERSION = 2;
+  private static readonly CURRENT_SCHEMA_VERSION = 3;
 
   /**
    * Run storage schema migrations (idempotent — safe to call multiple times).
@@ -49,6 +50,16 @@ export class Storage {
         ]);
         // eslint-disable-next-line no-console
         console.log('[Moq] Storage migrated to schema v2 (order fields added)');
+      }
+
+      if (storedVersion < 3) {
+        // v2 → v3: ensure proxyRules key exists
+        const result2 = (await browser.storage.local.get(this.PROXY_RULES_KEY)) as { [key: string]: unknown };
+        if (!result2[this.PROXY_RULES_KEY]) {
+          await browser.storage.local.set({ [this.PROXY_RULES_KEY]: [] });
+        }
+        // eslint-disable-next-line no-console
+        console.log('[Moq] Storage migrated to schema v3 (proxy rules added)');
       }
 
       await browser.storage.local.set({ [this.SCHEMA_VERSION_KEY]: this.CURRENT_SCHEMA_VERSION });
@@ -76,6 +87,16 @@ export class Storage {
 
   static async saveFolders(folders: Folder[]): Promise<void> {
     await browser.storage.local.set({ [this.FOLDERS_KEY]: folders });
+  }
+
+  // Proxy rules operations
+  static async getProxyRules(): Promise<ProxyRule[]> {
+    const result = (await browser.storage.local.get(this.PROXY_RULES_KEY)) as { [key: string]: unknown };
+    return (result[this.PROXY_RULES_KEY] as ProxyRule[]) || [];
+  }
+
+  static async saveProxyRules(proxyRules: ProxyRule[]): Promise<void> {
+    await browser.storage.local.set({ [this.PROXY_RULES_KEY]: proxyRules });
   }
 
   // Settings operations
@@ -154,9 +175,14 @@ export class Storage {
 
   // Import/Export operations
   static async exportAll(): Promise<StorageData> {
-    const [rules, settings, log] = await Promise.all([this.getRules(), this.getSettings(), this.getRequestLog()]);
+    const [rules, proxyRules, settings, log] = await Promise.all([
+      this.getRules(),
+      this.getProxyRules(),
+      this.getSettings(),
+      this.getRequestLog(),
+    ]);
 
-    return { mockRules: rules, settings, requestLog: log };
+    return { mockRules: rules, proxyRules, settings, requestLog: log };
   }
 
   static async importRules(rules: MockRule[]): Promise<void> {
