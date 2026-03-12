@@ -7,6 +7,7 @@ import { RulesView, DragDropItemType } from '../enums';
 import { SortableRuleItem } from './SortableRuleItem';
 import { SortableFolderItem } from './SortableFolderItem';
 import { ROOT_DROP_ZONE_ID } from '../constants';
+import { useI18n } from '../contexts/I18nContext';
 
 // Props for one level of the nested list
 export interface NestedFolderListProps {
@@ -61,6 +62,7 @@ export const NestedFolderList: React.FC<NestedFolderListProps> = ({
   onDuplicateRule,
 }) => {
   const isCompact = view === RulesView.Compact;
+  const { t } = useI18n();
 
   const isRootLevel = parentFolderId === undefined;
   const rootDropRef = useRef<HTMLDivElement>(null);
@@ -149,6 +151,16 @@ export const NestedFolderList: React.FC<NestedFolderListProps> = ({
       )}
 
       {/* Ungrouped rules */}
+      {isRootLevel && nodes.length > 0 && ungroupedRules.length > 0 && (
+        <div
+          className={clsx(
+            'font-semibold text-gray-600 dark:text-gray-400 px-2',
+            isCompact ? 'text-xs py-0.5' : 'text-sm'
+          )}
+        >
+          {t('folders.ungrouped')}
+        </div>
+      )}
       {ungroupedRules.length > 0 && (
         <div className={clsx('min-h-5 flex flex-col', isCompact ? 'gap-2' : 'gap-4')}>
           {ungroupedRules.map((rule, index) => (

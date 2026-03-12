@@ -61,17 +61,6 @@ export const RulesList: React.FC<RulesListProps> = ({
 
   return (
     <div className={clsx('flex flex-col', isCompact ? 'gap-2' : 'gap-4')}>
-      {folders.length > 0 && ungroupedRules.length > 0 && (
-        <div
-          className={clsx(
-            'font-semibold text-gray-600 dark:text-gray-400 px-2',
-            isCompact ? 'text-xs py-0.5' : 'text-sm'
-          )}
-        >
-          {t('folders.ungrouped')}
-        </div>
-      )}
-
       {hasContent && (
         <NestedFolderList
           nodes={folderTree}
