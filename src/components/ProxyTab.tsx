@@ -21,6 +21,7 @@ interface ProxyTabProps {
   onDeleteRule: (id: string) => void;
   onToggleRule: (id: string) => void;
   onDuplicateRule: (id: string) => void;
+  onResetRuleHits: (id: string) => void;
   onCancelEdit: () => void;
   onExportRules: () => void;
   onImportRules: (file: File) => void;
@@ -35,6 +36,7 @@ const ProxyTab: React.FC<ProxyTabProps> = ({
   onDeleteRule,
   onToggleRule,
   onDuplicateRule,
+  onResetRuleHits,
   onCancelEdit,
   onExportRules,
   onImportRules,
@@ -186,6 +188,7 @@ const ProxyTab: React.FC<ProxyTabProps> = ({
                 onDelete={() => onDeleteRule(rule.id)}
                 onToggle={() => onToggleRule(rule.id)}
                 onDuplicate={() => onDuplicateRule(rule.id)}
+                onResetHits={() => onResetRuleHits(rule.id)}
               />
             ) : (
               <ProxyRuleItem
@@ -196,6 +199,7 @@ const ProxyTab: React.FC<ProxyTabProps> = ({
                 onDelete={() => onDeleteRule(rule.id)}
                 onToggle={() => onToggleRule(rule.id)}
                 onDuplicate={() => onDuplicateRule(rule.id)}
+                onResetHits={() => onResetRuleHits(rule.id)}
               />
             )
           )}

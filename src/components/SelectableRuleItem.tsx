@@ -17,6 +17,7 @@ interface SelectableRuleItemProps {
   onDelete: () => void;
   onToggle: () => void;
   onDuplicate: () => void;
+  onResetHits?: () => void;
   // Visual feedback
   isDragging?: boolean;
   isDropTarget?: boolean;
@@ -32,6 +33,7 @@ export const SelectableRuleItem: React.FC<SelectableRuleItemProps> = ({
   onDelete,
   onToggle,
   onDuplicate,
+  onResetHits,
   isDragging,
   isDropTarget,
 }) => {
@@ -61,6 +63,7 @@ export const SelectableRuleItem: React.FC<SelectableRuleItemProps> = ({
         onDelete={onDelete}
         onToggle={onToggle}
         onDuplicate={onDuplicate}
+        onResetHits={onResetHits}
         className={selectionMode ? 'pl-12' : ''}
         disabled={selectionMode}
         isDragging={isDragging}

@@ -24,6 +24,7 @@ interface SortableRuleItemProps {
   onDelete: () => void;
   onToggle: () => void;
   onDuplicate: () => void;
+  onResetHits?: () => void;
 }
 
 export const SortableRuleItem: React.FC<SortableRuleItemProps> = ({

@@ -19,6 +19,7 @@ interface CompactRuleItemProps {
   onDelete: () => void;
   onToggle: () => void;
   onDuplicate: () => void;
+  onResetHits?: () => void;
   // Visual feedback
   isDragging?: boolean;
   isDropTarget?: boolean;
@@ -34,6 +35,7 @@ export const CompactRuleItem: React.FC<CompactRuleItemProps> = ({
   onDelete,
   onToggle,
   onDuplicate,
+  onResetHits,
   isDragging = false,
   isDropTarget = false,
 }) => {
@@ -81,7 +83,13 @@ export const CompactRuleItem: React.FC<CompactRuleItemProps> = ({
               {rule.name}
             </span>
             {(rule.matchCount ?? 0) > 0 && (
-              <span className='text-xs text-gray-500 dark:text-gray-400 shrink-0'>({rule.matchCount})</span>
+              <span
+                className='text-xs text-gray-500 dark:text-gray-400 shrink-0 cursor-pointer hover:text-red-600 dark:hover:text-red-400 transition-colors'
+                title={t('rules.resetHits')}
+                onClick={onResetHits}
+              >
+                ({rule.matchCount})
+              </span>
             )}
             {hasError && <AlertCircle className='w-3.5 h-3.5 text-red-600 dark:text-red-400 shrink-0' />}
             {hasWarning && !hasError && (

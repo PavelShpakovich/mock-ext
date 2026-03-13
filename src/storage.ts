@@ -175,14 +175,15 @@ export class Storage {
 
   // Import/Export operations
   static async exportAll(): Promise<StorageData> {
-    const [rules, proxyRules, settings, log] = await Promise.all([
+    const [rules, proxyRules, settings, log, folders] = await Promise.all([
       this.getRules(),
       this.getProxyRules(),
       this.getSettings(),
       this.getRequestLog(),
+      this.getFolders(),
     ]);
 
-    return { mockRules: rules, proxyRules, settings, requestLog: log };
+    return { mockRules: rules, proxyRules, settings, requestLog: log, folders };
   }
 
   static async importRules(rules: MockRule[]): Promise<void> {

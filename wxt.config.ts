@@ -7,12 +7,13 @@ export default defineConfig({
   zip: {
     artifactTemplate: '../releases/{{name}}-{{browser}}-v{{version}}.zip',
     sourcesTemplate: '../releases/{{name}}-v{{version}}-sources.zip',
+    excludeSources: ['**/releases/**', '**/coverage/**'],
   },
   manifest: {
     name: 'Moq - Mock API Requests',
     description:
       'Mock HTTP requests with custom responses, status codes, delays, and headers. Perfect for development, testing, and debugging.',
-    version: '2.15.1',
+    version: '2.15.2',
     permissions: ['storage', 'activeTab', 'tabs', 'contextMenus', 'declarativeNetRequest'],
     host_permissions: ['<all_urls>'],
 

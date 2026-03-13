@@ -19,6 +19,7 @@ interface RuleItemProps {
   onDelete: () => void;
   onToggle: () => void;
   onDuplicate: () => void;
+  onResetHits?: () => void;
   className?: string;
   disabled?: boolean;
   // Visual feedback for drag state
@@ -33,6 +34,7 @@ const RuleItem: React.FC<RuleItemProps> = ({
   onDelete,
   onToggle,
   onDuplicate,
+  onResetHits,
   className = '',
   disabled = false,
   isDragging = false,
@@ -150,7 +152,11 @@ const RuleItem: React.FC<RuleItemProps> = ({
         </div>
       </div>
       {(rule.matchCount ?? 0) > 0 && (
-        <span className='absolute bottom-3 right-3 min-w-[1.375rem] h-[1.375rem] rounded-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs font-bold flex items-center justify-center px-1'>
+        <span
+          className='absolute bottom-3 right-3 min-w-[1.375rem] h-[1.375rem] rounded-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs font-bold flex items-center justify-center px-1 cursor-pointer hover:bg-red-200 dark:hover:bg-red-700/50 hover:text-red-700 dark:hover:text-red-300 transition-colors'
+          title={t('rules.resetHits')}
+          onClick={onResetHits}
+        >
           {rule.matchCount}
         </span>
       )}

@@ -16,6 +16,7 @@ interface CompactProxyRuleItemProps {
   onDelete: () => void;
   onToggle: () => void;
   onDuplicate: () => void;
+  onResetHits?: () => void;
 }
 
 export const CompactProxyRuleItem: React.FC<CompactProxyRuleItemProps> = ({
@@ -25,6 +26,7 @@ export const CompactProxyRuleItem: React.FC<CompactProxyRuleItemProps> = ({
   onDelete,
   onToggle,
   onDuplicate,
+  onResetHits,
 }) => {
   const { t } = useI18n();
 
@@ -42,7 +44,13 @@ export const CompactProxyRuleItem: React.FC<CompactProxyRuleItemProps> = ({
             {rule.name}
           </span>
           {(rule.matchCount ?? 0) > 0 && (
-            <span className='text-xs text-gray-500 dark:text-gray-400 shrink-0'>({rule.matchCount})</span>
+            <span
+              className='text-xs text-gray-500 dark:text-gray-400 shrink-0 cursor-pointer hover:text-red-600 dark:hover:text-red-400 transition-colors'
+              title={t('rules.resetHits')}
+              onClick={onResetHits}
+            >
+              ({rule.matchCount})
+            </span>
           )}
           {rule.method && <MethodBadge method={rule.method} />}
           <ProxyBadge />

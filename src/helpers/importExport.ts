@@ -1,4 +1,4 @@
-import { MockRule, ProxyRule } from '../types';
+import { MockRule, ProxyRule, Folder } from '../types';
 
 export interface ValidationResult {
   valid: boolean;
@@ -21,6 +21,17 @@ export interface ImportPreview {
   replace: ReplaceStats;
 }
 
+export interface ExportData {
+  version: 2;
+  rules: MockRule[];
+  folders: Folder[];
+}
+
+export interface ParsedImportData {
+  rules: MockRule[];
+  folders: Folder[];
+}
+
 export function downloadFile(content: string, filename: string, mimeType: string): void {
   const blob = new Blob([content], { type: mimeType });
   const url = URL.createObjectURL(blob);
@@ -33,9 +44,35 @@ export function downloadFile(content: string, filename: string, mimeType: string
   URL.revokeObjectURL(url);
 }
 
-export function exportRulesToJSON(rules: MockRule[], selectedIds?: string[]): string {
+export function exportRulesToJSON(rules: MockRule[], selectedIds?: string[], folders: Folder[] = []): string {
   const rulesToExport = selectedIds ? rules.filter((r) => selectedIds.includes(r.id)) : rules;
-  return JSON.stringify(rulesToExport, null, 2);
+
+  // Collect folders referenced by exported rules, plus their full ancestor chain
+  const referencedFolderIds = new Set<string>();
+  for (const rule of rulesToExport) {
+    if (rule.folderId) referencedFolderIds.add(rule.folderId);
+  }
+
+  // Walk up the parent chain so nested folder structure is preserved
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const folder of folders) {
+      if (
+        referencedFolderIds.has(folder.id) &&
+        folder.parentFolderId &&
+        !referencedFolderIds.has(folder.parentFolderId)
+      ) {
+        referencedFolderIds.add(folder.parentFolderId);
+        changed = true;
+      }
+    }
+  }
+
+  const foldersToExport = folders.filter((f) => referencedFolderIds.has(f.id));
+
+  const data: ExportData = { version: 2, rules: rulesToExport, folders: foldersToExport };
+  return JSON.stringify(data, null, 2);
 }
 
 export function generateExportFilename(): string {
@@ -58,10 +95,64 @@ export function validateImportedRules(data: unknown): ValidationResult {
   return { valid: true };
 }
 
+/**
+ * Validates an imported file payload and returns parsed rules + folders.
+ * Handles both legacy v1 format (plain MockRule[]) and v2 format ({ version, rules, folders }).
+ * Legacy v1 imports have folderId stripped from rules to prevent orphaned/invisible rules.
+ */
+export function validateImportedData(
+  data: unknown
+): { valid: true; parsed: ParsedImportData } | { valid: false; error: string } {
+  // Legacy v1: plain array of rules
+  if (Array.isArray(data)) {
+    const validation = validateImportedRules(data);
+    if (!validation.valid) return { valid: false, error: validation.error! };
+    // Strip folderId so rules with dangling folder references don't become invisible
+    const rules = (data as MockRule[]).map(({ folderId: _f, ...rest }) => rest as MockRule);
+    return { valid: true, parsed: { rules, folders: [] } };
+  }
+
+  // v2: wrapper object with { version, rules, folders }
+  if (typeof data === 'object' && data !== null && 'rules' in data) {
+    const obj = data as Record<string, unknown>;
+
+    if (!Array.isArray(obj.rules)) {
+      return { valid: false, error: 'Invalid format - expected rules array' };
+    }
+
+    const rulesValidation = validateImportedRules(obj.rules);
+    if (!rulesValidation.valid) return { valid: false, error: rulesValidation.error! };
+
+    const folders: Folder[] = [];
+    if (obj.folders !== undefined) {
+      if (!Array.isArray(obj.folders)) {
+        return { valid: false, error: 'Invalid format - expected folders array' };
+      }
+      const validFolders = (obj.folders as unknown[]).every(
+        (f) => f && typeof f === 'object' && 'id' in (f as object) && 'name' in (f as object)
+      );
+      if (!validFolders) {
+        return { valid: false, error: 'Invalid folder format - missing required fields (id, name)' };
+      }
+      folders.push(...(obj.folders as Folder[]));
+    }
+
+    return { valid: true, parsed: { rules: obj.rules as MockRule[], folders } };
+  }
+
+  return { valid: false, error: 'Invalid format - expected array or export object' };
+}
+
 export function mergeRules(existingRules: MockRule[], importedRules: MockRule[]): MockRule[] {
   const existingIds = new Set(existingRules.map((r) => r.id));
   const newRules = importedRules.filter((rule) => !existingIds.has(rule.id));
   return [...existingRules, ...newRules];
+}
+
+export function mergeFolders(existingFolders: Folder[], importedFolders: Folder[]): Folder[] {
+  const existingIds = new Set(existingFolders.map((f) => f.id));
+  const newFolders = importedFolders.filter((f) => !existingIds.has(f.id));
+  return [...existingFolders, ...newFolders];
 }
 
 export function calculateImportStats(existingRules: MockRule[], importedRules: MockRule[]): ImportStats {
@@ -83,7 +174,7 @@ export function calculateReplaceStats(existingRules: MockRule[], importedRules: 
   };
 }
 
-export async function parseImportFile(file: File): Promise<MockRule[]> {
+export async function parseImportFile(file: File): Promise<unknown> {
   const text = await file.text();
   return JSON.parse(text);
 }

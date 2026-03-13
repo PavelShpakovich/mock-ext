@@ -31,6 +31,7 @@ interface RulesListProps {
   onDeleteRule: (id: string) => void;
   onToggleRule: (id: string) => void;
   onDuplicateRule: (id: string) => void;
+  onResetRuleHits: (id: string) => void;
 }
 
 export const RulesList: React.FC<RulesListProps> = ({
@@ -54,6 +55,7 @@ export const RulesList: React.FC<RulesListProps> = ({
   onDeleteRule,
   onToggleRule,
   onDuplicateRule,
+  onResetRuleHits,
 }) => {
   const { t } = useI18n();
   const isCompact = view === RulesView.Compact;
@@ -84,6 +86,7 @@ export const RulesList: React.FC<RulesListProps> = ({
           onDeleteRule={onDeleteRule}
           onToggleRule={onToggleRule}
           onDuplicateRule={onDuplicateRule}
+          onResetRuleHits={onResetRuleHits}
         />
       )}
     </div>

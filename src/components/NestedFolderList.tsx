@@ -36,6 +36,7 @@ export interface NestedFolderListProps {
   onDeleteRule: (id: string) => void;
   onToggleRule: (id: string) => void;
   onDuplicateRule: (id: string) => void;
+  onResetRuleHits: (id: string) => void;
 }
 
 export const NestedFolderList: React.FC<NestedFolderListProps> = ({
@@ -60,6 +61,7 @@ export const NestedFolderList: React.FC<NestedFolderListProps> = ({
   onDeleteRule,
   onToggleRule,
   onDuplicateRule,
+  onResetRuleHits,
 }) => {
   const isCompact = view === RulesView.Compact;
   const { t } = useI18n();
@@ -141,6 +143,7 @@ export const NestedFolderList: React.FC<NestedFolderListProps> = ({
                       onDeleteRule={onDeleteRule}
                       onToggleRule={onToggleRule}
                       onDuplicateRule={onDuplicateRule}
+                      onResetRuleHits={onResetRuleHits}
                     />
                   </div>
                 )}
@@ -178,6 +181,7 @@ export const NestedFolderList: React.FC<NestedFolderListProps> = ({
               onDelete={() => onDeleteRule(rule.id)}
               onToggle={() => onToggleRule(rule.id)}
               onDuplicate={() => onDuplicateRule(rule.id)}
+              onResetHits={() => onResetRuleHits(rule.id)}
             />
           ))}
         </div>

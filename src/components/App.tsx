@@ -17,8 +17,9 @@ import {
   downloadFile,
   exportRulesToJSON,
   generateExportFilename,
-  validateImportedRules,
+  validateImportedData,
   mergeRules,
+  mergeFolders,
   parseImportFile,
   exportProxyRulesToJSON,
   generateProxyExportFilename,
@@ -51,7 +52,7 @@ const App: React.FC = () => {
   const [editingFolder, setEditingFolder] = useState<Folder | null | EditMode>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [requestsSearchTerm, setRequestsSearchTerm] = useState('');
-  const [importDialogData, setImportDialogData] = useState<{ rules: MockRule[] } | null>(null);
+  const [importDialogData, setImportDialogData] = useState<{ rules: MockRule[]; folders: Folder[] } | null>(null);
   const [confirmDialog, setConfirmDialog] = useState<{
     title: string;
     message: string;
@@ -198,11 +199,11 @@ const App: React.FC = () => {
 
   const handleExportRules = useCallback(
     (selectedIds?: string[]) => {
-      const dataStr = exportRulesToJSON(rulesManager.rules, selectedIds);
+      const dataStr = exportRulesToJSON(rulesManager.rules, selectedIds, foldersManager.folders);
       const filename = generateExportFilename();
       downloadFile(dataStr, filename, 'application/json');
     },
-    [rulesManager.rules]
+    [rulesManager.rules, foldersManager.folders]
   );
 
   const handleExportProxyRules = useCallback(() => {
@@ -250,8 +251,8 @@ const App: React.FC = () => {
   const handleImportRules = useCallback(
     async (file: File) => {
       try {
-        const importedRules = await parseImportFile(file);
-        const validation = validateImportedRules(importedRules);
+        const rawData = await parseImportFile(file);
+        const validation = validateImportedData(rawData);
 
         if (!validation.valid) {
           setToast({
@@ -261,6 +262,7 @@ const App: React.FC = () => {
           return;
         }
 
+        const { rules: importedRules, folders: importedFolders } = validation.parsed;
         const hasHooks = importedRules.some((r) => r.responseHook && r.responseHook.trim().length > 0);
         if (hasHooks) {
           setConfirmDialog({
@@ -269,13 +271,13 @@ const App: React.FC = () => {
             variant: ConfirmDialogVariant.Danger,
             onConfirm: () => {
               setConfirmDialog(null);
-              setImportDialogData({ rules: importedRules });
+              setImportDialogData({ rules: importedRules, folders: importedFolders });
             },
           });
           return;
         }
 
-        setImportDialogData({ rules: importedRules });
+        setImportDialogData({ rules: importedRules, folders: importedFolders });
       } catch (error) {
         console.error('Import error:', error);
         setToast({
@@ -292,7 +294,7 @@ const App: React.FC = () => {
       if (!importDialogData) return;
 
       try {
-        const importedRules = importDialogData.rules;
+        const { rules: importedRules, folders: importedFolders } = importDialogData;
         const currentRules = rulesManager.rules;
         const updatedRules = mode === ImportMode.Merge ? mergeRules(currentRules, importedRules) : importedRules;
         const newRulesCount =
@@ -303,6 +305,14 @@ const App: React.FC = () => {
         await withContextCheck(() =>
           browser.runtime.sendMessage({ action: MessageActionType.UpdateRules, rules: updatedRules })
         ).catch(() => {});
+
+        // Update folders: merge new ones in, or replace entirely
+        const currentFolders = foldersManager.folders;
+        const updatedFolders =
+          mode === ImportMode.Merge ? mergeFolders(currentFolders, importedFolders) : importedFolders;
+        if (updatedFolders !== currentFolders) {
+          await foldersManager.saveFolders(updatedFolders);
+        }
 
         setImportDialogData(null);
         setToast({
@@ -317,7 +327,7 @@ const App: React.FC = () => {
         });
       }
     },
-    [importDialogData, rulesManager, t]
+    [importDialogData, rulesManager, foldersManager, t]
   );
 
   // ===========================
@@ -426,6 +436,7 @@ const App: React.FC = () => {
           onDeleteRule={handleDeleteRule}
           onToggleRule={rulesManager.toggleRule}
           onDuplicateRule={rulesManager.duplicateRule}
+          onResetRuleHits={rulesManager.resetRuleHits}
           onCancelEdit={() => setEditingRuleId(null)}
           onExportRules={handleExportRules}
           onImportRules={handleImportRules}
@@ -448,6 +459,7 @@ const App: React.FC = () => {
           onDeleteRule={handleDeleteProxyRule}
           onToggleRule={proxyRulesManager.toggleProxyRule}
           onDuplicateRule={proxyRulesManager.duplicateProxyRule}
+          onResetRuleHits={proxyRulesManager.resetProxyRuleHits}
           onCancelEdit={() => setEditingProxyRuleId(null)}
           onExportRules={handleExportProxyRules}
           onImportRules={handleImportProxyRules}
