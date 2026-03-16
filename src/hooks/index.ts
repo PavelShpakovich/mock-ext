@@ -7,3 +7,4 @@ export { useFoldersManager } from './useFoldersManager';
 export { useRecording } from './useRecording';
 export { useCrossContextSync } from './useCrossContextSync';
 export { useDragDropHandlers } from './useDragDropHandlers';
+export { useTextareaHistory } from './useTextareaHistory';

@@ -1,5 +1,11 @@
-import React from 'react';
+import React, { useRef, useCallback } from 'react';
 import clsx from 'clsx';
+import { useTextareaHistory } from '../../hooks/useTextareaHistory';
+
+const nativeTextAreaValueSetter =
+  typeof HTMLTextAreaElement !== 'undefined'
+    ? Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set
+    : undefined;
 
 interface TextAreaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
   label?: string;
@@ -7,6 +13,8 @@ interface TextAreaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement
   error?: string;
   fullWidth?: boolean;
   action?: React.ReactNode;
+  /** Number of spaces inserted when Tab is pressed (default: 2). */
+  tabSize?: number;
 }
 
 export const TextArea: React.FC<TextAreaProps> = ({
@@ -17,9 +25,44 @@ export const TextArea: React.FC<TextAreaProps> = ({
   action,
   className = '',
   id,
+  tabSize = 2,
+  onKeyDown: externalOnKeyDown,
+  onChange: externalOnChange,
   ...props
 }) => {
   const areaId = id || props.name || Math.random().toString(36).substr(2, 9);
+  const innerRef = useRef<HTMLTextAreaElement>(null);
+
+  // Called by the hook on undo/redo/tab. Sets the DOM value and calls the
+  // parent's onChange with a minimal event so `e.target.value` works.
+  const applyValue = useCallback(
+    (newValue: string) => {
+      const textarea = innerRef.current;
+      if (!textarea || !externalOnChange) return;
+      if (nativeTextAreaValueSetter) {
+        nativeTextAreaValueSetter.call(textarea, newValue);
+      }
+      externalOnChange({
+        target: textarea,
+        currentTarget: textarea,
+      } as React.ChangeEvent<HTMLTextAreaElement>);
+    },
+    [externalOnChange]
+  );
+
+  const { onKeyDown: historyKeyDown, onChangePush } = useTextareaHistory(innerRef, applyValue, tabSize);
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    historyKeyDown(e);
+    if (!e.defaultPrevented) {
+      externalOnKeyDown?.(e);
+    }
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    onChangePush();
+    externalOnChange?.(e);
+  };
 
   return (
     <div className={clsx('flex flex-col gap-1', { 'w-full': fullWidth }, className)}>
@@ -45,6 +88,7 @@ export const TextArea: React.FC<TextAreaProps> = ({
         {action}
       </div>
       <textarea
+        ref={innerRef}
         id={areaId}
         className={clsx(
           'w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600/50 dark:focus:ring-green-500/50 font-mono text-sm custom-scrollbar bg-white dark:bg-gray-700 text-gray-800 dark:text-white',
@@ -53,6 +97,8 @@ export const TextArea: React.FC<TextAreaProps> = ({
             'border-gray-300 dark:border-gray-600 focus:border-green-600 dark:focus:border-green-500': !error,
           }
         )}
+        onKeyDown={handleKeyDown}
+        onChange={handleChange}
         {...props}
       />
       {error && <p className='text-xs text-red-400 font-medium'>{error}</p>}

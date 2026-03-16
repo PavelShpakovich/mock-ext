@@ -2,7 +2,6 @@ import React from 'react';
 import { MockRule, Folder, FolderTreeNode } from '../types';
 import { ValidationWarning } from '../helpers';
 import { RulesView } from '../enums';
-import { useI18n } from '../contexts/I18nContext';
 import { NestedFolderList } from './NestedFolderList';
 import clsx from 'clsx';
 
@@ -37,7 +36,6 @@ interface RulesListProps {
 export const RulesList: React.FC<RulesListProps> = ({
   folderTree,
   ungroupedRules,
-  folders,
   ruleCounts,
   enabledCounts,
   ruleWarnings,
@@ -57,7 +55,6 @@ export const RulesList: React.FC<RulesListProps> = ({
   onDuplicateRule,
   onResetRuleHits,
 }) => {
-  const { t } = useI18n();
   const isCompact = view === RulesView.Compact;
   const hasContent = folderTree.length > 0 || ungroupedRules.length > 0;
 

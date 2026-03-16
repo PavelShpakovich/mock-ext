@@ -5,6 +5,18 @@ All notable changes to Moq Extension will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.15.3] - 2026-03-16
+
+### Changed
+- **Header UX Overhaul**: Moq enabled/disabled state is now always visible without opening any menu
+  - Added a persistent **Enabled / Disabled** pill badge next to the app title — clicking it toggles the extension on/off directly
+  - **CORS** and **Record / Stop** controls extracted from the dropdown into matching inline pill badges next to the enabled badge
+  - All active badges use consistent green (enabled/CORS) and red (recording) color language; inactive state is neutral gray
+  - All badge buttons show `cursor-pointer` and support `disabled` visual treatment when the extension is off
+  - Removed the `ControlsMenu` dropdown entirely — no hidden menu needed
+  - **Recording indicator** moved to a dedicated row below the main header row so it never shifts the layout of the logo and controls
+  - Controls button group is `shrink-0` — on narrow widths the header title compresses rather than pushing buttons to a second line
+
 ## [2.15.2] - 2026-03-13
 
 ### Fixed

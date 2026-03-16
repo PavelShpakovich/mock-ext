@@ -3,6 +3,7 @@ import { IconButton } from '../ui/IconButton';
 import { X, Wand2, Search, ChevronUp, ChevronDown } from 'lucide-react';
 import clsx from 'clsx';
 import { useI18n } from '../../contexts/I18nContext';
+import { useTextareaHistory } from '../../hooks/useTextareaHistory';
 
 const WORD_CHAR_REGEX = /[a-zA-Z0-9_]/;
 const WHOLE_WORD_PATTERN = /^\w+$/;
@@ -103,6 +104,7 @@ export const ExpandedEditor: React.FC<ExpandedEditorProps> = ({
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const { onKeyDown: historyKeyDown, onChangePush } = useTextareaHistory(textareaRef, onChange, 2);
 
   const matchIndices = useMemo(() => {
     return findMatchIndices(searchQuery, value);
@@ -263,6 +265,7 @@ export const ExpandedEditor: React.FC<ExpandedEditorProps> = ({
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    onChangePush();
     onChange(e.target.value);
   };
 
@@ -340,6 +343,7 @@ export const ExpandedEditor: React.FC<ExpandedEditorProps> = ({
           ref={textareaRef}
           value={value}
           onChange={handleChange}
+          onKeyDown={historyKeyDown}
           placeholder={placeholder}
           className='flex-1 w-full bg-white dark:bg-gray-950 text-gray-800 dark:text-white border border-gray-300 dark:border-gray-700 rounded px-4 py-3 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-green-600 dark:focus:ring-green-500 resize-none custom-scrollbar'
         />
