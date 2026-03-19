@@ -1,315 +1,249 @@
 # Moq
 
-A powerful **cross-browser** extension for mocking API requests during development and testing. Intercepts HTTP requests at the JavaScript level and responds with custom data, status codes, and delays without modifying your application code.
+A cross-browser extension for mocking API requests, proxying matched traffic, and modifying live responses during development and testing.
+Moq intercepts `fetch()` and `XMLHttpRequest` traffic at the page level, lets you return custom mock responses or forward requests through a proxy target, and gives you a DevTools-first UI for managing rules, recording requests, and debugging behavior.
 
-> 🚀 **Now built with [WXT](https://wxt.dev/)** - A modern framework for browser extensions with support for Chrome, Firefox, Safari, and Edge!
+> Built with [WXT](https://wxt.dev/) for Chrome, Firefox, Safari, and Edge.
 
 ## Browser Support
 
-| Browser    | Support        | Manifest Version |
-| ---------- | -------------- | ---------------- |
-| 🟢 Chrome  | ✅ Full        | MV3              |
-| 🟠 Firefox | ✅ Full        | MV3              |
-| 🟣 Edge    | ✅ Full        | MV3              |
-| 🔵 Safari  | ⚙️ Build Ready | MV3              |
+| Browser | Support     | Manifest Version |
+| ------- | ----------- | ---------------- |
+| Chrome  | Full        | MV3              |
+| Firefox | Full        | MV3              |
+| Edge    | Full        | MV3              |
+| Safari  | Build ready | MV3              |
+
+Edge uses the Chrome build output because both targets are Chromium-based.
+
+## Accessing Moq
+
+Moq currently has three access paths:
+
+- **DevTools panel**: the main workflow. Open DevTools on any page and select the **Moq** tab.
+- **Standalone window**: available from the settings menu inside the DevTools panel.
+- **Toolbar icon click**: shows a prompt that tells you how to open DevTools quickly.
+  The extension icon does **not** open a full popup UI at the moment.
 
 ## Development
 
 ```bash
-# Chrome development
-npm run dev
+# Development
+npm run dev              # Chrome / Chromium
+npm run dev:firefox      # Firefox
 
-# Firefox development
-npm run dev:firefox
+# Production builds
+npm run build            # Chrome / Chromium
+npm run build:chrome     # Chrome / Chromium
+npm run build:firefox    # Firefox
+npm run build:safari     # Safari
+npm run build:all        # All supported browser targets
 
-# Build for production
-npm run build              # Chrome (default - also works for Edge)
-npm run build:firefox      # Firefox
-npm run build:safari       # Safari
+# Release archives
+npm run zip              # Chrome / Chromium zip
+npm run zip:chrome
+npm run zip:firefox
+npm run zip:safari
+npm run zip:all
 
-# Create distribution packages (saved to releases/ folder)
-npm run package            # Builds all browsers and creates release zips
-
-# Or create individual zips
-npm run zip                # Chrome
-npm run zip:firefox        # Firefox
-npm run zip:safari         # Safari
+# Quality checks
+npm run lint
+npm run type-check
+npm test
+npm run test:coverage
 ```
 
-**Note:** Edge uses the same Chrome build (both are Chromium-based with MV3).
+### Build Output
 
-**Output directories:**
-
-- Chrome/Edge: `build/chrome-mv3/`
+- Chrome / Edge: `build/chrome-mv3/`
 - Firefox: `build/firefox-mv3/`
 - Safari: `build/safari-mv3/`
-- Release packages: `releases/moq-extension-{browser}-v{version}.zip`
+- Release archives: `releases/moq-extension-{browser}-v{version}.zip`
 
-See [WXT_MIGRATION.md](WXT_MIGRATION.md) for detailed migration notes and development workflow.
+See [WXT_MIGRATION.md](WXT_MIGRATION.md) for migration-specific notes.
 
-## What's New in v2.15.0
+## What's New in v2.15.3
 
-🔀 **Proxy Tab — Import/Export & Compact View**
+### Header Controls Overhaul
 
-- **Import/Export**: Backup and restore proxy rules to and from JSON. Import merges intelligently — duplicate IDs are skipped. Security warning shown when importing rules with response hooks
-- **Compact View**: Toggle between detailed cards and a single-row compact layout per proxy rule — same UX as the Rules tab
-- **Path Rewrite**: Configure a `from`/`to` path rewrite directly on a proxy rule
+- **Enabled / Disabled** is now always visible as a pill badge next to the app title
+- **CORS** and **Record / Stop** are inline controls instead of being hidden behind a controls dropdown
+- Active states use consistent green and red status styling
+- The recording indicator now sits on its own row so the header layout stays stable on narrow widths
 
-🎛️ **Controls Menu**
+### Recent Follow-up Fixes
 
-- Inline header toggles replaced by a single compact dropdown
-- Shows live CORS status text, turns red during recording and green when enabled
-
-🎨 **ProxyRuleItem Redesign**
-
-- Proxy rule cards now match the visual design of mock rule cards — color-coded borders, URL code box, conflict warnings, match counters
+- **v2.15.2**: rule import/export now preserves folders using a versioned export format
+- **v2.15.1**: the **Ungrouped Rules** heading now renders in the correct position in the list
 
 ## Features
 
-### Request Interception
+### Mock Rules
 
-- **URL Pattern Matching**: Use wildcards (`*`), exact match, or regex patterns to match URLs
-- **HTTP Method Filtering**: Mock specific methods (GET, POST, PUT, DELETE, PATCH, OPTIONS, HEAD) or all methods
-- **Custom Responses**: Define JSON or plain text responses
-- **Status Code Control**: Set any HTTP status code (200, 404, 500, etc.)
-- **Response Delay**: Simulate network latency for testing loading states
-- **Custom Response Headers**: Add custom HTTP headers to mock responses
-  - Define multiple key-value header pairs
-  - Auto-populates from captured real responses
-  - Perfect for testing CORS, authentication, caching behaviors
-- **Client-Side Interception**: Intercepts fetch() and XMLHttpRequest before they reach the network
+- Match requests with **wildcard**, **exact**, or **regex** URL patterns
+- Filter by HTTP method or match any method
+- Return custom status codes, delays, headers, and response bodies
+- Support JSON and plain-text responses
+- Track match counts and last-matched timestamps
+- Duplicate, enable/disable, search, export, and import rules
+
+### Response Hooks and Passthrough Mode
+
+- Add JavaScript **response hooks** to modify responses dynamically
+- Choose between:
+  - **Modify Mock Response**: apply the hook to the configured mock body
+  - **Passthrough + Modify**: forward the real request and transform the real response
+- Hook context includes `response`, `request`, and helper utilities
+- Built-in helpers include `uuid()`, `timestamp()`, `randomNumber()`, and `randomString()`
+- Hook validation and runtime restrictions block dangerous globals such as `window`, `document`, `eval`, and `fetch`
+
+### Proxy Rules
+
+- Forward matching requests to a different target server
+- Rewrite paths with `from` / `to` rewrite rules
+- Attach response hooks to proxied responses
+- Detect conflicts when a proxy overlaps an existing mock rule
+- Import/export proxy rules and switch between compact and detailed layouts
+
+### Request Recording
+
+- Record `fetch()` and `XMLHttpRequest` traffic from the active inspected tab
+- Automatically reload the page when recording starts so interceptors are active immediately
+- Capture status, headers, content type, timestamps, and response bodies
+- Create mock rules or proxy rules directly from recorded requests
+- Filter logs by text, method, and status range
 
 ### CORS Auto Fix
 
-Automatically resolve CORS (Cross-Origin Resource Sharing) issues during development and testing:
+- Uses `declarativeNetRequest` to inject CORS headers at the network layer
+- Works across matched requests without creating explicit mock rules
+- Useful for third-party APIs, local services, and cross-origin development flows
+- Can be toggled independently from recording
 
-- **Network-Level CORS Resolution**: Uses Chrome's `declarativeNetRequest` API to modify HTTP response headers at the network level before browser CORS checks
-  - Works for both `fetch()` and `XMLHttpRequest` calls
-  - No configuration required - just toggle it on
-  - Headers are visible in browser Network tab
-- **Complete Header Set**: Adds all necessary CORS headers:
-  - `Access-Control-Allow-Origin: *`
-  - `Access-Control-Allow-Methods: *`
-  - `Access-Control-Allow-Headers: *`
-  - `Access-Control-Allow-Credentials: true`
-- **Zero Setup**: No need to create mock rules for CORS-restricted endpoints
-- **Development Focused**: Perfect for testing third-party APIs, microservices, and cross-origin requests
-- **Toggle Control**: Enable/disable with a single click in the extension header
+### Rule Organization
 
-### Google Response Support
+- Organize rules into folders, including nested folders
+- Bulk enable or disable all rules in a folder
+- Keep ungrouped rules visible in a dedicated section
+- Import/export rules together with folder structure
+- Reorder rules and folders with drag and drop
 
-Full support for Google's specialized response formats:
+### UI and Workflow
 
-- **XSSI Protection Handling**: Automatically strips `)]}'` security prefix
-- **Chunked Response Format**: Handles Google's chunked transfer encoding
-  - Automatically removes chunk size indicators (e.g., `144\n`, `25\n`)
-  - Validates JavaScript code responses (not pure JSON)
-  - Shows clear validation: "Valid Google response format (JavaScript) ✓"
-- **Response Hook Helpers**: Built-in utilities for Google responses
-  - `parseGoogleJSON(responseBody)` - Strips prefix and parses chunks
-  - `stripGooglePrefix(responseBody)` - Removes `)]}'` prefix
-- **Examples**: Works perfectly with Google Translate, Gmail API, Google Maps, etc.
-
-### Focused Content-Type Support
-
-Optimized for modern API development:
-
-- **JSON Responses** (Primary): Full validation and beautification
-  - Real-time validation with detailed error messages
-  - One-click JSON formatting
-  - Google's )]}' XSSI prefix support
-  - Response hook helpers: `parseGoogleJSON()`, `stripGooglePrefix()`
-- **Plain Text Responses**: Simple text responses for non-JSON APIs
-- **Auto-Detection**: Smart content-type detection from response body
-  - Automatically detects JSON (including Google's special format)
-  - Falls back to plain text for all other content
-  - Handles truncated responses intelligently
+- Separate **Rules**, **Proxy**, and **Requests** tabs
+- Compact and detailed views for both rules and proxy rules
+- Theme support: **System**, **Light**, and **Dark**
+- Internationalization: **English** and **Russian**
+- DevTools-first workflow with optional standalone window mode
 
 ### Dynamic Variables
 
-Generate dynamic data in responses using built-in variables:
+Use built-in placeholders inside mock responses:
 
-- `{{timestamp}}` - Current Unix timestamp
-- `{{uuid}}` - Random UUID v4
-- `{{random_number}}` - Random number between 0-999999
+- `{{timestamp}}`
+- `{{uuid}}`
+- `{{random_number}}`
+- `{{random_string}}`
 
 Example:
 
 ```json
 {
   "id": "{{uuid}}",
-  "timestamp": {{timestamp}},
-  "order_number": {{random_number}}
+  "createdAt": {{timestamp}},
+  "orderNumber": {{random_number}},
+  "token": "{{random_string}}"
 }
 ```
-
-### Request Logging & Filtering
-
-- **Page-Specific Recording**: Record XMLHttpRequest/fetch requests from a specific browser tab
-- **Automatic Reload**: Page automatically reloads when starting recording to ensure all requests are captured
-  - Interceptor scripts inject seamlessly
-  - User feedback via toast notification
-  - No manual refresh needed
-- **Manual Control**: Start/stop recording with button controls
-- **Advanced Filtering**: Filter logged requests by HTTP method and status code range
-  - Method filters: GET, POST, PUT, DELETE, PATCH, OPTIONS
-  - Status code filters: 2xx Success, 3xx Redirect, 4xx Client Error, 5xx Server Error
-- **Search & Filter**: Quickly find requests with text search and multiple filters
-- **Request Details**: View URL, method, status code, content type, and timestamp
-- **Response Headers Capture**: All response headers captured and stored with logged requests
-- **XHR Support**: Complete XMLHttpRequest logging including non-mocked requests
-- **Up to 1000 Requests**: Automatic log rotation keeps recent requests
-- **Quick Mocking**: Create mock rules directly from logged requests with "Mock This" button
-  - Auto-populates all fields including captured response headers
-  - Smart content-type detection from response body
-
-### Rule Management
-
-- **Rule Groups/Folders**: Organize rules into logical groups
-  - Create folders to organize rules (e.g., "User API", "Payment API", "Auth")
-  - Rename and delete folders with validation
-  - Collapse/expand folders to save screen space
-  - Bulk enable/disable all rules in a folder
-  - Visual badges showing rule count and enabled count per folder
-  - Search works seamlessly across all folders
-  - Ungrouped rules section for rules without folders
-- **Rule Hit Counter**: Track rule usage in real-time
-  - See how many times each rule has been matched
-  - View "Last matched: X minutes ago" timestamps
-  - Identify unused rules for cleanup
-  - Debug which rules are actually triggering
-- **Export/Import**: Backup rules to JSON file and restore them later
-  - Export all rules or selected rules
-  - Import with merge or replace strategy
-  - Duplicate detection and validation
-- **Duplicate Rules**: Quickly copy existing rules to create variations
-- **Enable/Disable**: Toggle rules on/off without deleting them
-- **Search Rules**: Find rules by name or URL pattern
-
-### DevTools Integration
-
-- **Native DevTools Panel**: Integrated as a dedicated panel in Chrome DevTools
-- **Developer-Focused**: Designed for seamless integration into your development workflow
-- **Keyboard Shortcut Access**: Quick access via Cmd+Option+I (Mac) or Ctrl+Shift+I (Windows/Linux)
-- **Visual Prompt**: Helpful notification when extension icon is clicked, guiding you to open DevTools
-
-### Proxy Tab
-
-Route matching requests through a custom proxy target instead of (or in addition to) returning a mock response:
-
-- **URL Pattern Matching**: Same wildcard, exact, and regex matching as mock rules
-- **Proxy Target**: Redirect matched requests to any base URL
-- **Path Rewrite**: Optionally rewrite the URL path with a `from`/`to` pattern (plain string or regex)
-- **Response Hook**: Attach JavaScript hooks to modify proxied responses dynamically
-- **Conflict Detection**: Warns when a proxy rule overlaps with an existing mock rule
-- **Match Counter**: Track how many times each proxy rule has been triggered
-- **Compact / Detailed Views**: Toggle between a single-row compact layout and full card view
-- **Import/Export**: Backup and restore proxy rules to/from JSON (with merge strategy)
-- **Enable/Disable**: Toggle individual proxy rules without deleting them
-
-### User Interface
-
-- **Clean Dark Theme**: Modern, minimalist design optimized for developer workflows
-- **Three Tabs**: "Rules" for mock rules, "Proxy" for proxy routing, "Requests" for captured traffic
-- **Controls Menu**: Compact dropdown for Enable/Disable, CORS Auto Fix, and recording controls — with live status indicators
-- **Visual Feedback**: Color-coded rule cards (green border = enabled, faded = disabled, red = recording)
-- **Real-time JSON Validation**: Instant feedback on JSON syntax with throttled validation
-- **JSON Beautifier**: One-click JSON formatting
-- **Search**: Filter rules and requests instantly
-- **Compact Views**: Single-row compact layout available for both Rules and Proxy tabs
-- **Cursor Pointer**: All interactive elements have proper cursor styling
 
 ## Installation
 
 ### From Source
 
-1. **Clone this repository**
+1. Clone the repository
 
    ```bash
    git clone https://github.com/PavelShpakovich/mock-ext.git
    cd mock-ext
    ```
 
-2. **Install dependencies**
+2. Install dependencies
 
    ```bash
    npm install
    ```
 
-3. **Build the extension**
+3. Build the target you want to load
 
    ```bash
    npm run build
    ```
 
-   This creates a `dist` folder with the compiled extension.
+4. Load the extension
 
-4. **Load in Chrome**
-   - Open Chrome and navigate to `chrome://extensions`
-   - Enable "Developer mode" (toggle in top-right corner)
-   - Click "Load unpacked"
-   - Select the `dist` folder
-
-### Development Mode
-
-For development with auto-rebuild on changes:
-
-```bash
-npm run dev
-```
+   - **Chrome / Edge**:
+     - Open `chrome://extensions` or `edge://extensions`
+     - Enable **Developer mode**
+     - Click **Load unpacked**
+     - Select `build/chrome-mv3/`
+   - **Firefox**:
+     - Open `about:debugging#/runtime/this-firefox`
+     - Click **Load Temporary Add-on**
+     - Select `build/firefox-mv3/manifest.json`
+   - **Safari**:
+     - Run `npm run build:safari`
+     - Use the generated `build/safari-mv3/` output in your Safari extension packaging flow
 
 ## Quick Start
 
-### Opening Moq
+### Open Moq
 
-1. **Open Chrome DevTools** on any webpage:
-   - Mac: `Cmd + Option + I`
-   - Windows/Linux: `Ctrl + Shift + I`
-   - Right-click anywhere and select "Inspect"
-2. **Look for the "Moq" tab** in the DevTools panel (usually at the top or under >> menu)
-3. **Alternative**: Click the extension icon to see a helpful prompt with the keyboard shortcut
+1. Open DevTools on the page you want to work with
+   - macOS: `Cmd + Option + I`
+   - Windows / Linux: `Ctrl + Shift + I`
+2. Select the **Moq** tab in DevTools
+3. If you clicked the toolbar icon instead, follow the prompt to open DevTools
 
-### Creating Your First Mock Rule
+### Create Your First Mock Rule
 
-1. **Open Moq in DevTools**
-2. **Go to "Rules" tab**
-3. **Click "+ Add Rule"**
-4. **Fill in the form**:
-   - **Rule Name**: "Mock User API"
+1. Open the **Rules** tab
+2. Click **Add Rule**
+3. Fill in the form:
+
+   - **Rule Name**: `Mock User API`
    - **URL Pattern**: `https://api.example.com/users/*`
-   - **Match Type**: Wildcard
-   - **Method**: GET
-   - **Status Code**: 200
-   - **Content Type**: JSON
+   - **Match Type**: `Wildcard`
+   - **Method**: `GET`
+   - **Status Code**: `200`
+   - **Content Type**: `JSON`
    - **Response Body**:
+
      ```json
      {
        "id": "{{uuid}}",
-       "name": "Test User", (recommended for 99% of APIs)
+       "name": "Test User",
        "email": "test@example.com"
      }
      ```
-5. **Click "Create Rule"** (button will be disabled if JSON is invalid)
-6. **Toggle the rule ON** using the switch
 
-Now all GET requests to `https://api.example.com/users/*` will return your mock data!
+4. Save the rule
+5. Click the **Enabled** pill if Moq is disabled
+6. Enable the rule
 
-### Recording and Mocking Requests
+### Record Requests and Turn Them Into Rules
 
-1. **Open DevTools** on the website you want to test
-2. **Navigate to Moq panel**
-3. **Go to "Requests" tab**
-4. **Click "Record" button** (red circle icon)
-5. **Interact with the website** to generate fetch/XHR requests
-6. **View logged requests** in the list (mocked requests are automatically filtered out)
-7. **Click "Mock This"** on any request to create a mock rule instantly
-8. **Click "Stop" button** (red square icon) when done recording
+1. Open the **Requests** tab
+2. Click **Record**
+3. Interact with the page
+4. Inspect the captured requests
+5. Use **Mock This** or **Proxy This** on a recorded request to bootstrap a rule
+6. Click **Stop** when finished
 
 ## Usage Examples
 
-### Mock API Endpoint
+### Mock an API Endpoint
 
-```
+```text
 URL Pattern: https://api.github.com/users/*
 Method: GET
 Response:
@@ -320,9 +254,9 @@ Response:
 }
 ```
 
-### Mock Error Response
+### Mock an Error Response
 
-```
+```text
 URL Pattern: https://api.example.com/checkout
 Method: POST
 Status Code: 500
@@ -333,424 +267,220 @@ Response:
 }
 ```
 
-### Simulate Slow Network
+### Simulate a Slow Response
 
-```
+```text
 URL Pattern: https://api.example.com/data
-Delay: 3000 (3 seconds)
+Delay: 3000
 Response: {"data": "slow response"}
 ```
 
-### Regex Pattern Matching
+### Regex Matching
 
-```
+```text
 URL Pattern: https://api\.example\.com/(users|customers)/\d+
 Match Type: Regex
 Response: {"id": {{random_number}}, "type": "entity"}
 ```
 
+### Proxy to a Local Backend
+
+```text
+URL Pattern: https://api.example.com/v1/*
+Proxy Target: http://localhost:3000
+Path Rewrite From: /v1
+Path Rewrite To: /api
+```
+
 ## URL Pattern Matching
 
-### Wildcard Pattern
+### Wildcard
 
 - `*` matches any characters
 - Examples:
-  - `https://api.example.com/*` - matches all requests to this domain
-  - `https://*/users` - matches /users on any domain
-  - `*://api.example.com/v*/users` - matches any protocol and version
+  - `https://api.example.com/*`
+  - `https://*/users`
+  - `*://api.example.com/v*/users`
 
 ### Exact Match
 
-- Matches the URL exactly as specified
-- No wildcards or regex interpretation
+- Matches the URL exactly as written
+- Best when you want a single endpoint with no pattern expansion
 
-### Regex Pattern
+### Regex
 
-- Full regex support with JavaScript syntax
-- Don't include leading/trailing slashes
+- Uses JavaScript regular expression syntax
+- Do not include leading or trailing `/`
 - Examples:
-  - `https://api\.example\.com/users/\d+` - matches /users/123
-  - `https://.*\.example\.com/.*` - matches all subdomains
+  - `https://api\.example\.com/users/\d+`
+  - `https://.*\.example\.com/.*`
 
 ## Project Structure
 
-```
+```text
 mock-ext/
 ├── src/
-│   ├── background.ts           # Service worker (request interception)
-│   ├── content-script.ts       # Bridge between page and extension
-│   ├── interceptor.ts          # Client-side fetch/XHR interception (MAIN world)
-│   ├── popup.tsx               # Main React app entry point
-│   ├── devtools.ts             # DevTools panel registration
-│   ├── devtools-prompt.ts      # Content script for DevTools prompt notification
-│   ├── types.ts                # TypeScript type definitions
-│   ├── enums.ts                # Centralized enums (MatchType, HttpMethod, etc.)
-│   ├── utils.ts                # Utility functions
-│   ├── storage.ts              # Chrome storage API wrapper (with batched logging)
-│   ├── contextHandler.ts       # Extension context validation
-│   ├── performance.ts          # Performance monitoring utilities
-│   ├── styles.css              # Global styles with Tailwind CSS 4.x
-│   ├── helpers/                # Business logic helpers (modular architecture)
-│   │   ├── recording.ts        # Recording functionality (tab validation, messages)
-│   │   ├── importExport.ts     # Import/export logic (validation, merging, stats)
-│   │   ├── headers.ts          # HTTP header utilities (conversion, extraction)
-│   │   ├── ruleForm.ts         # Form data initialization
-│   │   ├── ruleValidation.ts   # Form & JSON validation
-│   │   ├── urlMatching.ts      # URL pattern matching logic
-│   │   ├── filtering.ts        # Request filtering logic
-│   │   ├── formatting.ts       # Data formatting utilities
-│   │   ├── time.ts             # Time formatting utilities
-│   │   ├── string.ts           # String manipulation utilities
-│   │   └── validation.ts       # General validation functions
-│   ├── components/
-│   │   ├── App.tsx             # Main app component with tabs
-│   │   ├── Header.tsx          # Extension header with settings menu
-│   │   ├── RulesTab.tsx        # Rules management tab
-│   │   ├── RequestsTab.tsx     # Request logging and filtering tab
-│   │   ├── RuleEditor.tsx      # Form for creating/editing rules
-│   │   ├── RuleEditor/         # Rule editor sub-components
-│   │   │   ├── ExpandedEditor.tsx # Full rule editor view
-│   │   │   ├── RuleBasicInfo.tsx # Name and URL pattern section
-│   │   │   ├── RuleMatchingSection.tsx # Method and matching type
-│   │   │   └── RuleResponseSection.tsx # Response and hooks
-│   │   ├── RuleItem.tsx        # Individual rule display
-│   │   ├── RulesList.tsx       # Rules list with sorting
-│   │   ├── RulesSearchBar.tsx  # Search and filtering for rules
-│   │   ├── RulesToolbar.tsx    # Toolbar with bulk operations
-│   │   ├── RulesEmptyState.tsx # Empty state UI
-│   │   ├── FolderEditor.tsx    # Folder creation/editing
-│   │   ├── FolderItem.tsx      # Individual folder display
-│   │   ├── RequestItem.tsx     # Individual request display
-│   │   ├── FilterButton.tsx # Individual filter button
-│   │       ├── FilterSection.tsx # Filter section container
-│   │       ├── ImportDialog.tsx # Import preview modal
-│   │       ├── HeadersEditor.tsx # HTTP headers editor
-│   │       ├── ConfirmDialog.tsx # Confirmation modal
-│   │       ├── Toast.tsx       # Toast notification component
-│   │       ├── SettingsMenu.tsx # Settings dropdown menu
-│   │       ├── MenuOption.tsx   # Menu option item
-│   │       ├── MenuSection.tsx  # Menu section group
-│   │       ├── RadioOption.tsx  # Atomic: Radio with label/description
-│   │       ├── StatItem.tsx     # Atomic: Icon + label + value
-│   │       ├── DialogHeader.tsx # Atomic: Modal header with close
-│   │       └── InfoPanel.tsx    # Atomic: Contextual info panels
-│   ├── contexts/
-│   │   ├── I18nContext.tsx     # Internationalization context (EN/RU)
-│   │   └── ThemeContext.tsx    # Theme context (light/dark mode)
-│   ├── hooks/
-│   │   ├── useBodyScrollLock.ts # Prevent body scroll
-│   │   ├── useClickOutside.ts  # Click outside detection
-│   │   ├── useCrossContextSync.ts # Sync between DevTools and window
-│   │   ├── useFoldersManager.ts # Folder CRUD operations
-│   │   ├── useRecording.ts     # Recording state management
-│   │   ├── useRulesManager.ts  # Rule CRUD operations
-│   │   ├── useStandaloneWindowStatus.ts # Window mode state
-│   │   └── index.ts            # Hook exports
-│   ├── locales/
-│   │   ├── en.json             # English translations
-│   │   └── ru.json             # Russian translations
-│   └── __tests__/              # Unit tests (Jest + Testing Library) - 230+ tests
-│       ├── setup.ts            # Test configuration
-│       ├── background.test.ts  # Background service worker tests
-│       ├── recording.test.ts   # Recording functionality tests
-│       ├── importExport.test.ts # Import/export logic tests
-│       ├── headers.test.ts     # HTTP header utilities tests
-│       ├── ruleForm.test.ts    # Rule form initialization tests
-│       ├── ruleValidation.test.ts # Validation logic tests
-│       ├── urlMatching.test.ts # URL pattern matching tests
-│       ├── filtering.test.ts   # Request filtering tests
-│       ├── time.test.ts        # Time formatting tests
-│       ├── utils.test.ts       # Utility functions tests
-│       ├── storage.test.ts     # Storage operations tests
-│       ├── contextHandler.test.ts # Extension context tests
-│       ├── folderManagement.test.ts # Folder operations tests
-│       └── i18n.test.ts        # Internationalization tests
-├── public/
-│   ├── manifest.json           # Extension manifest (Manifest V3)
-│   ├── popup.html              # UI HTML structure
-│   ├── devtools.html           # DevTools panel entry point
-│   └── icons/                  # Extension icons (SVG)
-├── dist/                       # Build output (generated)
-├── webpack.config.js           # Webpack configuration
-├── tailwind.config.js          # Tailwind CSS 4.x configuration
-├── postcss.config.js           # PostCSS configuration
-├── tsconfig.json               # TypeScript 5.3.3 configuration
-├── jest.config.js              # Jest test configuration
-└── package.json                # Project dependencies
+│   ├── components/             # React UI
+│   ├── config/                 # UI/editor configuration
+│   ├── contexts/               # Theme and i18n providers
+│   ├── entrypoints/            # WXT entrypoints
+│   │   ├── background.ts
+│   │   ├── content.content.ts
+│   │   ├── devtools/
+│   │   ├── devtools-prompt.content.ts
+│   │   ├── interceptor.content.ts
+│   │   └── window/
+│   ├── helpers/                # Business logic and utilities
+│   ├── hooks/                  # Feature hooks
+│   ├── locales/                # Translations
+│   ├── __tests__/              # Jest test suites
+│   ├── storage.ts              # Storage layer
+│   ├── types.ts                # Shared types
+│   └── styles.css              # Global styles
+├── public/                     # Static assets copied into builds
+├── build/                      # Generated browser builds
+├── releases/                   # Generated zip artifacts
+├── jest.config.js
+├── package.json
+├── tsconfig.json
+└── wxt.config.ts
 ```
 
 ## Technical Details
 
-### Architecture
+- **WXT** for cross-browser extension builds
+- **Manifest V3** architecture
+- **React 19 + TypeScript 5** for the UI layer
+- **Tailwind CSS 4** for styling
+- **MAIN-world interceptor** for request interception before network execution
+- **Background service worker** for state coordination, badge updates, recording state, and CORS ruleset sync
+- **Cross-context synchronization** between DevTools and standalone window modes
 
-- **Modular Design**: Business logic extracted into dedicated helper modules for maintainability
-- **Atomic UI Components**: Small, reusable components following atomic design principles
-- **Manifest V3**: Uses the latest Chrome Extension APIs
-- **DevTools Integration**: Native panel integrated into Chrome DevTools
-- **TypeScript 5.3.3**: Fully typed codebase with strict mode enabled
-- **React 19.2.3**: Modern React with hooks for UI components
-- **Webpack 5.104.1**: Module bundler with multiple entry points
-- **Tailwind CSS 4.x**: Utility-first CSS framework with @tailwindcss/postcss
-- **Client-Side Interception**: MAIN world interceptor for fetch/XHR before network
-- **Service Worker**: Background script for cross-tab messaging and storage
-- **Chrome Storage**: Persistent data storage for rules and logs
-- **Comprehensive Testing**: 230+ unit tests with Jest covering all business logic
-- **Hooks Architecture**: 7+ custom React hooks for feature separation and reusability
+## Permissions
 
-### Performance Optimizations
+- `storage`: persist rules, folders, proxy rules, and settings
+- `activeTab`: interact with the current inspected page
+- `tabs`: recording and tab metadata
+- `contextMenus`: action context menu integration
+- `declarativeNetRequest`: network-level CORS header injection
+- `host_permissions: <all_urls>`: interception and logging across sites
 
-- **In-Memory Request Logging**: Uses `chrome.storage.session` (fast in-memory storage) instead of persistent storage for logs
-- **Batched Write Operations**: Logs are batch written every 500ms instead of on every request, reducing CPU/IO usage
-- **DevTools-Only Architecture**: No popup window management overhead
-- **Lightweight Content Script**: Minimal 2.8KB script only for showing prompts
-- **Request Filtering**: Only logs XMLHttpRequest/fetch, excludes images, CSS, fonts
-- **Smart Deduplication**: Prevents duplicate request logging within 100ms window
-- **Mocked Request Filtering**: Automatically excludes mocked requests from logs
-- **Throttled Validation**: JSON validation debounced to 500ms for better UX
-- **Continuous Polling**: Request count updates on all tabs when recording is active
-- **Efficient DevTools Integration**: Panel uses same React app as popup, no duplication
+## Data Storage
 
-### Key Features Removed for Performance
+Moq stores data locally in the browser:
 
-- **Response Body Capture**: Not available due to Chrome security limitations and performance impact
-  - Users manually enter response bodies when creating mock rules
-  - Focus on fast, non-intrusive request logging
-- **Floating Window Mode**: Removed in favor of native DevTools integration
-  - Better developer workflow integration
-  - Reduced complexity and maintenance overhead
+- `browser.storage.local`
+  - mock rules
+  - proxy rules
+  - folders
+  - user settings
+- `browser.storage.session`
+  - request log
 
-### Permissions
-
-- `storage`: Save rules and settings
-- `activeTab`: Access current tab information
-- `tabs`: Access tab information for recording
-- `contextMenus`: Right-click menu integration
-- `host_permissions`: `<all_urls>` - Access to all URLs for interception
-
-### Data Storage
-
-All data is stored locally using `chrome.storage.local`:
-
-- Mock rules with complete configuration
-- Request logs (up to 1000 entries, oldest removed first)
-- Settings and preferences (global mocking toggle, recording state per tab)
-
-## Development
-
-### Building
-
-```bash
-npm run build      # Production build
-npm run dev        # Development build with watch mode
-```
-
-### Code Quality
-
-- **Strict TypeScript**: All code fully typed with strict mode enabled
-- **Modern React**: Functional components with hooks
-- **Tailwind CSS**: Utility-first styling for consistent design
-- **Clean Architecture**: DevTools-focused design with minimal overhead
-- **Multiple Entry Points**: Webpack configured for background, popup, devtools, and devtools-prompt
-
-### Recent Architectural Changes
-
-#### v2.9.x - Performance & UX Improvements (Current)
-
-Major performance optimizations and user experience enhancements:
-
-- **Bundle Size Optimization**: Reduced initial bundle by 65% (1.04 MB → 364 KB)
-  - Lazy loading for Prettier and validation dependencies
-  - On-demand loading of heavy dependencies
-- **Response Hook Toggle**: Enable/disable response hooks without deleting code
-  - Smart UI that only shows toggle when hook code exists
-  - Visual status indicators with color-coded badges
-- **Enhanced Validation**: Comprehensive response hook validation using eslint-scope
-  - Catches undefined variables and proper scope analysis
-  - CSP-safe static analysis
-- **UI Polish**: Theme-aware icons, quick save button, improved accessibility
-  - Focus rings only for keyboard navigation
-  - Standardized error message styling
-
-#### v2.8.x - Response Modes & Custom Hooks
-
-Powerful response modification capabilities:
-
-- **Response Mode Selection**: Choose between Mock and Passthrough modes
-  - Mock Mode: Apply hooks to configured mock responses
-  - Passthrough Mode: Forward real requests and modify actual responses
-- **Response Hooks**: JavaScript code to dynamically modify responses
-  - Access to `response`, `request`, and `helpers` objects
-  - Built-in helper functions for IDs, timestamps, and random data
-  - **Google Helpers**: `parseGoogleJSON()`, `stripGooglePrefix()` for Google responses
-  - Sandboxed execution with dangerous pattern detection
-
-#### v2.7.x - Multi-Context Support
-
-Flexible viewing modes and architecture improvements:
-
-- **Standalone Window Mode**: Open Moq in a separate 800×600 window
-  - Perfect for multi-monitor setups
-  - Full state synchronization across DevTools and window
-  - Single instance enforcement
-- **Code Architecture Refactoring**: Major cleanup for maintainability
-  - Extracted 5 custom hooks for feature separation
-  - Reduced App.tsx from 570 to 350 lines
-  - Improved performance with proper memoization
+Request logs are buffered and flushed in batches, capped at 1000 entries, and constrained to roughly 5 MB in session storage.
 
 ## Troubleshooting
 
-### Extension Not Working
+### Moq Tab Is Missing
 
-- Ensure **DevTools is open** - the extension only works in DevTools panel
-- Check if "Enable Mocking" toggle is ON (in header)
-- Verify individual rule toggles are enabled
-- Check URL pattern matches your request
-- Verify HTTP method matches (or leave empty for all methods)
-- Check JSON syntax is valid (error will prevent rule creation)
+- Open DevTools first; Moq registers as a DevTools panel
+- Check the `>>` overflow menu in DevTools tabs
+- Reload the extension after rebuilding or reinstalling it
+- Close and reopen DevTools if the panel still does not appear
 
-### Can't Find Moq Panel
+### The Toolbar Icon Did Not Open Moq
 
-- Open Chrome DevTools (Cmd+Option+I or Ctrl+Shift+I)
-- Look for "Moq" tab in the top panel
-- If not visible, click the **>>** menu and select "Moq"
-- **Reload the extension** if panel doesn't appear
-- Close and reopen DevTools after reloading extension
+- This is expected: the icon click shows a DevTools prompt, not the full UI
+- Open DevTools and use the **Moq** tab
+- If you want a separate window, open it from Moq settings inside DevTools
 
-### Requests Not Being Logged
+### A Mock Rule Is Not Matching
 
-- Ensure **DevTools is open** on the tab you want to monitor
-- Click "Record" button in Moq panel (red circle icon)
-- Recording is tab-specific
-- Only fetch/XHR requests are logged (not images, CSS, fonts)
-- Mocked requests are automatically filtered out
-- Check that the page is making actual network requests
-- Recording status shows the current tab title
+- Make sure the global **Enabled** pill is on
+- Verify the individual rule is enabled
+- Check the URL pattern and match type
+- Check the HTTP method, or switch to **Any Method**
+- Start with a wildcard pattern if you are narrowing down matching issues
 
-### JSON Validation Errors
+### Requests Are Not Being Recorded
 
-- Wait 500ms after typing for validation to run (throttled)
-- Use "Beautify" button to auto-format valid JSON
-- Empty response body is valid
-- Error message shows specific JSON syntax issue
-- Cannot create/update rule while JSON is invalid
+- Start recording from the tab you want to inspect
+- Let Moq reload the page when recording begins
+- Only `fetch()` and `XMLHttpRequest` traffic is recorded
+- Restricted browser pages such as `chrome://` cannot be instrumented
 
-### DevTools Prompt Not Appearing
+### Import Shows a Security Warning
 
-- The prompt only shows when clicking the extension icon
-- Content script must be loaded on the page (HTTP/HTTPS pages only)
-- Won't appear on chrome:// pages or other restricted pages
-- Reload the page if prompt doesn't show
-
-### Slow Page Loading
-
-- **This should not happen** - only a lightweight content script is injected
-- Content script is 2.8KB and runs at document_idle
-- If you experience slowness, try disabling other extensions
-- Check browser console for unrelated errors
+- Moq warns when imported rules contain executable response hooks
+- Only import rules from sources you trust
 
 ## Testing
 
-Moq has comprehensive test coverage for critical business logic:
+The project includes Jest coverage for core behavior including:
 
-### Test Suites
+- background service worker behavior
+- request recording
+- import/export
+- folder management
+- headers and formatting helpers
+- rule validation
+- i18n
+- URL matching
+- storage behavior
 
-- **230+ unit tests** covering URL matching, storage, utilities, context handling, translations, folder management, background worker, recording, import/export, headers, and more
-- **Coverage highlights**:
-  - URL matching logic: 100%
-  - Context handler: 100%
-  - Service Worker/Background: 100%
-  - Utils: 100%
-  - Storage: 85%
-  - Helpers: 90%+
-
-### Running Tests
+Run the test suite with:
 
 ```bash
-npm test                 # Run all tests
-npm run test:watch      # Watch mode
-npm run test:coverage   # Coverage report
+npm test
+npm run test:watch
+npm run test:coverage
 ```
-
-### Test Structure
-
-- `src/__tests__/utils.test.ts` - Utility functions
-- `src/__tests__/storage.test.ts` - Storage operations
-- `src/__tests__/contextHandler.test.ts` - Extension context handling
-- `src/__tests__/urlMatching.test.ts` - URL pattern matching (exact, wildcard, regex)
-- `src/__tests__/folderManagement.test.ts` - Folder management operations
-- `src/__tests__/ruleValidation.test.ts` - Rule and response hook validation
-- `src/__tests__/i18n.test.ts` - Internationalization validation
-- `src/__tests__/recording.test.ts` - Request recording logic
-- `src/__tests__/importExport.test.ts` - Import/export functionality
-- `src/__tests__/headers.test.ts` - HTTP header utilities
-- `src/__tests__/ruleForm.test.ts` - Form initialization
-- `src/__tests__/time.test.ts` - Time formatting utilities
-- `src/__tests__/background.test.ts` - Background service worker
-
-### Mock Not Applied
-
-- Verify the URL pattern exactly matches
-- Check HTTP method matches (or set to "Any")
-- Ensure Content Type is correct
-- Test with wildcard pattern first for debugging
-
-### Performance Issues
-
-- Clear request log regularly (1000+ entries can slow down UI)
-- Disable rules you're not using
-- Use specific URL patterns instead of `*` when possible
 
 ## FAQ
 
+**Q: Can I use Moq without DevTools?**  
+A: You can use the standalone window once it is opened from DevTools, but the primary entry point is still the DevTools panel.
+
+**Q: Why does clicking the extension icon not open the full app?**  
+A: The toolbar action currently shows a DevTools prompt instead of a popup.
+
 **Q: Can I mock requests on any website?**  
-A: Yes, the extension has host_permissions for all URLs.
+A: Yes. Moq requests host access for all URLs.
 
-**Q: How do I access Moq?**  
-A: Open Chrome DevTools (Cmd+Option+I or Ctrl+Shift+I) and look for the "Moq" tab. Click the extension icon for a helpful prompt.
+**Q: Are rules synced across devices?**  
+A: No. Rules are stored locally in browser extension storage. Use export/import if you need to move them.
 
-**Q: Are my mock rules shared across devices?**  
-A: No, rules are stored locally in Chrome storage. Use the export/import feature to transfer rules between devices.
+**Q: Can I use Moq in Incognito mode?**  
+A: Yes, if you enable **Allow in Incognito** in the browser's extension settings.
 
-**Q: Can I mock WebSocket connections?**  
-A: No, currently only HTTP/HTTPS requests are supported.
+**Q: Does Moq support WebSockets?**  
+A: No. Moq currently targets HTTP/HTTPS traffic through `fetch()` and `XMLHttpRequest`.
 
-**Q: Does this work in Incognito mode?**  
-A: Yes, if you enable "Allow in Incognito" in extension settings (chrome://extensions).
-
-**Q: Can I use this for automated testing?**  
-A: This extension is designed for manual testing in DevTools. For automated tests, use tools like MSW or Nock.
-
-**Q: Why is recording tab-specific?**  
-A: Recording tracks requests from a specific tab to avoid confusion when working with multiple pages. The recording status shows which tab is being monitored.
-
-**Q: Can I use the extension without opening DevTools?**  
-A: No, Moq operates exclusively as a DevTools panel. This design provides better integration with your development workflow.
+**Q: Is this intended for automated end-to-end testing?**  
+A: It is primarily a manual debugging and development tool. For automated test suites, dedicated tools such as MSW or Nock are usually a better fit.
 
 ## Contributing
 
-Contributions are welcome! Please follow these guidelines:
+Contributions are welcome.
 
 1. Fork the repository
 2. Create a feature branch
-3. Make your changes with clear commit messages
-4. Test thoroughly
-5. Submit a pull request
+3. Make focused changes
+4. Run relevant tests
+5. Open a pull request
 
 ## License
 
-MIT License - feel free to use this extension in your projects.
+MIT
 
 ## Credits
 
 Built with:
 
-- TypeScript 5.3.3
-- React 19.2.3
-- Chrome Extension Manifest V3
-- Webpack 5.104.1
-- Tailwind CSS 3.4.1
-- Chrome DevTools Extension APIs
+- WXT
+- React
+- TypeScript
+- Tailwind CSS
+- Browser Extension Manifest V3 APIs
 
----
-
-**Need help?** Open an issue on GitHub: https://github.com/PavelShpakovich/mock-ext/issues
+Need help? Open an issue on GitHub: https://github.com/PavelShpakovich/mock-ext/issues
