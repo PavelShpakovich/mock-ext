@@ -5,6 +5,13 @@ All notable changes to Moq Extension will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.15.4] - 2026-03-20
+
+### Fixed
+- **Record CTA in Standalone Mode**: Record/logging now works correctly when capturing traffic from the standalone window
+  - Fixed tab discovery in standalone mode to search the active browser window instead of the popup window itself
+  - Recording will now find valid web tabs to instrument when initiated from a standalone window
+
 ## [2.15.3] - 2026-03-16
 
 ### Changed

@@ -43,11 +43,17 @@ export async function findValidWebTab(): Promise<Browser.tabs.Tab | undefined> {
     return undefined;
   }
 
-  // Standalone mode: get active tab in current window
+  // Standalone/popup mode: get active tab in the last focused normal browser window
   try {
-    const currentWindow = await browser.windows.getCurrent();
-    const tabs = await browser.tabs.query({ active: true, windowId: currentWindow.id });
-    return tabs.find(isValidRecordingTab);
+    const tabs = await browser.tabs.query({ active: true, lastFocusedWindow: true });
+    const validTab = tabs.find(isValidRecordingTab);
+    if (validTab) {
+      return validTab;
+    }
+
+    // Fallback: search all normal windows for an active valid tab
+    const allTabs = await browser.tabs.query({ active: true });
+    return allTabs.find(isValidRecordingTab);
   } catch (error) {
     console.error('[Moq] Failed to query tabs:', error);
     return undefined;
