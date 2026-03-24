@@ -5,6 +5,13 @@ All notable changes to Moq Extension will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.15.5] - 2026-03-24
+
+### Fixed
+- **DevTools Prompt Duplication**: Clicking the extension action now shows only one "Open DevTools" toast
+  - Removed the duplicate `OpenDevTools` listener from the general content bridge
+  - Kept the dedicated DevTools prompt content script as the single renderer for the toast
+
 ## [2.15.4] - 2026-03-20
 
 ### Fixed
