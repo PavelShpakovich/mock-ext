@@ -5,6 +5,15 @@ All notable changes to Moq Extension will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.15.6] - 2026-04-22
+
+### Fixed
+- **Expanded Editor Search**: Fixed multiple issues with the built-in search in full-screen editor
+  - Removed `textarea.focus()` call in `selectMatchByRange` that was stealing focus from the search input on every keystroke, making it nearly impossible to type a query
+  - Search input is now always focused when opening search, including when prefilling from a text selection
+  - Added match-index clamping so `currentMatchIndex` stays within bounds when the text is edited while searching
+  - Added `stopPropagation` in search input key handler to prevent Enter/Escape from double-firing through the parent
+
 ## [2.15.5] - 2026-03-24
 
 ### Fixed

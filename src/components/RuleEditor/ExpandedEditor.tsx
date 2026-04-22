@@ -7,17 +7,12 @@ import { useTextareaHistory } from '../../hooks/useTextareaHistory';
 
 const WORD_CHAR_REGEX = /[a-zA-Z0-9_]/;
 const WHOLE_WORD_PATTERN = /^\w+$/;
-const DEFAULT_LINE_HEIGHT = 20;
 const NO_MATCH_INDEX = -1;
 const FIRST_MATCH_INDEX = 0;
 const VIEWPORT_CENTER_DIVISOR = 2;
 const MATCH_INCREMENT = 1;
 const PREV_CHAR_OFFSET = -1;
 const INITIAL_SEARCH_INDEX = 0;
-const MIN_VALID_INDEX = 0;
-const MIN_VALID_LENGTH = 0;
-const TEXT_START_INDEX = 0;
-const LENGTH_TO_INDEX_OFFSET = 1;
 const UNFOCUSABLE_TAB_INDEX = -1;
 
 const KEYBOARD_KEYS = {
@@ -104,35 +99,67 @@ export const ExpandedEditor: React.FC<ExpandedEditorProps> = ({
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const backdropRef = useRef<HTMLDivElement>(null);
+  const activeMatchRef = useRef<HTMLElement>(null);
   const { onKeyDown: historyKeyDown, onChangePush } = useTextareaHistory(textareaRef, onChange, 2);
 
   const matchIndices = useMemo(() => {
     return findMatchIndices(searchQuery, value);
   }, [searchQuery, value]);
 
-  const selectMatchByRange = useCallback(
-    (start: number, matchLength: number) => {
-      const textarea = textareaRef.current;
-      if (!textarea || start < MIN_VALID_INDEX || matchLength <= MIN_VALID_LENGTH) return;
+  const highlightedContent = useMemo(() => {
+    if (!searchQuery || matchIndices.length === 0) return null;
 
-      const end = start + matchLength;
-      const textBeforeMatch = value.slice(TEXT_START_INDEX, start);
-      const lineNumber = textBeforeMatch.split('\n').length - LENGTH_TO_INDEX_OFFSET;
-      const computed = window.getComputedStyle(textarea);
-      const lineHeight = Number.parseFloat(computed.lineHeight) || DEFAULT_LINE_HEIGHT;
+    const parts: React.ReactNode[] = [];
+    let lastIndex = 0;
 
-      textarea.focus();
-      textarea.setSelectionRange(start, end);
+    for (let i = 0; i < matchIndices.length; i++) {
+      const matchStart = matchIndices[i];
+      const matchEnd = matchStart + searchQuery.length;
 
-      // Scroll to center the match in viewport
-      const targetScrollTop = Math.max(
-        FIRST_MATCH_INDEX,
-        lineNumber * lineHeight - textarea.clientHeight / VIEWPORT_CENTER_DIVISOR + lineHeight
+      if (matchStart > lastIndex) {
+        parts.push(value.slice(lastIndex, matchStart));
+      }
+
+      parts.push(
+        <mark
+          key={i}
+          ref={i === currentMatchIndex ? activeMatchRef : undefined}
+          className={
+            i === currentMatchIndex
+              ? 'bg-yellow-300 dark:bg-yellow-500 rounded-sm'
+              : 'bg-yellow-200/60 dark:bg-yellow-600/40 rounded-sm'
+          }
+        >
+          {value.slice(matchStart, matchEnd)}
+        </mark>
       );
-      textarea.scrollTop = targetScrollTop;
-    },
-    [value]
-  );
+
+      lastIndex = matchEnd;
+    }
+
+    if (lastIndex < value.length) {
+      parts.push(value.slice(lastIndex));
+    }
+
+    return parts;
+  }, [value, searchQuery, matchIndices, currentMatchIndex]);
+
+  const scrollToActiveMatch = useCallback(() => {
+    const backdrop = backdropRef.current;
+    const textarea = textareaRef.current;
+    const mark = activeMatchRef.current;
+    if (!backdrop || !textarea || !mark) return;
+
+    // Scroll the backdrop so the active mark is centered
+    const markTop = mark.offsetTop;
+    const markHeight = mark.offsetHeight;
+    const containerHeight = backdrop.clientHeight;
+    const targetScrollTop = Math.max(0, markTop - containerHeight / VIEWPORT_CENTER_DIVISOR + markHeight);
+
+    backdrop.scrollTop = targetScrollTop;
+    textarea.scrollTop = targetScrollTop;
+  }, []);
 
   const openSearch = useCallback(
     (useSelection = false) => {
@@ -154,13 +181,12 @@ export const ExpandedEditor: React.FC<ExpandedEditorProps> = ({
         setSearchQuery(prefillQuery);
         const matches = findMatchIndices(prefillQuery, value);
         setCurrentMatchIndex(matches.length > FIRST_MATCH_INDEX ? FIRST_MATCH_INDEX : NO_MATCH_INDEX);
-        // Keep textarea focused to show selection highlight
-      } else {
-        requestAnimationFrame(() => {
-          searchInputRef.current?.focus();
-          searchInputRef.current?.select();
-        });
       }
+
+      requestAnimationFrame(() => {
+        searchInputRef.current?.focus();
+        searchInputRef.current?.select();
+      });
     },
     [value]
   );
@@ -202,12 +228,24 @@ export const ExpandedEditor: React.FC<ExpandedEditorProps> = ({
     };
   }, [openSearch]);
 
+  // Clamp currentMatchIndex when match count changes (e.g. text edited while searching)
+  useEffect(() => {
+    setCurrentMatchIndex((prev) => {
+      if (matchIndices.length === 0) return NO_MATCH_INDEX;
+      if (prev < FIRST_MATCH_INDEX) return FIRST_MATCH_INDEX;
+      if (prev >= matchIndices.length) return matchIndices.length - 1;
+      return prev;
+    });
+  }, [matchIndices]);
+
   useEffect(() => {
     if (currentMatchIndex < FIRST_MATCH_INDEX || currentMatchIndex >= matchIndices.length) return;
 
-    const start = matchIndices[currentMatchIndex];
-    selectMatchByRange(start, searchQuery.length);
-  }, [currentMatchIndex, matchIndices, searchQuery, selectMatchByRange]);
+    // Wait for React to render the updated mark refs before scrolling
+    requestAnimationFrame(() => {
+      scrollToActiveMatch();
+    });
+  }, [currentMatchIndex, matchIndices, searchQuery, scrollToActiveMatch]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if ((e.ctrlKey || e.metaKey) && e.key === KEYBOARD_KEYS.FIND) {
@@ -240,6 +278,7 @@ export const ExpandedEditor: React.FC<ExpandedEditorProps> = ({
   const handleSearchKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === KEYBOARD_KEYS.ENTER) {
       e.preventDefault();
+      e.stopPropagation();
       if (e.shiftKey) {
         handlePrev();
       } else {
@@ -247,6 +286,7 @@ export const ExpandedEditor: React.FC<ExpandedEditorProps> = ({
       }
     } else if (e.key === KEYBOARD_KEYS.ESCAPE) {
       e.preventDefault();
+      e.stopPropagation();
       closeSearch();
     }
   };
@@ -339,14 +379,36 @@ export const ExpandedEditor: React.FC<ExpandedEditorProps> = ({
       )}
 
       <div className='flex-1 flex flex-col p-6 gap-2 overflow-hidden'>
-        <textarea
-          ref={textareaRef}
-          value={value}
-          onChange={handleChange}
-          onKeyDown={historyKeyDown}
-          placeholder={placeholder}
-          className='flex-1 w-full bg-white dark:bg-gray-950 text-gray-800 dark:text-white border border-gray-300 dark:border-gray-700 rounded px-4 py-3 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-green-600 dark:focus:ring-green-500 resize-none custom-scrollbar'
-        />
+        <div className='flex-1 relative text-gray-800 dark:text-white'>
+          {isSearchOpen && highlightedContent && (
+            <div
+              ref={backdropRef}
+              aria-hidden='true'
+              className='absolute inset-0 border border-transparent rounded px-4 py-3 font-mono text-sm whitespace-pre-wrap wrap-break-word overflow-y-auto highlight-backdrop pointer-events-none'
+            >
+              {highlightedContent}
+              {'\n '}
+            </div>
+          )}
+          <textarea
+            ref={textareaRef}
+            value={value}
+            onChange={handleChange}
+            onKeyDown={historyKeyDown}
+            onScroll={(e) => {
+              if (backdropRef.current) {
+                backdropRef.current.scrollTop = e.currentTarget.scrollTop;
+              }
+            }}
+            placeholder={placeholder}
+            className={clsx(
+              'relative w-full h-full border border-gray-300 dark:border-gray-700 rounded px-4 py-3 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-green-600 dark:focus:ring-green-500 resize-none custom-scrollbar',
+              isSearchOpen && highlightedContent
+                ? 'search-highlight-active'
+                : 'bg-white dark:bg-gray-950 text-gray-800 dark:text-white'
+            )}
+          />
+        </div>
 
         {(error || validation) && (
           <div className='shrink-0'>

@@ -41,3 +41,24 @@ body {
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   @apply bg-gray-500 dark:bg-gray-500;
 }
+
+/* Search highlight backdrop: invisible scrollbar matching custom-scrollbar width */
+.highlight-backdrop::-webkit-scrollbar {
+  width: 8px;
+}
+
+.highlight-backdrop::-webkit-scrollbar-track,
+.highlight-backdrop::-webkit-scrollbar-thumb {
+  background: transparent;
+}
+
+/* Textarea transparency when search highlights are active */
+.search-highlight-active {
+  background: transparent !important;
+  color: transparent !important;
+  caret-color: #1f2937;
+}
+
+.dark .search-highlight-active {
+  caret-color: white;
+}
