@@ -33,6 +33,7 @@ import ProxyTab from './ProxyTab';
 import RequestsTab from './RequestsTab';
 import FolderEditor from './FolderEditor';
 import StandaloneWindowOverlay from './StandaloneWindowOverlay';
+import DisabledBanner from './DisabledBanner';
 import { TabButton } from './ui/TabButton';
 import { ImportDialog } from './ui/ImportDialog';
 import { ConfirmDialog } from './ui/ConfirmDialog';
@@ -409,6 +410,8 @@ const App: React.FC = () => {
         onToggleCors={recording.handleCorsToggle}
         activeTabTitle={recording.activeTabTitle}
       />
+
+      {!recording.settings.enabled && <DisabledBanner onEnable={() => recording.handleGlobalToggle(true)} />}
 
       <div className='flex bg-gray-100 dark:bg-gray-950 border-b border-gray-200 dark:border-gray-800'>
         <TabButton active={activeTab === Tab.Rules} onClick={() => setActiveTab(Tab.Rules)}>

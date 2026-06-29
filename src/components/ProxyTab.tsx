@@ -98,7 +98,7 @@ const ProxyTab: React.FC<ProxyTabProps> = ({
 
       {/* Toolbar */}
       <div className='flex items-center justify-between'>
-        <div className='flex items-center gap-1'>
+        <div className='flex items-center gap-2'>
           <IconButton
             onClick={() => fileInputRef.current?.click()}
             variant={IconButtonVariant.Ghost}

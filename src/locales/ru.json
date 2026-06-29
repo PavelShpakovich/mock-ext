@@ -2,7 +2,9 @@
   "app": {
     "name": "Moq",
     "standaloneWindowOpen": "Отдельное окно открыто",
-    "standaloneWindowMessage": "Moq в данный момент открыт в отдельном окне. Пожалуйста, используйте это окно или закройте его, чтобы использовать панель DevTools."
+    "standaloneWindowMessage": "Moq в данный момент открыт в отдельном окне. Пожалуйста, используйте это окно или закройте его, чтобы использовать панель DevTools.",
+    "disabledBannerMessage": "Moq отключён — правила не применяются.",
+    "enableExtension": "Включить"
   },
   "header": {
     "recording": "Запись: {{tabTitle}}",

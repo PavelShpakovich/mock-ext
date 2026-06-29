@@ -2,7 +2,9 @@
   "app": {
     "name": "Moq",
     "standaloneWindowOpen": "Standalone Window is Open",
-    "standaloneWindowMessage": "Moq is currently open in a standalone window. Please use that window or close it to use the DevTools panel."
+    "standaloneWindowMessage": "Moq is currently open in a standalone window. Please use that window or close it to use the DevTools panel.",
+    "disabledBannerMessage": "Moq is disabled — no rules are being applied.",
+    "enableExtension": "Enable"
   },
   "header": {
     "recording": "Recording: {{tabTitle}}",

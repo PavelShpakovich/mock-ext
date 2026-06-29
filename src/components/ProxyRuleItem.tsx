@@ -18,7 +18,6 @@ interface ProxyRuleItemProps {
   onDuplicate: () => void;
   onResetHits?: () => void;
 }
-
 const ProxyRuleItem: React.FC<ProxyRuleItemProps> = ({
   rule,
   conflictingMockNames,
