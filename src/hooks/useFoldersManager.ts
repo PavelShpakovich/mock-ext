@@ -1,8 +1,7 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { Storage } from '../storage';
 import { Folder, MockRule } from '../types';
 import { withContextCheck } from '../contextHandler';
-import { MessageActionType } from '../enums';
 import {
   createFolder,
   renameFolder,
@@ -38,79 +37,62 @@ interface UseFoldersManagerReturn {
  */
 export const useFoldersManager = (): UseFoldersManagerReturn => {
   const [folders, setFolders] = useState<Folder[]>([]);
+  const foldersRef = useRef(folders);
+
+  useEffect(() => {
+    const handleStorageChange = (changes: Record<string, Browser.storage.StorageChange>, areaName: string) => {
+      if (areaName === 'local' && changes.folders) {
+        const nextFolders = (changes.folders.newValue as Folder[] | undefined) ?? [];
+        foldersRef.current = nextFolders;
+        setFolders(nextFolders);
+      }
+    };
+
+    browser.storage.onChanged.addListener(handleStorageChange);
+    return () => browser.storage.onChanged.removeListener(handleStorageChange);
+  }, []);
 
   const loadFolders = useCallback(async () => {
     const loadedFolders = await withContextCheck(() => Storage.getFolders(), []);
+    foldersRef.current = loadedFolders;
     setFolders(loadedFolders);
   }, []);
 
-  const saveFolder = useCallback(
-    async (name: string, editingFolder: Folder | null, parentFolderId?: string) => {
-      let updatedFolders: Folder[];
+  const saveFolder = useCallback(async (name: string, editingFolder: Folder | null, parentFolderId?: string) => {
+    const updatedFolders = !editingFolder
+      ? [...foldersRef.current, createFolder(name, parentFolderId)]
+      : foldersRef.current.map((folder) => (folder.id === editingFolder.id ? renameFolder(folder, name) : folder));
+    foldersRef.current = updatedFolders;
+    setFolders(updatedFolders);
+    await Storage.saveFolders(updatedFolders);
+  }, []);
 
-      if (!editingFolder) {
-        // Create new folder (optionally nested)
-        const newFolder = createFolder(name, parentFolderId);
-        updatedFolders = [...folders, newFolder];
-      } else {
-        // Rename existing folder
-        updatedFolders = folders.map((f) => (f.id === editingFolder.id ? renameFolder(f, name) : f));
-      }
+  const deleteFolderAndUpdateRules = useCallback(async (folderId: string, rules: MockRule[]) => {
+    const result = deleteFolderAndUngroup(foldersRef.current, rules, folderId);
+    foldersRef.current = result.folders;
+    setFolders(result.folders);
 
-      setFolders(updatedFolders);
-      await Storage.saveFolders(updatedFolders);
-      browser.runtime.sendMessage({ action: MessageActionType.FoldersUpdated }).catch(() => {});
-    },
-    [folders]
-  );
+    await Promise.all([Storage.saveFolders(result.folders), Storage.saveRules(result.rules)]);
 
-  const deleteFolderAndUpdateRules = useCallback(
-    async (folderId: string, rules: MockRule[]) => {
-      const result = deleteFolderAndUngroup(folders, rules, folderId);
-      setFolders(result.folders);
+    return result;
+  }, []);
 
-      await Promise.all([Storage.saveFolders(result.folders), Storage.saveRules(result.rules)]);
+  const deleteFolderRecursivelyAndUpdateRules = useCallback(async (folderId: string, rules: MockRule[]) => {
+    const result = deleteFolderRecursively(foldersRef.current, rules, folderId);
+    foldersRef.current = result.folders;
+    setFolders(result.folders);
 
-      await withContextCheck(() =>
-        browser.runtime.sendMessage({ action: MessageActionType.UpdateRules, rules: result.rules })
-      ).catch(() => {});
+    await Promise.all([Storage.saveFolders(result.folders), Storage.saveRules(result.rules)]);
 
-      browser.runtime.sendMessage({ action: MessageActionType.FoldersUpdated }).catch(() => {});
-      browser.runtime.sendMessage({ action: MessageActionType.RulesUpdated }).catch(() => {});
+    return result;
+  }, []);
 
-      return result;
-    },
-    [folders]
-  );
-
-  const deleteFolderRecursivelyAndUpdateRules = useCallback(
-    async (folderId: string, rules: MockRule[]) => {
-      const result = deleteFolderRecursively(folders, rules, folderId);
-      setFolders(result.folders);
-
-      await Promise.all([Storage.saveFolders(result.folders), Storage.saveRules(result.rules)]);
-
-      await withContextCheck(() =>
-        browser.runtime.sendMessage({ action: MessageActionType.UpdateRules, rules: result.rules })
-      ).catch(() => {});
-
-      browser.runtime.sendMessage({ action: MessageActionType.FoldersUpdated }).catch(() => {});
-      browser.runtime.sendMessage({ action: MessageActionType.RulesUpdated }).catch(() => {});
-
-      return result;
-    },
-    [folders]
-  );
-
-  const toggleCollapse = useCallback(
-    async (folderId: string) => {
-      const updatedFolders = folders.map((f) => (f.id === folderId ? toggleFolderCollapse(f) : f));
-      setFolders(updatedFolders);
-      await Storage.saveFolders(updatedFolders);
-      browser.runtime.sendMessage({ action: MessageActionType.FoldersUpdated }).catch(() => {});
-    },
-    [folders]
-  );
+  const toggleCollapse = useCallback(async (folderId: string) => {
+    const updatedFolders = foldersRef.current.map((f) => (f.id === folderId ? toggleFolderCollapse(f) : f));
+    foldersRef.current = updatedFolders;
+    setFolders(updatedFolders);
+    await Storage.saveFolders(updatedFolders);
+  }, []);
 
   const enableFolderRules = useCallback(async (rules: MockRule[], folderId: string) => {
     return toggleFolderRules(rules, folderId, true);
@@ -121,25 +103,40 @@ export const useFoldersManager = (): UseFoldersManagerReturn => {
   }, []);
 
   const setFoldersDirectly = useCallback((updatedFolders: Folder[]) => {
+    foldersRef.current = updatedFolders;
     setFolders(updatedFolders);
   }, []);
 
   const saveFolders = useCallback(async (updatedFolders: Folder[]) => {
+    foldersRef.current = updatedFolders;
     setFolders(updatedFolders);
     await Storage.saveFolders(updatedFolders);
-    browser.runtime.sendMessage({ action: MessageActionType.FoldersUpdated }).catch(() => {});
   }, []);
 
-  return {
-    folders,
-    loadFolders,
-    saveFolder,
-    deleteFolderAndUpdateRules,
-    deleteFolderRecursivelyAndUpdateRules,
-    toggleCollapse,
-    enableFolderRules,
-    disableFolderRules,
-    setFoldersDirectly,
-    saveFolders,
-  };
+  return useMemo(
+    () => ({
+      folders,
+      loadFolders,
+      saveFolder,
+      deleteFolderAndUpdateRules,
+      deleteFolderRecursivelyAndUpdateRules,
+      toggleCollapse,
+      enableFolderRules,
+      disableFolderRules,
+      setFoldersDirectly,
+      saveFolders,
+    }),
+    [
+      folders,
+      loadFolders,
+      saveFolder,
+      deleteFolderAndUpdateRules,
+      deleteFolderRecursivelyAndUpdateRules,
+      toggleCollapse,
+      enableFolderRules,
+      disableFolderRules,
+      setFoldersDirectly,
+      saveFolders,
+    ]
+  );
 };

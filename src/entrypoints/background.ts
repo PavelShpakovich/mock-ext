@@ -1,41 +1,61 @@
-import { v4 as uuidv4 } from 'uuid';
 import { Storage } from '../storage';
-import { MockRule, Settings, MessageAction, MessageResponse, ProxyRule } from '../types';
+import { DEFAULT_SETTINGS } from '../constants';
+import { MockRule, Settings, MessageAction, MessageResponse, ProxyRule, RuleStats } from '../types';
 import { MatchType, HttpMethod, Language, MessageActionType } from '../enums';
-import { findMatchingRule } from '../helpers/urlMatching';
+import { clearURLMatchCache, findMatchingRule } from '../helpers/urlMatching';
 
 // WINDOW_ID_NONE constant (-1) - used instead of chrome.windows.WINDOW_ID_NONE
 // to avoid dependency on chrome.windows object (not available in all contexts)
 const WINDOW_ID_NONE = -1;
+const RUNTIME_STATE_KEY = 'runtimeState';
+const RULE_STATS_FLUSH_MS = 1000;
+
+interface RuntimeState {
+  recordingTabId: number | null;
+  standaloneWindowId: number | null;
+}
+
+function sameRuleConfiguration<T extends { matchCount?: number; lastMatched?: number }>(
+  previous: T[],
+  next: T[]
+): boolean {
+  const withoutStats = (rules: T[]) =>
+    rules.map(({ matchCount: _matchCount, lastMatched: _lastMatched, ...rule }) => rule);
+  return JSON.stringify(withoutStats(previous)) === JSON.stringify(withoutStats(next));
+}
 
 export default defineBackground(() => {
   let mockRules: MockRule[] = [];
   let proxyRules: ProxyRule[] = [];
-  let settings: Settings = {
-    enabled: true,
-    logRequests: false,
-    showNotifications: false,
-    corsAutoFix: false,
-    language: undefined,
-  };
+  let ruleStats: RuleStats = {};
+  let ruleStatsDirty = false;
+  let ruleStatsWritePending = false;
+  let ruleStatsFlushTimer: ReturnType<typeof setTimeout> | null = null;
+  let settings: Settings = DEFAULT_SETTINGS;
   let recordingTabId: number | null = null;
   let standaloneWindowId: number | null = null;
+  let ready: Promise<void> = Promise.resolve();
+
+  async function restoreRuntimeState(): Promise<void> {
+    const result = (await browser.storage.session.get(RUNTIME_STATE_KEY)) as { [RUNTIME_STATE_KEY]?: RuntimeState };
+    recordingTabId = result[RUNTIME_STATE_KEY]?.recordingTabId ?? null;
+    standaloneWindowId = result[RUNTIME_STATE_KEY]?.standaloneWindowId ?? null;
+  }
+
+  async function persistRuntimeState(): Promise<void> {
+    await browser.storage.session.set({ [RUNTIME_STATE_KEY]: { recordingTabId, standaloneWindowId } });
+  }
 
   // Load initial state
   async function initialize(): Promise<void> {
     try {
+      await Storage.migrateStorageSchema();
+      await restoreRuntimeState();
       mockRules = await Storage.getRules();
       proxyRules = await Storage.getProxyRules();
+      ruleStats = await Storage.getRuleStats();
       settings = await Storage.getSettings();
-
-      // Clear logRequests if no recording tab is active
-      // This handles cases where service worker crashed before onSuspend could fire
-      if (settings.logRequests && recordingTabId === null) {
-        // eslint-disable-next-line no-console
-        console.log('[Moq] Clearing stale logRequests state on initialization');
-        settings.logRequests = false;
-        await Storage.saveSettings(settings);
-      }
+      clearURLMatchCache();
 
       await updateRulesInAllTabs();
       await injectScriptsToExistingTabs();
@@ -45,8 +65,19 @@ export default defineBackground(() => {
     }
   }
 
+  async function clearStaleRecordingState(): Promise<void> {
+    recordingTabId = null;
+    standaloneWindowId = null;
+    await persistRuntimeState();
+
+    if (settings.logRequests) {
+      settings = { ...settings, logRequests: false };
+      await Storage.saveSettings(settings);
+    }
+    await updateRulesInAllTabs();
+  }
+
   // Helper: Update CORS auto-fix rules via static declarativeNetRequest ruleset.
-  // This is the same approach as the original src/background.ts (Chrome MV3).
   // cors_rules is defined in public/cors-rules.json and declared in the manifest.
   async function syncCorsRules(): Promise<void> {
     try {
@@ -71,7 +102,7 @@ export default defineBackground(() => {
     const tabs = await browser.tabs.query({ url: ['http://*/*', 'https://*/*'] });
 
     for (const tab of tabs) {
-      if (!tab.id) continue;
+      if (!isInjectableTab(tab)) continue;
 
       try {
         // Check if content script is already there
@@ -104,8 +135,8 @@ export default defineBackground(() => {
   }
 
   // Helper: Check if tab can receive content script messages
-  function isValidTab(tab: Browser.tabs.Tab): boolean {
-    return !!tab.id && !!tab.url && !tab.url.startsWith('chrome://') && !tab.url.startsWith('chrome-extension://');
+  function isInjectableTab(tab: Browser.tabs.Tab): tab is Browser.tabs.Tab & { id: number; url: string } {
+    return tab.id !== undefined && !!tab.url && /^https?:\/\//i.test(tab.url) && tab.windowId !== WINDOW_ID_NONE;
   }
 
   // Helper: Send rules to a single tab
@@ -140,6 +171,7 @@ export default defineBackground(() => {
         rules,
         proxyRules: getEnabledProxyRules(),
         settings,
+        capture: recordingTabId === tabId,
       });
     } catch {
       // Silent fail - content script may not be injected yet
@@ -158,22 +190,31 @@ export default defineBackground(() => {
 
   // Helper: Increment rule match counter
   async function incrementRuleCounter(ruleId: string): Promise<void> {
-    // Check mock rules first, then proxy rules
-    const mockRule = mockRules.find((r) => r.id === ruleId);
-    if (mockRule) {
-      mockRule.matchCount = (mockRule.matchCount || 0) + 1;
-      mockRule.lastMatched = Date.now();
-      await Storage.saveRules(mockRules);
-      browser.runtime.sendMessage({ action: MessageActionType.RulesUpdated }).catch(() => {});
-      return;
-    }
+    if (!mockRules.some((rule) => rule.id === ruleId) && !proxyRules.some((rule) => rule.id === ruleId)) return;
+    const previous = ruleStats[ruleId];
+    ruleStats = { ...ruleStats, [ruleId]: { count: (previous?.count ?? 0) + 1, last: Date.now() } };
+    ruleStatsDirty = true;
+    if (ruleStatsFlushTimer) clearTimeout(ruleStatsFlushTimer);
+    ruleStatsFlushTimer = setTimeout(() => {
+      void flushRuleStats();
+    }, RULE_STATS_FLUSH_MS);
+  }
 
-    const proxyRule = proxyRules.find((r) => r.id === ruleId);
-    if (proxyRule) {
-      proxyRule.matchCount = (proxyRule.matchCount || 0) + 1;
-      proxyRule.lastMatched = Date.now();
-      await Storage.saveProxyRules(proxyRules);
-      browser.runtime.sendMessage({ action: MessageActionType.ProxyRulesUpdated }).catch(() => {});
+  async function flushRuleStats(): Promise<void> {
+    if (ruleStatsFlushTimer) clearTimeout(ruleStatsFlushTimer);
+    ruleStatsFlushTimer = null;
+    if (!ruleStatsDirty) return;
+
+    const snapshot = ruleStats;
+    ruleStatsDirty = false;
+    ruleStatsWritePending = true;
+    try {
+      await Storage.saveRuleStats(snapshot);
+    } catch (error) {
+      ruleStatsDirty = true;
+      console.error('[Moq] Failed to save rule statistics:', error);
+    } finally {
+      ruleStatsWritePending = false;
     }
   }
 
@@ -183,7 +224,7 @@ export default defineBackground(() => {
     const tabs = await browser.tabs.query({});
 
     // Send rules to each valid tab
-    const sendPromises = tabs.filter(isValidTab).map((tab) => sendRulesToTab(tab.id!, enabledRules));
+    const sendPromises = tabs.filter(isInjectableTab).map((tab) => sendRulesToTab(tab.id!, enabledRules));
 
     await Promise.allSettled(sendPromises);
 
@@ -223,42 +264,16 @@ export default defineBackground(() => {
         }
         return { success: false, error: 'Missing ruleId' };
 
-      case MessageActionType.UpdateRules:
-        if (message.rules) {
-          mockRules = message.rules;
-          await Storage.saveRules(mockRules);
-          await updateRulesInAllTabs();
-          return { success: true };
-        }
-        return { success: false, error: 'No rules provided' };
-
-      case MessageActionType.UpdateSettings:
-        if (message.settings) {
-          settings = message.settings;
-          await Storage.saveSettings(settings);
-          await updateRulesInAllTabs();
-          await syncCorsRules();
-
-          return { success: true };
-        }
-        return { success: false, error: 'No settings provided' };
-
       case MessageActionType.ToggleMocking:
         if (message.enabled !== undefined) {
-          // Reload settings from storage to get the latest state
           settings = await Storage.getSettings();
-          settings.enabled = message.enabled;
 
           // If disabling extension, clear recording tab ID and CORS auto-fix
           if (!message.enabled) {
             recordingTabId = null;
-            settings.corsAutoFix = false;
-            settings.logRequests = false;
+            await persistRuntimeState();
           }
 
-          await Storage.saveSettings(settings);
-          await updateRulesInAllTabs();
-          await syncCorsRules();
           return { success: true };
         }
         return { success: false, error: 'No enabled state provided' };
@@ -276,6 +291,13 @@ export default defineBackground(() => {
 
       case MessageActionType.StartRecording:
         if (message.tabId !== undefined) {
+          const previousRecordingTabId = recordingTabId;
+          recordingTabId = message.tabId;
+          await persistRuntimeState();
+          if (previousRecordingTabId !== null && previousRecordingTabId !== message.tabId) {
+            await sendRulesToTab(previousRecordingTabId, getEnabledRules());
+          }
+
           // Check if scripts are already present
           const scriptsPresent = await sendRulesToTab(message.tabId, getEnabledRules());
 
@@ -283,26 +305,34 @@ export default defineBackground(() => {
             // Scripts weren't present - reload the tab to properly inject them
             try {
               await browser.tabs.reload(message.tabId);
-              // Set recording tab AFTER reload to catch requests on page load
-              recordingTabId = message.tabId;
               return { success: true, data: { tabId: recordingTabId, reloaded: true } };
             } catch {
+              recordingTabId = previousRecordingTabId;
+              await persistRuntimeState();
+              if (previousRecordingTabId !== null) {
+                await sendRulesToTab(previousRecordingTabId, getEnabledRules());
+              }
               return { success: false, error: 'Failed to reload tab' };
             }
           }
 
-          // Scripts were already present, start recording immediately
-          recordingTabId = message.tabId;
           return { success: true, data: { tabId: recordingTabId, reloaded: false } };
         }
         return { success: false, error: 'No tab ID provided' };
 
-      case MessageActionType.StopRecording:
+      case MessageActionType.StopRecording: {
+        const stoppedTabId = recordingTabId;
         recordingTabId = null;
+        await persistRuntimeState();
+        if (stoppedTabId !== null) await sendRulesToTab(stoppedTabId, getEnabledRules());
         return { success: true };
+      }
 
       case MessageActionType.GetRecordingStatus:
-        return { success: true, data: { tabId: recordingTabId } };
+        return {
+          success: true,
+          data: { tabId: recordingTabId, isRecording: sender?.tab?.id === recordingTabId },
+        };
 
       case MessageActionType.GetTabById:
         if (message.tabId !== undefined) {
@@ -327,29 +357,16 @@ export default defineBackground(() => {
         await openStandaloneWindow(message.language);
         return { success: true };
 
-      case MessageActionType.GetStandaloneWindowStatus:
-        return { success: true, data: { isOpen: standaloneWindowId !== null } };
-
-      case MessageActionType.UpdateProxyRules:
-        if (message.proxyRules) {
-          proxyRules = message.proxyRules;
-          await Storage.saveProxyRules(proxyRules);
-          await updateRulesInAllTabs();
-          return { success: true };
-        }
-        return { success: false, error: 'No proxy rules provided' };
-
       default:
         return { success: false, error: 'Unknown action' };
     }
   }
 
   // Helper: Handle captured response logging
-  async function handleCapturedResponse(message: MessageAction, sender?: Browser.runtime.MessageSender): Promise<void> {
-    if (message.action !== 'logCapturedResponse') {
-      return;
-    }
-
+  async function handleCapturedResponse(
+    message: Extract<MessageAction, { action: MessageActionType.LogCapturedResponse }>,
+    sender?: Browser.runtime.MessageSender
+  ): Promise<void> {
     const { url, method, statusCode, contentType, responseBody, responseHeaders } = message;
 
     // Only log if from recording tab
@@ -365,7 +382,7 @@ export default defineBackground(() => {
     }
 
     await Storage.addToRequestLog({
-      id: uuidv4(),
+      id: crypto.randomUUID(),
       url,
       method,
       timestamp: Date.now(),
@@ -379,11 +396,10 @@ export default defineBackground(() => {
   }
 
   // Helper: Handle mocked request logging
-  async function handleMockedRequest(message: MessageAction, sender?: Browser.runtime.MessageSender): Promise<void> {
-    if (message.action !== 'logMockedRequest') {
-      return;
-    }
-
+  async function handleMockedRequest(
+    message: Extract<MessageAction, { action: MessageActionType.LogMockedRequest }>,
+    sender?: Browser.runtime.MessageSender
+  ): Promise<void> {
     const { url, method, ruleId, timestamp } = message;
 
     // Only log if from recording tab
@@ -394,7 +410,7 @@ export default defineBackground(() => {
     const matchedRule = mockRules.find((r) => r.id === ruleId);
 
     await Storage.addToRequestLog({
-      id: uuidv4(),
+      id: crypto.randomUUID(),
       url,
       method,
       timestamp: timestamp || Date.now(),
@@ -407,32 +423,20 @@ export default defineBackground(() => {
 
   // Helper: Show DevTools prompt in active tab
   async function showDevToolsPromptInActiveTab(): Promise<void> {
-    const settings = await Storage.getSettings();
+    const currentSettings = await Storage.getSettings();
     const tabs = await browser.tabs.query({ active: true, currentWindow: true });
 
     if (tabs[0]?.id) {
       try {
         await browser.tabs.sendMessage(tabs[0].id, {
           action: MessageActionType.OpenDevTools,
-          language: settings.language || 'en',
-          theme: settings.theme || 'system',
+          language: currentSettings.language || 'en',
+          theme: currentSettings.theme || 'system',
         });
       } catch {
         // Silent fail - content script may not be loaded yet
       }
     }
-  }
-
-  // Helper function to check if tab is valid for recording
-  function isValidRecordingTab(tab: Browser.tabs.Tab): boolean {
-    return (
-      tab.id !== undefined &&
-      !!tab.url &&
-      !tab.url.startsWith('chrome-extension://') &&
-      !tab.url.startsWith('chrome://') &&
-      !tab.url.startsWith('about:') &&
-      tab.windowId !== WINDOW_ID_NONE
-    );
   }
 
   // Helper: Create example rule on first install
@@ -473,6 +477,7 @@ export default defineBackground(() => {
       } catch {
         // Window doesn't exist anymore
         standaloneWindowId = null;
+        await persistRuntimeState();
       }
     }
 
@@ -481,7 +486,7 @@ export default defineBackground(() => {
     const url = lang ? `window.html?lang=${lang}` : 'window.html';
 
     // Create new window
-    const window = await browser.windows.create({
+    const createdWindow = await browser.windows.create({
       url,
       type: 'popup',
       width: 800,
@@ -490,7 +495,8 @@ export default defineBackground(() => {
       top: 100,
     });
 
-    standaloneWindowId = window?.id || null;
+    standaloneWindowId = createdWindow?.id || null;
+    await persistRuntimeState();
   }
 
   // Helper: Create context menu
@@ -502,18 +508,6 @@ export default defineBackground(() => {
     });
   }
 
-  // Helper: Clean up recording state on service worker suspend
-  async function cleanupRecordingState(): Promise<void> {
-    recordingTabId = null;
-
-    // Clear logRequests in storage when service worker is suspended
-    const currentSettings = await Storage.getSettings();
-    if (currentSettings.logRequests) {
-      currentSettings.logRequests = false;
-      await Storage.saveSettings(currentSettings);
-    }
-  }
-
   // Handle messages from popup
   browser.runtime.onMessage.addListener(
     (
@@ -521,7 +515,8 @@ export default defineBackground(() => {
       sender: Browser.runtime.MessageSender,
       sendResponse: (response: MessageResponse) => void
     ) => {
-      handleMessage(message, sender)
+      ready
+        .then(() => handleMessage(message, sender))
         .then((response) => sendResponse(response))
         .catch((error) => {
           console.error('[Moq] Message handler error:', error);
@@ -537,15 +532,13 @@ export default defineBackground(() => {
   browser.tabs.onRemoved.addListener((tabId) => {
     if (tabId === recordingTabId) {
       recordingTabId = null;
+      persistRuntimeState().catch(() => {});
 
       // Also clear logRequests in storage when recording tab closes
       Storage.getSettings().then((currentSettings) => {
         if (currentSettings.logRequests) {
           currentSettings.logRequests = false;
-          Storage.saveSettings(currentSettings).then(() => {
-            // Notify popup about recording stop
-            browser.runtime.sendMessage({ action: MessageActionType.SettingsUpdated }).catch(() => {});
-          });
+          Storage.saveSettings(currentSettings);
         }
       });
     }
@@ -556,19 +549,17 @@ export default defineBackground(() => {
     // Only process if this is the recording tab
     if (tabId === recordingTabId) {
       // Check if tab navigated to a restricted URL
-      if (changeInfo.url && !isValidRecordingTab(tab)) {
+      if (changeInfo.url && !isInjectableTab(tab)) {
         // eslint-disable-next-line no-console
         console.log('[Moq] Recording tab navigated to restricted URL, stopping recording');
         recordingTabId = null;
+        persistRuntimeState().catch(() => {});
 
         // Clear logRequests in storage
         Storage.getSettings().then((currentSettings) => {
           if (currentSettings.logRequests) {
             currentSettings.logRequests = false;
-            Storage.saveSettings(currentSettings).then(() => {
-              // Notify popup about recording stop
-              browser.runtime.sendMessage({ action: MessageActionType.SettingsUpdated }).catch(() => {});
-            });
+            Storage.saveSettings(currentSettings);
           }
         });
         return;
@@ -595,25 +586,69 @@ export default defineBackground(() => {
     }
 
     await createContextMenu();
-    await initialize();
+    await ready;
+
+    if (details.reason === 'install') {
+      mockRules = await Storage.getRules();
+      await updateRulesInAllTabs();
+    }
   });
 
-  // Stop recording and clear state when service worker is about to suspend
+  browser.runtime.onStartup.addListener(() =>
+    ready
+      .then(() => clearStaleRecordingState())
+      .catch((error) => {
+        console.error('[Moq] Failed to clear recording state on startup:', error);
+      })
+  );
+
   browser.runtime.onSuspend.addListener(() => {
-    cleanupRecordingState().catch((error) => {
-      console.error('[Moq] Failed to cleanup recording state on suspend:', error);
-    });
+    void flushRuleStats();
+  });
+
+  browser.storage.onChanged.addListener((changes, areaName) => {
+    if (areaName !== 'local') return;
+
+    return ready
+      .then(async () => {
+        let rulesChanged = false;
+        if (changes.mockRules) {
+          const nextRules = (changes.mockRules.newValue as MockRule[] | undefined) ?? [];
+          rulesChanged ||= !sameRuleConfiguration(mockRules, nextRules);
+          mockRules = nextRules;
+          clearURLMatchCache();
+        }
+        if (changes.proxyRules) {
+          const nextRules = (changes.proxyRules.newValue as ProxyRule[] | undefined) ?? [];
+          rulesChanged ||= !sameRuleConfiguration(proxyRules, nextRules);
+          proxyRules = nextRules;
+          clearURLMatchCache();
+        }
+        if (changes.settings) {
+          settings = { ...DEFAULT_SETTINGS, ...(changes.settings.newValue as Partial<Settings> | undefined) };
+          rulesChanged = true;
+          await syncCorsRules();
+        }
+        if (changes.ruleStats && !ruleStatsWritePending && !ruleStatsDirty) {
+          ruleStats = (changes.ruleStats.newValue as RuleStats | undefined) ?? {};
+        }
+        if (rulesChanged) await updateRulesInAllTabs();
+      })
+      .catch((error) => {
+        console.error('[Moq] Failed to synchronize storage changes:', error);
+      });
   });
 
   // Clean up window reference when window is closed
   browser.windows.onRemoved.addListener((windowId) => {
     if (windowId === standaloneWindowId) {
       standaloneWindowId = null;
+      persistRuntimeState().catch(() => {});
     }
   });
 
   // Service worker startup
-  initialize();
+  ready = initialize();
 
   // Handle extension icon click to show DevTools prompt
   browser.action.onClicked.addListener(showDevToolsPromptInActiveTab);

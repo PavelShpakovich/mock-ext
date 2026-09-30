@@ -1,203 +1,99 @@
-import { v4 as uuidv4 } from 'uuid';
-
-/**
- * Context provided to response hooks
- */
-export interface ResponseHookContext {
-  response: unknown; // Parsed response body (can be modified by hook)
-  request: {
-    url: string;
-    method: string;
-    headers: Record<string, string>;
-    body?: string;
-  };
-  helpers: {
-    randomId: () => string;
-    timestamp: () => number;
-    uuid: () => string;
-    randomNumber: (min?: number, max?: number) => number;
-    randomString: (length?: number) => string;
-  };
+export interface ResponseHookRequest {
+  url: string;
+  method: string;
+  headers?: HeadersInit;
+  body?: unknown;
 }
 
-/**
- * Helper functions available in response hooks
- */
-const createHelpers = () => ({
-  randomId: (): string => {
-    return Math.random().toString(36).substring(2, 11);
-  },
+function normalizeHeaders(headers?: HeadersInit): Record<string, string> {
+  const normalized: Record<string, string> = {};
+  if (headers instanceof Headers) {
+    headers.forEach((value, key) => {
+      normalized[key] = value;
+    });
+  } else if (Array.isArray(headers)) {
+    headers.forEach(([key, value]) => {
+      normalized[key] = value;
+    });
+  } else if (headers) {
+    Object.assign(normalized, headers);
+  }
+  return normalized;
+}
 
-  timestamp: (): number => {
-    return Date.now();
-  },
+function stripGooglePrefix(responseBody: string): string {
+  return responseBody.replace(/^\)\]\}'\s*/, '').replace(/^\d+\n/gm, '');
+}
 
-  uuid: (): string => {
-    return uuidv4();
-  },
+function parseGoogleJSON(responseBody: string): unknown {
+  const stripped = stripGooglePrefix(responseBody);
+  try {
+    return JSON.parse(stripped);
+  } catch {
+    const parsedLines = stripped
+      .split('\n')
+      .filter((line) => line.trim())
+      .flatMap((line) => {
+        try {
+          return [JSON.parse(line)];
+        } catch {
+          return [];
+        }
+      });
+    return parsedLines.length > 0 ? parsedLines : stripped;
+  }
+}
 
-  randomNumber: (min: number = 0, max: number = 999999): number => {
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-  },
-
-  randomString: (length: number = 8): string => {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let result = '';
-    for (let i = 0; i < length; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return result;
-  },
-});
-
-/**
- * Executes a response hook with the provided context
- * Modifies the response object in place
- *
- * @param hookCode - JavaScript code to execute
- * @param response - Response body (will be modified)
- * @param request - Request details
- * @returns Modified response or original if hook fails
- */
-export function executeResponseHook(
-  hookCode: string,
-  response: unknown,
-  request: { url: string; method: string; headers?: Record<string, string>; body?: string }
-): unknown {
-  // Empty hook means no modification
-  if (!hookCode || hookCode.trim() === '') {
-    return response;
+export function executeResponseHook(hookCode: string, response: string, context: ResponseHookRequest): unknown {
+  let parsedResponse: unknown = response;
+  try {
+    parsedResponse = JSON.parse(response);
+  } catch {
+    parsedResponse = response;
   }
 
-  try {
-    // Parse response if it's a string
-    let parsedResponse = response;
-    if (typeof response === 'string') {
-      try {
-        parsedResponse = JSON.parse(response);
-      } catch {
-        // Not JSON, keep as string
-        parsedResponse = response;
+  const request = {
+    url: context.url,
+    method: context.method,
+    headers: normalizeHeaders(context.headers),
+    body: context.body ? String(context.body) : undefined,
+  };
+  const helpers = {
+    randomId: (): string => Math.random().toString(36).substring(2, 11),
+    timestamp: (): number => Date.now(),
+    uuid: (): string => crypto.randomUUID(),
+    randomNumber: (min: number = 0, max: number = 999999): number => Math.floor(Math.random() * (max - min + 1)) + min,
+    randomString: (length: number = 8): string => {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+      let result = '';
+      for (let index = 0; index < length; index++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
       }
-    }
+      return result;
+    },
+    stripGooglePrefix,
+    parseGoogleJSON,
+  };
 
-    // Create context
-    const context: ResponseHookContext = {
-      response: parsedResponse,
-      request: {
-        url: request.url,
-        method: request.method,
-        headers: request.headers || {},
-        body: request.body,
-      },
-      helpers: createHelpers(),
-    };
-
-    // Create safe execution function
-    // The hook has access to: response, request, helpers
-    const fn = new Function(
+  try {
+    const execute = new Function(
       'response',
       'request',
       'helpers',
       `
-      'use strict';
-      
-      // Runtime security: Block access to dangerous globals
-      const restrictedGlobals = ['window', 'document', 'location', 'eval', 'Function', 'globalThis', 'self'];
-      const globalProxy = new Proxy({}, {
-        get(target, prop) {
-          if (restrictedGlobals.includes(prop)) {
-            throw new Error('Access to ' + prop + ' is not allowed in response hooks');
-          }
-          return undefined;
-        },
-        has(target, prop) {
-          // Prevent 'prop in this' checks from succeeding for restricted globals
-          return !restrictedGlobals.includes(prop);
-        }
-      });
-      
-      // Wrap execution with security proxy
-      return (function() {
+        'use strict';
         try {
           ${hookCode}
           return response;
         } catch (error) {
-          console.error('[Moq] Response hook error:', (error as Error).message);
+          console.error('[Moq] Response hook error:', error?.message);
           return response;
         }
-      }).call(globalProxy);
-    `
+      `
     );
-
-    // Execute hook
-    const modifiedResponse = fn(context.response, context.request, context.helpers) as unknown;
-
-    // Return modified response
-    return modifiedResponse;
+    return execute(parsedResponse, request, helpers);
   } catch (error) {
     console.error('[Moq] Failed to execute response hook:', error);
-    return response; // Return original on error
+    return response;
   }
-}
-
-/**
- * Validates a response hook for syntax errors
- * Returns an error message if invalid, or null if valid
- *
- * @param hookCode - JavaScript code to validate
- * @param t - Translation function for error messages
- * @returns Promise that resolves to error message or null if valid
- */
-export async function validateResponseHook(
-  hookCode: string,
-  t: (key: string, params?: Record<string, string | number>) => string
-): Promise<string | null> {
-  // Empty hook is valid (no modification)
-  if (!hookCode || hookCode.trim() === '') {
-    return null;
-  }
-
-  // Lazy load validation module
-  const { validateResponseHookLazy } = await import('./lazyValidation');
-  return validateResponseHookLazy(hookCode, t);
-}
-
-/**
- * Helper function to provide examples for users
- */
-export function getResponseHookExamples(): Array<{
-  description: string;
-  code: string;
-}> {
-  return [
-    {
-      description: 'Add timestamp to response',
-      code: 'response.timestamp = helpers.timestamp();',
-    },
-    {
-      description: 'Generate unique ID',
-      code: 'response.id = helpers.uuid();',
-    },
-    {
-      description: 'Add request info to response',
-      code: `response.requestedBy = request.headers['User-Agent'];\nresponse.requestUrl = request.url;`,
-    },
-    {
-      description: 'Add random data',
-      code: 'response.randomValue = helpers.randomNumber(1, 100);\nresponse.token = helpers.randomString(16);',
-    },
-    {
-      description: 'Modify existing fields',
-      code: `if (response.items) {\n  response.items.forEach((item, index) => {\n    item.id = helpers.uuid();\n    item.position = index + 1;\n  });\n}`,
-    },
-    {
-      description: 'Add pagination metadata',
-      code: `response.meta = {\n  page: 1,\n  perPage: 10,\n  total: response.items ? response.items.length : 0,\n  generatedAt: helpers.timestamp()\n};`,
-    },
-    {
-      description: 'Conditionally modify based on request',
-      code: `if (request.method === 'POST') {\n  response.created = true;\n  response.createdAt = helpers.timestamp();\n}`,
-    },
-  ];
 }

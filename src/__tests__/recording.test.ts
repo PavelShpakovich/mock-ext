@@ -11,7 +11,7 @@ import { Settings } from '../types';
 describe('Recording Helpers', () => {
   describe('isValidRecordingTab', () => {
     it('should return true for valid web tabs', () => {
-      const validTab: chrome.tabs.Tab = {
+      const validTab: Browser.tabs.Tab = {
         id: 123,
         url: 'https://example.com',
         windowId: 1,
@@ -23,6 +23,7 @@ describe('Recording Helpers', () => {
         selected: false,
         discarded: false,
         autoDiscardable: true,
+        frozen: false,
         groupId: -1,
       };
 
@@ -30,7 +31,7 @@ describe('Recording Helpers', () => {
     });
 
     it('should return false for tabs without id', () => {
-      const tab: chrome.tabs.Tab = {
+      const tab: Browser.tabs.Tab = {
         url: 'https://example.com',
         windowId: 1,
         index: 0,
@@ -41,6 +42,7 @@ describe('Recording Helpers', () => {
         selected: false,
         discarded: false,
         autoDiscardable: true,
+        frozen: false,
         groupId: -1,
       };
 
@@ -48,7 +50,7 @@ describe('Recording Helpers', () => {
     });
 
     it('should return false for tabs without url', () => {
-      const tab: chrome.tabs.Tab = {
+      const tab: Browser.tabs.Tab = {
         id: 123,
         windowId: 1,
         index: 0,
@@ -59,6 +61,7 @@ describe('Recording Helpers', () => {
         selected: false,
         discarded: false,
         autoDiscardable: true,
+        frozen: false,
         groupId: -1,
       };
 
@@ -66,7 +69,7 @@ describe('Recording Helpers', () => {
     });
 
     it('should return false for chrome extension URLs', () => {
-      const tab: chrome.tabs.Tab = {
+      const tab: Browser.tabs.Tab = {
         id: 123,
         url: 'chrome-extension://abc123/popup.html',
         windowId: 1,
@@ -78,6 +81,7 @@ describe('Recording Helpers', () => {
         selected: false,
         discarded: false,
         autoDiscardable: true,
+        frozen: false,
         groupId: -1,
       };
 
@@ -85,7 +89,7 @@ describe('Recording Helpers', () => {
     });
 
     it('should return false for chrome:// URLs', () => {
-      const tab: chrome.tabs.Tab = {
+      const tab: Browser.tabs.Tab = {
         id: 123,
         url: 'chrome://settings',
         windowId: 1,
@@ -97,6 +101,7 @@ describe('Recording Helpers', () => {
         selected: false,
         discarded: false,
         autoDiscardable: true,
+        frozen: false,
         groupId: -1,
       };
 
@@ -104,7 +109,7 @@ describe('Recording Helpers', () => {
     });
 
     it('should return false for about: URLs', () => {
-      const tab: chrome.tabs.Tab = {
+      const tab: Browser.tabs.Tab = {
         id: 123,
         url: 'about:blank',
         windowId: 1,
@@ -116,6 +121,7 @@ describe('Recording Helpers', () => {
         selected: false,
         discarded: false,
         autoDiscardable: true,
+        frozen: false,
         groupId: -1,
       };
 
@@ -123,10 +129,10 @@ describe('Recording Helpers', () => {
     });
 
     it('should return false for tabs with WINDOW_ID_NONE', () => {
-      const tab: chrome.tabs.Tab = {
+      const tab: Browser.tabs.Tab = {
         id: 123,
         url: 'https://example.com',
-        windowId: chrome.windows.WINDOW_ID_NONE,
+        windowId: -1,
         index: 0,
         highlighted: false,
         active: true,
@@ -135,6 +141,7 @@ describe('Recording Helpers', () => {
         selected: false,
         discarded: false,
         autoDiscardable: true,
+        frozen: false,
         groupId: -1,
       };
 

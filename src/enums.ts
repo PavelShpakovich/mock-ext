@@ -99,8 +99,6 @@ export enum DropEdge {
 // ============================================================================
 
 export enum MessageActionType {
-  UpdateRules = 'updateRules',
-  UpdateSettings = 'updateSettings',
   ToggleMocking = 'toggleMocking',
   GetRules = 'getRules',
   GetSettings = 'getSettings',
@@ -113,17 +111,11 @@ export enum MessageActionType {
   LogMockedRequest = 'logMockedRequest',
   LogCapturedResponse = 'logCapturedResponse',
   IncrementRuleCounter = 'incrementRuleCounter',
-  RulesUpdated = 'rulesUpdated',
-  SettingsUpdated = 'settingsUpdated',
-  FoldersUpdated = 'foldersUpdated',
   RequestLogUpdated = 'requestLogUpdated',
   RecordingTabUpdated = 'recordingTabUpdated',
   OpenDevTools = 'openDevTools',
   UpdateFolders = 'updateFolders',
   OpenStandaloneWindow = 'openStandaloneWindow',
-  GetStandaloneWindowStatus = 'getStandaloneWindowStatus',
-  UpdateProxyRules = 'updateProxyRules',
-  ProxyRulesUpdated = 'proxyRulesUpdated',
   Ping = 'ping',
 }
 

@@ -9,6 +9,7 @@ import {
   findOverlappingRules,
   validateRule,
   validateAllRules,
+  refreshUnusedRuleWarnings,
 } from '../helpers/ruleValidation';
 
 describe('Rule Validation', () => {
@@ -96,6 +97,21 @@ describe('Rule Validation', () => {
       const recentDate = Date.now() - 10 * 24 * 60 * 60 * 1000; // 10 days ago
       const rule = createMockRule({ created: recentDate, lastMatched: undefined });
       expect(isRuleUnused(rule, 30)).toBe(false);
+    });
+  });
+
+  describe('refreshUnusedRuleWarnings', () => {
+    it('updates only unused warnings and preserves configuration warnings', () => {
+      const rule = createMockRule({ created: Date.now() - 31 * 24 * 60 * 60 * 1000, lastMatched: Date.now() });
+      const overlapWarning = {
+        type: ValidationWarningType.Overlapping,
+        severity: ValidationSeverity.Warning,
+        messageKey: 'warnings.overlappingRules',
+      };
+      const warnings = refreshUnusedRuleWarnings([rule], new Map([[rule.id, [overlapWarning]]]));
+
+      expect(warnings.get(rule.id)).toEqual([overlapWarning]);
+      expect(warnings.get(rule.id)?.some((warning) => warning.type === ValidationWarningType.Unused)).toBe(false);
     });
   });
 

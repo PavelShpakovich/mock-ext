@@ -1,6 +1,7 @@
-import { MockRule, Settings, StorageData, RequestLog, Folder, ProxyRule } from './types';
-import { Theme, RulesView } from './enums';
+import { MockRule, Settings, StorageData, RequestLog, Folder, ProxyRule, RuleStats } from './types';
+import { DEFAULT_SETTINGS } from './constants';
 import { migrateFoldersAndRules } from './helpers/folderManagement';
+import { stripRuleStats } from './helpers/ruleStats';
 
 // Batch buffer for log entries
 let logBuffer: RequestLog[] = [];
@@ -10,15 +11,7 @@ let flushTimeout: ReturnType<typeof setTimeout> | null = null;
 const BATCH_INTERVAL_MS = 500;
 const MAX_LOG_ENTRIES = 1000;
 const MAX_LOG_SIZE_BYTES = 5 * 1024 * 1024; // 5MB limit for session storage logs
-
-const DEFAULT_SETTINGS: Settings = {
-  enabled: true,
-  logRequests: false,
-  showNotifications: false,
-  corsAutoFix: false,
-  theme: Theme.System,
-  rulesView: RulesView.Detailed,
-};
+const RULE_STATS_KEY = 'ruleStats';
 
 export class Storage {
   private static readonly RULES_KEY = 'mockRules';
@@ -28,7 +21,7 @@ export class Storage {
   private static readonly FOLDERS_KEY = 'folders';
   private static readonly PROXY_RULES_KEY = 'proxyRules';
   private static readonly SCHEMA_VERSION_KEY = 'schemaVersion';
-  private static readonly CURRENT_SCHEMA_VERSION = 3;
+  private static readonly CURRENT_SCHEMA_VERSION = 4;
 
   /**
    * Run storage schema migrations (idempotent — safe to call multiple times).
@@ -62,9 +55,22 @@ export class Storage {
         console.log('[Moq] Storage migrated to schema v3 (proxy rules added)');
       }
 
+      if (storedVersion < 4) {
+        const [rules, proxyRules] = await Promise.all([this.getRules(), this.getProxyRules()]);
+        const storedStats = await this.getRuleStats();
+        const migratedStats = { ...storedStats };
+        for (const rule of [...rules, ...proxyRules]) {
+          if (!migratedStats[rule.id] && (rule.matchCount || rule.lastMatched)) {
+            migratedStats[rule.id] = { count: rule.matchCount ?? 0, last: rule.lastMatched };
+          }
+        }
+        await Promise.all([this.saveRules(rules), this.saveProxyRules(proxyRules), this.saveRuleStats(migratedStats)]);
+        // eslint-disable-next-line no-console
+        console.log('[Moq] Storage migrated to schema v4 (rule statistics separated)');
+      }
+
       await browser.storage.local.set({ [this.SCHEMA_VERSION_KEY]: this.CURRENT_SCHEMA_VERSION });
     } catch (error) {
-      // eslint-disable-next-line no-console
       console.error('[Moq] Storage migration failed:', error);
     }
   }
@@ -76,7 +82,7 @@ export class Storage {
   }
 
   static async saveRules(rules: MockRule[]): Promise<void> {
-    await browser.storage.local.set({ [this.RULES_KEY]: rules });
+    await browser.storage.local.set({ [this.RULES_KEY]: stripRuleStats(rules) });
   }
 
   // Folders operations
@@ -96,13 +102,33 @@ export class Storage {
   }
 
   static async saveProxyRules(proxyRules: ProxyRule[]): Promise<void> {
-    await browser.storage.local.set({ [this.PROXY_RULES_KEY]: proxyRules });
+    await browser.storage.local.set({ [this.PROXY_RULES_KEY]: stripRuleStats(proxyRules) });
+  }
+
+  static async getRuleStats(): Promise<RuleStats> {
+    const result = (await browser.storage.local.get(RULE_STATS_KEY)) as { [key: string]: unknown };
+    const storedStats = result[RULE_STATS_KEY] as RuleStats | undefined;
+    if (storedStats) return storedStats;
+
+    const [rules, proxyRules] = await Promise.all([this.getRules(), this.getProxyRules()]);
+    const legacyStats: RuleStats = {};
+    for (const rule of [...rules, ...proxyRules]) {
+      if (rule.matchCount || rule.lastMatched) {
+        legacyStats[rule.id] = { count: rule.matchCount ?? 0, last: rule.lastMatched };
+      }
+    }
+    return legacyStats;
+  }
+
+  static async saveRuleStats(ruleStats: RuleStats): Promise<void> {
+    await browser.storage.local.set({ [RULE_STATS_KEY]: ruleStats });
   }
 
   // Settings operations
   static async getSettings(): Promise<Settings> {
     const result = (await browser.storage.local.get(this.SETTINGS_KEY)) as { [key: string]: unknown };
-    return (result[this.SETTINGS_KEY] as Settings) || DEFAULT_SETTINGS;
+    const storedSettings = result[this.SETTINGS_KEY] as Partial<Settings> | undefined;
+    return { ...DEFAULT_SETTINGS, ...storedSettings };
   }
 
   static async saveSettings(settings: Settings): Promise<void> {
@@ -160,11 +186,18 @@ export class Storage {
     try {
       const result = (await browser.storage.session.get(this.LOG_KEY)) as { [key: string]: unknown };
       const existingLog = (result[this.LOG_KEY] as RequestLog[]) || [];
-      const combinedLog = [...currentBuffer, ...existingLog].slice(0, MAX_LOG_ENTRIES);
+      const candidates = [...currentBuffer, ...existingLog].slice(0, MAX_LOG_ENTRIES);
+      const combinedLog: RequestLog[] = [];
+      let totalBytes = 2;
 
-      // Enforce byte size limit
-      while (combinedLog.length > 0 && JSON.stringify(combinedLog).length > MAX_LOG_SIZE_BYTES) {
-        combinedLog.pop();
+      for (const entry of candidates) {
+        const serializedEntry = JSON.stringify(entry);
+        const entryBytes = new Blob([serializedEntry]).size;
+        const separatorBytes = combinedLog.length > 0 ? 1 : 0;
+        if (totalBytes + separatorBytes + entryBytes > MAX_LOG_SIZE_BYTES) break;
+
+        combinedLog.push(entry);
+        totalBytes += separatorBytes + entryBytes;
       }
 
       await browser.storage.session.set({ [this.LOG_KEY]: combinedLog });
@@ -184,12 +217,6 @@ export class Storage {
     ]);
 
     return { mockRules: rules, proxyRules, settings, requestLog: log, folders };
-  }
-
-  static async importRules(rules: MockRule[]): Promise<void> {
-    const existingRules = await this.getRules();
-    const mergedRules = [...existingRules, ...rules];
-    await this.saveRules(mergedRules);
   }
 
   // Draft operations

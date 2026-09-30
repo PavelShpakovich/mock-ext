@@ -13,7 +13,6 @@ export default defineConfig({
     name: 'Moq - Mock API Requests',
     description:
       'Mock HTTP requests with custom responses, status codes, delays, and headers. Perfect for development, testing, and debugging.',
-    version: '2.15.7',
     permissions: ['storage', 'activeTab', 'tabs', 'contextMenus', 'declarativeNetRequest'],
     host_permissions: ['<all_urls>'],
 

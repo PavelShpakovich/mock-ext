@@ -1,9 +1,8 @@
-import { useState, useCallback } from 'react';
-import { v4 as uuidv4 } from 'uuid';
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { Storage } from '../storage';
-import { ProxyRule } from '../types';
+import { ProxyRule, RuleStats } from '../types';
 import { withContextCheck } from '../contextHandler';
-import { MessageActionType } from '../enums';
+import { attachRuleStats, stripRuleStats } from '../helpers/ruleStats';
 
 interface UseProxyRulesManagerReturn {
   proxyRules: ProxyRule[];
@@ -19,95 +18,152 @@ interface UseProxyRulesManagerReturn {
 
 export const useProxyRulesManager = (): UseProxyRulesManagerReturn => {
   const [proxyRules, setProxyRules] = useState<ProxyRule[]>([]);
+  const proxyRulesRef = useRef(proxyRules);
+  const [ruleStats, setRuleStats] = useState<RuleStats>({});
 
-  const updateProxyRulesEverywhere = useCallback(async (updatedRules: ProxyRule[]) => {
-    setProxyRules(updatedRules);
-    await Storage.saveProxyRules(updatedRules);
-    await withContextCheck(() =>
-      browser.runtime.sendMessage({ action: MessageActionType.UpdateProxyRules, proxyRules: updatedRules })
-    ).catch(() => {});
-  }, []);
+  useEffect(() => {
+    const handleStorageChange = (changes: Record<string, Browser.storage.StorageChange>, areaName: string) => {
+      if (areaName !== 'local') return;
+      if (changes.ruleStats) {
+        const updatedStats = (changes.ruleStats.newValue as RuleStats | undefined) ?? {};
+        setRuleStats(updatedStats);
+        setProxyRules((currentRules) => {
+          const nextRules = attachRuleStats(stripRuleStats(currentRules), updatedStats);
+          proxyRulesRef.current = nextRules;
+          return nextRules;
+        });
+      }
+      if (changes.proxyRules) {
+        const nextRules = attachRuleStats((changes.proxyRules.newValue as ProxyRule[] | undefined) ?? [], ruleStats);
+        proxyRulesRef.current = nextRules;
+        setProxyRules(nextRules);
+      }
+    };
+
+    browser.storage.onChanged.addListener(handleStorageChange);
+    return () => browser.storage.onChanged.removeListener(handleStorageChange);
+  }, [ruleStats]);
+
+  const updateProxyRulesEverywhere = useCallback(
+    async (update: (currentRules: ProxyRule[]) => ProxyRule[]) => {
+      const updatedRules = update(proxyRulesRef.current);
+      const rulesWithStats = attachRuleStats(stripRuleStats(updatedRules), ruleStats);
+      proxyRulesRef.current = rulesWithStats;
+      setProxyRules(rulesWithStats);
+      await Storage.saveProxyRules(updatedRules);
+    },
+    [ruleStats]
+  );
 
   const loadProxyRules = useCallback(async () => {
-    const loaded = await withContextCheck(() => Storage.getProxyRules(), []);
-    setProxyRules(loaded);
+    const [loaded, loadedStats] = await Promise.all([
+      withContextCheck(() => Storage.getProxyRules(), []),
+      withContextCheck(() => Storage.getRuleStats(), {}),
+    ]);
+    setRuleStats(loadedStats);
+    const rulesWithStats = attachRuleStats(loaded, loadedStats);
+    proxyRulesRef.current = rulesWithStats;
+    setProxyRules(rulesWithStats);
   }, []);
 
   const saveProxyRule = useCallback(
     async (rule: ProxyRule, editingRuleId: string | null) => {
-      let updatedRules: ProxyRule[];
-      if (editingRuleId && editingRuleId !== 'new') {
-        updatedRules = proxyRules.map((r) => (r.id === editingRuleId ? rule : r));
-      } else {
-        updatedRules = [...proxyRules, rule];
-      }
-      await updateProxyRulesEverywhere(updatedRules);
-    },
-    [proxyRules, updateProxyRulesEverywhere]
-  );
-
-  const deleteProxyRule = useCallback(
-    async (id: string) => {
-      const updatedRules = proxyRules.filter((r) => r.id !== id);
-      await updateProxyRulesEverywhere(updatedRules);
-    },
-    [proxyRules, updateProxyRulesEverywhere]
-  );
-
-  const toggleProxyRule = useCallback(
-    async (id: string) => {
-      const updatedRules = proxyRules.map((r) => (r.id === id ? { ...r, enabled: !r.enabled } : r));
-      await updateProxyRulesEverywhere(updatedRules);
-    },
-    [proxyRules, updateProxyRulesEverywhere]
-  );
-
-  const duplicateProxyRule = useCallback(
-    async (id: string) => {
-      const ruleToDuplicate = proxyRules.find((r) => r.id === id);
-      if (!ruleToDuplicate) return;
-      const now = Date.now();
-      const duplicated: ProxyRule = {
-        ...ruleToDuplicate,
-        id: uuidv4(),
-        name: `${ruleToDuplicate.name} (Copy)`,
-        created: now,
-        modified: now,
-      };
-      const updatedRules = [...proxyRules, duplicated];
-      await updateProxyRulesEverywhere(updatedRules);
-    },
-    [proxyRules, updateProxyRulesEverywhere]
-  );
-
-  const resetProxyRuleHits = useCallback(
-    async (id: string) => {
-      const updatedRules = proxyRules.map((r) => (r.id === id ? { ...r, matchCount: 0, lastMatched: undefined } : r));
-      await updateProxyRulesEverywhere(updatedRules);
-    },
-    [proxyRules, updateProxyRulesEverywhere]
-  );
-
-  const setProxyRulesDirectly = useCallback((updatedRules: ProxyRule[]) => {
-    setProxyRules(updatedRules);
-  }, []);
-
-  const saveProxyRules = useCallback(
-    async (updatedRules: ProxyRule[]) => {
-      await updateProxyRulesEverywhere(updatedRules);
+      await updateProxyRulesEverywhere((currentRules) =>
+        editingRuleId && editingRuleId !== 'new'
+          ? currentRules.map((currentRule) => (currentRule.id === editingRuleId ? rule : currentRule))
+          : [...currentRules, rule]
+      );
     },
     [updateProxyRulesEverywhere]
   );
 
-  return {
-    proxyRules,
-    loadProxyRules,
-    saveProxyRule,
-    deleteProxyRule,
-    toggleProxyRule,
-    duplicateProxyRule,
-    resetProxyRuleHits,
-    setProxyRulesDirectly,
-    saveProxyRules,
-  };
+  const deleteProxyRule = useCallback(
+    async (id: string) => {
+      await updateProxyRulesEverywhere((currentRules) => currentRules.filter((rule) => rule.id !== id));
+    },
+    [updateProxyRulesEverywhere]
+  );
+
+  const toggleProxyRule = useCallback(
+    async (id: string) => {
+      await updateProxyRulesEverywhere((currentRules) =>
+        currentRules.map((rule) => (rule.id === id ? { ...rule, enabled: !rule.enabled } : rule))
+      );
+    },
+    [updateProxyRulesEverywhere]
+  );
+
+  const duplicateProxyRule = useCallback(
+    async (id: string) => {
+      await updateProxyRulesEverywhere((currentRules) => {
+        const ruleToDuplicate = currentRules.find((rule) => rule.id === id);
+        if (!ruleToDuplicate) return currentRules;
+        const now = Date.now();
+        const duplicated: ProxyRule = {
+          ...ruleToDuplicate,
+          id: crypto.randomUUID(),
+          name: `${ruleToDuplicate.name} (Copy)`,
+          created: now,
+          modified: now,
+        };
+        return [...currentRules, duplicated];
+      });
+    },
+    [updateProxyRulesEverywhere]
+  );
+
+  const resetProxyRuleHits = useCallback(
+    async (id: string) => {
+      const updatedStats = { ...ruleStats, [id]: { count: 0 } };
+      setRuleStats(updatedStats);
+      setProxyRules((currentRules) => {
+        const nextRules = attachRuleStats(stripRuleStats(currentRules), updatedStats);
+        proxyRulesRef.current = nextRules;
+        return nextRules;
+      });
+      await Storage.saveRuleStats(updatedStats);
+    },
+    [ruleStats]
+  );
+
+  const setProxyRulesDirectly = useCallback(
+    (updatedRules: ProxyRule[]) => {
+      const rulesWithStats = attachRuleStats(stripRuleStats(updatedRules), ruleStats);
+      proxyRulesRef.current = rulesWithStats;
+      setProxyRules(rulesWithStats);
+    },
+    [ruleStats]
+  );
+
+  const saveProxyRules = useCallback(
+    async (updatedRules: ProxyRule[]) => {
+      await updateProxyRulesEverywhere(() => updatedRules);
+    },
+    [updateProxyRulesEverywhere]
+  );
+
+  return useMemo(
+    () => ({
+      proxyRules,
+      loadProxyRules,
+      saveProxyRule,
+      deleteProxyRule,
+      toggleProxyRule,
+      duplicateProxyRule,
+      resetProxyRuleHits,
+      setProxyRulesDirectly,
+      saveProxyRules,
+    }),
+    [
+      proxyRules,
+      loadProxyRules,
+      saveProxyRule,
+      deleteProxyRule,
+      toggleProxyRule,
+      duplicateProxyRule,
+      resetProxyRuleHits,
+      setProxyRulesDirectly,
+      saveProxyRules,
+    ]
+  );
 };

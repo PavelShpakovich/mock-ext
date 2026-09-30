@@ -18,6 +18,7 @@ interface RulesTabProps {
   settings: Settings;
   onSearchChange: (term: string) => void;
   editingRuleId: string | null;
+  initialRequest?: RequestLog | null;
   onEditRule: (id: string | null) => void;
   onSaveRule: (rule: MockRule) => void;
   onDeleteRule: (id: string) => void;
@@ -43,6 +44,7 @@ const RulesTab: React.FC<RulesTabProps> = ({
   settings,
   onSearchChange,
   editingRuleId,
+  initialRequest,
   onEditRule,
   onSaveRule,
   onDeleteRule,
@@ -59,7 +61,6 @@ const RulesTab: React.FC<RulesTabProps> = ({
   onEnableFolderRules,
   onDisableFolderRules,
 }) => {
-  const [mockRequest, setMockRequest] = useState<RequestLog | null>(null);
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [rulesView, setRulesView] = useState<RulesView>((settings.rulesView as RulesView) || RulesView.Detailed);
@@ -142,16 +143,6 @@ const RulesTab: React.FC<RulesTabProps> = ({
     }
   };
 
-  useEffect(() => {
-    const requestData = sessionStorage.getItem('mockRequest');
-    if (requestData && editingRuleId === EditMode.New) {
-      setMockRequest(JSON.parse(requestData));
-      sessionStorage.removeItem('mockRequest');
-    } else if (!editingRuleId) {
-      setMockRequest(null);
-    }
-  }, [editingRuleId]);
-
   if (editingRuleId) {
     return (
       <div className='p-6'>
@@ -159,7 +150,7 @@ const RulesTab: React.FC<RulesTabProps> = ({
           rule={editingRuleId === EditMode.New ? null : rules.find((r) => r.id === editingRuleId) || null}
           onSave={onSaveRule}
           onCancel={onCancelEdit}
-          mockRequest={mockRequest}
+          mockRequest={editingRuleId === EditMode.New ? initialRequest : null}
           folders={folders}
         />
       </div>

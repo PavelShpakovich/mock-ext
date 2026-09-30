@@ -132,7 +132,7 @@ export function validateJSONDetailed(jsonString: string): JSONValidation {
         isValid: true,
         message: hasChunkSizes ? 'Valid Google chunked response ✓' : 'Valid Google response ✓',
       };
-    } catch (e) {
+    } catch {
       // Not valid JSON - might be JavaScript code (e.g., with bare identifiers)
       // This is acceptable for Google responses with chunk sizes
       if (hasChunkSizes && bodyToValidate.trim().startsWith('[')) {
@@ -167,7 +167,7 @@ export function validateJSONDetailed(jsonString: string): JSONValidation {
           };
         }
       }
-    } catch (e2) {
+    } catch {
       // Fall through to return original error
     }
 
@@ -241,6 +241,28 @@ export function isRuleUnused(rule: MockRule, daysThreshold: number = UNUSED_RULE
 
   const daysSinceMatched = (Date.now() - rule.lastMatched) / (1000 * 60 * 60 * 24);
   return daysSinceMatched > daysThreshold;
+}
+
+export function refreshUnusedRuleWarnings(
+  rules: MockRule[],
+  currentWarnings: Map<string, ValidationWarning[]>
+): Map<string, ValidationWarning[]> {
+  const updatedWarnings = new Map(currentWarnings);
+  for (const rule of rules) {
+    const warnings = (updatedWarnings.get(rule.id) || []).filter(
+      (warning) => warning.type !== ValidationWarningType.Unused
+    );
+    if (isRuleUnused(rule)) {
+      warnings.push({
+        type: ValidationWarningType.Unused,
+        severity: ValidationSeverity.Info,
+        messageKey: 'warnings.unusedRule',
+      });
+    }
+    if (warnings.length > 0) updatedWarnings.set(rule.id, warnings);
+    else updatedWarnings.delete(rule.id);
+  }
+  return updatedWarnings;
 }
 
 /**

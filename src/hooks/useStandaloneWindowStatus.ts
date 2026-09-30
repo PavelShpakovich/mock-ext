@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react';
-import { MessageActionType } from '../enums';
 import { isDevTools } from '../helpers/context';
 
 /**
  * Hook to check if standalone window is open (only works in DevTools context)
- * Polls every second to keep status updated
+ * Tracks the persisted service-worker window ID
  */
 export const useStandaloneWindowStatus = (): boolean => {
   const [standaloneWindowOpen, setStandaloneWindowOpen] = useState(false);
@@ -12,22 +11,23 @@ export const useStandaloneWindowStatus = (): boolean => {
   useEffect(() => {
     if (!isDevTools()) return;
 
-    const checkWindowStatus = () => {
-      browser.runtime.sendMessage({ action: MessageActionType.GetStandaloneWindowStatus }, (response) => {
-        if (browser.runtime.lastError) {
-          return; // Ignore errors
-        }
-        setStandaloneWindowOpen(Boolean(response?.data?.isOpen));
-      });
+    const updateStatus = (runtimeState?: { standaloneWindowId?: number | null }) => {
+      setStandaloneWindowOpen(runtimeState?.standaloneWindowId != null);
     };
 
-    // Initial check
-    checkWindowStatus();
+    browser.storage.session
+      .get('runtimeState')
+      .then((result) => updateStatus(result.runtimeState as { standaloneWindowId?: number | null } | undefined))
+      .catch(() => updateStatus());
 
-    // Poll every second
-    const interval = setInterval(checkWindowStatus, 1000);
+    const storageListener = (changes: Record<string, Browser.storage.StorageChange>, areaName: string) => {
+      if (areaName === 'session' && changes.runtimeState) {
+        updateStatus(changes.runtimeState.newValue as { standaloneWindowId?: number | null } | undefined);
+      }
+    };
+    browser.storage.onChanged.addListener(storageListener);
 
-    return () => clearInterval(interval);
+    return () => browser.storage.onChanged.removeListener(storageListener);
   }, []);
 
   return standaloneWindowOpen;

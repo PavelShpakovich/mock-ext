@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { v4 as uuidv4 } from 'uuid';
 import { ProxyRule, RequestLog } from '../types';
 import { ButtonVariant, HttpMethod } from '../enums';
 import { validateProxyRuleForm } from '../helpers/ruleValidation';
@@ -86,7 +85,7 @@ function getInitialFormData(rule: ProxyRule | null, mockRequest?: RequestLog | n
 function buildProxyRule(formData: ProxyFormData, rule: ProxyRule | null): ProxyRule {
   const now = Date.now();
   return {
-    id: rule?.id || uuidv4(),
+    id: rule?.id || crypto.randomUUID(),
     name: formData.name,
     enabled: rule?.enabled ?? true,
     urlPattern: formData.urlPattern,

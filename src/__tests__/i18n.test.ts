@@ -6,8 +6,33 @@
 
 import enTranslations from '../locales/en.json';
 import ruTranslations from '../locales/ru.json';
+import React, { PropsWithChildren } from 'react';
+import { act, renderHook, waitFor } from '@testing-library/react';
+import { I18nProvider, useI18n } from '../contexts/I18nContext';
+import { Language } from '../enums';
+import { listeners } from './setup';
 
 describe('I18n Translations', () => {
+  it('loads settings once and follows storage language changes', async () => {
+    const storage = (globalThis as unknown as { chrome: { storage: { local: { get: jest.Mock } } } }).chrome.storage
+      .local;
+    storage.get.mockResolvedValue({ settings: { language: Language.English } });
+    const wrapper = ({ children }: PropsWithChildren) => React.createElement(I18nProvider, null, children);
+    const { result } = renderHook(() => useI18n(), { wrapper });
+
+    await waitFor(() => expect(result.current.language).toBe(Language.English));
+    const readsAfterMount = storage.get.mock.calls.length;
+
+    act(() => {
+      listeners['storage.onChanged']?.forEach((listener) =>
+        listener({ settings: { newValue: { language: Language.Russian } } }, 'local')
+      );
+    });
+
+    expect(result.current.language).toBe(Language.Russian);
+    expect(storage.get).toHaveBeenCalledTimes(readsAfterMount);
+  });
+
   describe('Translation files structure', () => {
     it('should have valid English translations', () => {
       expect(enTranslations).toBeDefined();

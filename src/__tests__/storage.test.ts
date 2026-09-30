@@ -1,6 +1,6 @@
 import { Storage } from '../storage';
 import { MockRule, Settings, RequestLog } from '../types';
-import { MatchType, HttpMethod, Language } from '../enums';
+import { MatchType, HttpMethod, Language, Theme, RulesView } from '../enums';
 
 // Mock chrome.storage.local and session
 const mockLocalStorage: { [key: string]: unknown } = {};
@@ -89,6 +89,24 @@ afterEach(() => {
 });
 
 describe('Storage', () => {
+  describe('migrateStorageSchema', () => {
+    it('moves legacy mock and proxy rule counters into ruleStats at schema v4', async () => {
+      mockLocalStorage.schemaVersion = 3;
+      mockLocalStorage.mockRules = [{ id: 'legacy-mock', matchCount: 4, lastMatched: 123 }];
+      mockLocalStorage.proxyRules = [{ id: 'legacy-proxy', matchCount: 2, lastMatched: 456 }];
+
+      await Storage.migrateStorageSchema();
+
+      expect(mockLocalStorage.ruleStats).toEqual({
+        'legacy-mock': { count: 4, last: 123 },
+        'legacy-proxy': { count: 2, last: 456 },
+      });
+      expect(mockLocalStorage.mockRules).toEqual([{ id: 'legacy-mock' }]);
+      expect(mockLocalStorage.proxyRules).toEqual([{ id: 'legacy-proxy' }]);
+      expect(mockLocalStorage.schemaVersion).toBe(4);
+    });
+  });
+
   describe('getRules', () => {
     it('should return rules from storage', async () => {
       const mockRules: MockRule[] = [
@@ -170,6 +188,12 @@ describe('Storage', () => {
       expect(mockLocalStorage.mockRules).toEqual(mockRules);
     });
 
+    it('should not persist hit statistics in rule configurations', async () => {
+      await Storage.saveRules([{ id: 'stat-rule', matchCount: 4, lastMatched: 99 } as MockRule]);
+
+      expect(mockLocalStorage.mockRules).toEqual([{ id: 'stat-rule' }]);
+    });
+
     it('should save rules with custom headers', async () => {
       const mockRules: MockRule[] = [
         {
@@ -201,6 +225,26 @@ describe('Storage', () => {
     });
   });
 
+  describe('rule statistics', () => {
+    it('should backfill separate stats from legacy rule fields when no stats key exists', async () => {
+      mockLocalStorage.mockRules = [{ id: 'legacy', matchCount: 4, lastMatched: 123 }];
+      mockLocalStorage.proxyRules = [{ id: 'legacy-proxy', matchCount: 2, lastMatched: 456 }];
+
+      expect(await Storage.getRuleStats()).toEqual({
+        legacy: { count: 4, last: 123 },
+        'legacy-proxy': { count: 2, last: 456 },
+      });
+    });
+
+    it('should persist stats separately from rules', async () => {
+      const stats = { ruleA: { count: 3, last: 789 } };
+      await Storage.saveRuleStats(stats);
+
+      expect(mockLocalStorage.ruleStats).toEqual(stats);
+      expect(mockLocalStorage.mockRules).toBeUndefined();
+    });
+  });
+
   describe('getSettings', () => {
     it('should return settings from storage', async () => {
       const mockSettings: Settings = {
@@ -213,7 +257,24 @@ describe('Storage', () => {
       mockLocalStorage.settings = mockSettings;
 
       const settings = await Storage.getSettings();
-      expect(settings).toEqual(mockSettings);
+      expect(settings).toMatchObject(mockSettings);
+    });
+
+    it('should merge defaults into partial settings without sharing the defaults object', async () => {
+      mockLocalStorage.settings = { enabled: false };
+
+      const settings = await Storage.getSettings();
+      expect(settings).toEqual({
+        enabled: false,
+        logRequests: false,
+        showNotifications: false,
+        corsAutoFix: false,
+        theme: Theme.System,
+        rulesView: RulesView.Detailed,
+      });
+
+      settings.enabled = true;
+      expect((await Storage.getSettings()).enabled).toBe(false);
     });
   });
 
@@ -351,6 +412,21 @@ describe('addToRequestLog', () => {
     expect((mockSessionStorage.requestLog as RequestLog[])?.[0]).toEqual(entry);
   });
 
+  it('should enforce the serialized byte limit for multibyte text', async () => {
+    await Storage.addToRequestLog({
+      id: 'large',
+      url: 'https://api.example.com/test',
+      method: HttpMethod.GET,
+      timestamp: Date.now(),
+      matched: false,
+      responseBody: 'é'.repeat(2_621_440),
+    });
+
+    await jest.runAllTimersAsync();
+
+    expect(mockSessionStorage.requestLog).toEqual([]);
+  });
+
   it('should add entry with response headers to log', async () => {
     const entry: RequestLog = {
       id: '1',
@@ -424,7 +500,7 @@ describe('exportAll', () => {
 
     const exported = await Storage.exportAll();
     expect(exported.mockRules).toEqual(mockRules);
-    expect(exported.settings).toEqual(mockSettings);
+    expect(exported.settings).toMatchObject(mockSettings);
   });
 
   it('should export rules with custom headers', async () => {
@@ -456,58 +532,6 @@ describe('exportAll', () => {
     expect(exported.mockRules?.[0].headers).toEqual({
       'X-Custom-Header': 'custom-value',
       Authorization: 'Bearer xyz',
-    });
-  });
-});
-
-describe('importRules', () => {
-  it('should import rules with custom headers', async () => {
-    const existingRules: MockRule[] = [
-      {
-        id: '1',
-        name: 'Existing Rule',
-        enabled: true,
-        urlPattern: 'https://existing.com',
-        matchType: MatchType.Exact,
-        method: HttpMethod.GET,
-        statusCode: 200,
-        response: {},
-        contentType: 'application/json',
-        delay: 0,
-        created: Date.now(),
-        modified: Date.now(),
-      },
-    ];
-
-    const newRules: MockRule[] = [
-      {
-        id: '2',
-        name: 'Imported with Headers',
-        enabled: true,
-        urlPattern: 'https://api.test.com',
-        matchType: MatchType.Exact,
-        method: HttpMethod.GET,
-        statusCode: 200,
-        response: { success: true },
-        contentType: 'application/json',
-        delay: 0,
-        headers: {
-          'Cache-Control': 'no-cache',
-          'X-API-Key': 'test-key',
-        },
-        created: Date.now(),
-        modified: Date.now(),
-      },
-    ];
-
-    mockLocalStorage.mockRules = existingRules;
-    await Storage.importRules(newRules);
-    const rules = await Storage.getRules();
-
-    expect(rules).toHaveLength(2);
-    expect(rules[1].headers).toEqual({
-      'Cache-Control': 'no-cache',
-      'X-API-Key': 'test-key',
     });
   });
 });

@@ -1,9 +1,11 @@
 import '@testing-library/jest-dom';
 
-// Mock uuid module
-jest.mock('uuid', () => ({
-  v4: jest.fn(() => 'mock-uuid-' + Math.random().toString(36).substring(7)),
-}));
+if (typeof globalThis.crypto.randomUUID !== 'function') {
+  Object.defineProperty(globalThis.crypto, 'randomUUID', {
+    configurable: true,
+    value: () => 'mock-uuid-' + Math.random().toString(36).substring(7),
+  });
+}
 
 // Mock chrome API
 export const listeners: Record<string, ((...args: unknown[]) => void)[]> = {};
@@ -16,6 +18,9 @@ const createListener = (name: string) => ({
   addListener: jest.fn((callback: (...args: unknown[]) => void) => {
     if (!listeners[name]) listeners[name] = [];
     listeners[name].push(callback);
+  }),
+  removeListener: jest.fn((callback: (...args: unknown[]) => void) => {
+    listeners[name] = (listeners[name] || []).filter((listener) => listener !== callback);
   }),
   // Helper to trigger listeners in tests
   callListeners: async (...args: unknown[]) => {
@@ -31,6 +36,7 @@ const createListener = (name: string) => ({
 (globalThis as unknown as { chrome: unknown; resetListeners: () => void }).chrome = {
   resetListeners, // Exposed for testing
   storage: {
+    onChanged: createListener('storage.onChanged'),
     local: {
       get: jest.fn(),
       set: jest.fn(),
@@ -46,6 +52,7 @@ const createListener = (name: string) => ({
     sendMessage: jest.fn(),
     onMessage: createListener('runtime.onMessage'),
     onInstalled: createListener('runtime.onInstalled'),
+    onStartup: createListener('runtime.onStartup'),
     onSuspend: createListener('runtime.onSuspend'),
   },
   declarativeNetRequest: {

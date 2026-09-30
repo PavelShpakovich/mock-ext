@@ -5,6 +5,8 @@ export { useRulesManager } from './useRulesManager';
 export { useProxyRulesManager } from './useProxyRulesManager';
 export { useFoldersManager } from './useFoldersManager';
 export { useRecording } from './useRecording';
+export { useImportExport } from './useImportExport';
+export { useAppActions } from './useAppActions';
 export { useCrossContextSync } from './useCrossContextSync';
 export { useDragDropHandlers } from './useDragDropHandlers';
 export { useTextareaHistory } from './useTextareaHistory';

@@ -1,5 +1,4 @@
 import { Folder, MockRule, FolderTreeNode, DropValidation } from '../types';
-import { v4 as uuidv4 } from 'uuid';
 import { MAX_FOLDER_NAME_LENGTH, MAX_FOLDER_DEPTH } from '../constants';
 
 /**
@@ -7,7 +6,7 @@ import { MAX_FOLDER_NAME_LENGTH, MAX_FOLDER_DEPTH } from '../constants';
  */
 export function createFolder(name: string, parentFolderId?: string, order?: number): Folder {
   return {
-    id: uuidv4(),
+    id: crypto.randomUUID(),
     name,
     parentFolderId,
     collapsed: false,

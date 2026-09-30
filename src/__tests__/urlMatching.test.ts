@@ -1,8 +1,47 @@
 import { MockRule } from '../types';
 import { MatchType, HttpMethod } from '../enums';
-import { findMatchingRule, matchURL } from '../helpers/urlMatching';
+import { filterRulesForUrlOrigin, findMatchingRule, matchURL } from '../helpers/urlMatching';
 
 describe('URL Matching Logic', () => {
+  const createRule = (overrides: Partial<MockRule> = {}): MockRule => ({
+    id: '1',
+    name: 'Test Rule',
+    enabled: true,
+    urlPattern: 'https://api.example.com/users',
+    matchType: MatchType.Exact,
+    method: HttpMethod.GET,
+    statusCode: 200,
+    response: {},
+    contentType: 'application/json',
+    delay: 0,
+    created: Date.now(),
+    modified: Date.now(),
+    ...overrides,
+  });
+
+  describe('filterRulesForUrlOrigin', () => {
+    it('keeps same-origin exact/wildcard rules, wildcard hosts, and all regex rules', () => {
+      const rules = [
+        createRule({ id: 'same-exact', matchType: MatchType.Exact, urlPattern: 'https://api.example.com/users' }),
+        createRule({ id: 'same-wildcard', matchType: MatchType.Wildcard, urlPattern: 'https://api.example.com/*' }),
+        createRule({ id: 'other-origin', matchType: MatchType.Exact, urlPattern: 'https://other.example.com/users' }),
+        createRule({ id: 'wildcard-host', matchType: MatchType.Wildcard, urlPattern: 'https://*.example.com/*' }),
+        createRule({ id: 'regex', matchType: MatchType.Regex, urlPattern: 'https://other\\.example\\.com/.*' }),
+      ];
+
+      expect(filterRulesForUrlOrigin(rules, 'https://api.example.com/page').map((rule) => rule.id)).toEqual([
+        'same-exact',
+        'same-wildcard',
+        'wildcard-host',
+        'regex',
+      ]);
+    });
+
+    it('returns no rules for non-web page origins', () => {
+      expect(filterRulesForUrlOrigin([createRule()], 'chrome://settings')).toEqual([]);
+    });
+  });
+
   describe('matchURL', () => {
     describe('exact match', () => {
       it('should match exact URLs', () => {
@@ -142,22 +181,6 @@ describe('URL Matching Logic', () => {
   });
 
   describe('findMatchingRule', () => {
-    const createRule = (overrides: Partial<MockRule> = {}): MockRule => ({
-      id: '1',
-      name: 'Test Rule',
-      enabled: true,
-      urlPattern: 'https://api.example.com/users',
-      matchType: MatchType.Exact,
-      method: HttpMethod.GET,
-      statusCode: 200,
-      response: {},
-      contentType: 'application/json',
-      delay: 0,
-      created: Date.now(),
-      modified: Date.now(),
-      ...overrides,
-    });
-
     it('should find exact matching rule', () => {
       const rules = [createRule()];
       const result = findMatchingRule('https://api.example.com/users', HttpMethod.GET, rules);

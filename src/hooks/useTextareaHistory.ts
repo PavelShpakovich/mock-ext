@@ -25,7 +25,7 @@ const EDIT_KEYS = new Set(['Backspace', 'Delete', 'Enter', 'Tab']);
  *   // call onChangePush() at the top of your onChange handler
  */
 export function useTextareaHistory(
-  ref: React.RefObject<HTMLTextAreaElement>,
+  ref: React.RefObject<HTMLTextAreaElement | null>,
   onValueChange: (value: string) => void,
   tabSize = 2
 ) {

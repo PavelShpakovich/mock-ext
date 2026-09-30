@@ -2,10 +2,6 @@ import { useEffect } from 'react';
 import { MessageActionType } from '../enums';
 
 interface SyncCallbacks {
-  onRulesUpdated: () => void;
-  onProxyRulesUpdated: () => void;
-  onSettingsUpdated: () => void;
-  onFoldersUpdated: () => void;
   onRequestLogUpdated: () => void;
 }
 
@@ -13,28 +9,10 @@ interface SyncCallbacks {
  * Hook to listen for cross-context sync messages
  * Handles messages from other contexts (standalone window, DevTools, popup)
  */
-export const useCrossContextSync = ({
-  onRulesUpdated,
-  onProxyRulesUpdated,
-  onSettingsUpdated,
-  onFoldersUpdated,
-  onRequestLogUpdated,
-}: SyncCallbacks): void => {
+export const useCrossContextSync = ({ onRequestLogUpdated }: SyncCallbacks): void => {
   useEffect(() => {
     const messageListener = (message: { action: MessageActionType }) => {
       switch (message.action) {
-        case MessageActionType.RulesUpdated:
-          onRulesUpdated();
-          break;
-        case MessageActionType.ProxyRulesUpdated:
-          onProxyRulesUpdated();
-          break;
-        case MessageActionType.SettingsUpdated:
-          onSettingsUpdated();
-          break;
-        case MessageActionType.FoldersUpdated:
-          onFoldersUpdated();
-          break;
         case MessageActionType.RequestLogUpdated:
           onRequestLogUpdated();
           break;
@@ -46,5 +24,5 @@ export const useCrossContextSync = ({
     return () => {
       browser.runtime.onMessage.removeListener(messageListener);
     };
-  }, [onRulesUpdated, onProxyRulesUpdated, onSettingsUpdated, onFoldersUpdated, onRequestLogUpdated]);
+  }, [onRequestLogUpdated]);
 };

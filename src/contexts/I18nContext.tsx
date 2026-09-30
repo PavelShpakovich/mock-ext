@@ -26,16 +26,13 @@ export const I18nProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [language, setLanguageState] = useState<Language>(Language.English);
 
   useEffect(() => {
-    // Load saved language preference
     const loadLanguage = async () => {
-      // Check URL params first (for standalone window context injection)
       const urlParams = new URLSearchParams(window.location.search);
       const urlLang = urlParams.get('lang') as Language | null;
 
-      // Check if the URL param matches a valid language
       if (urlLang && Object.values(Language).includes(urlLang)) {
         setLanguageState(urlLang);
-        return; // Prioritize URL param and skip storage/browser detection
+        return;
       }
 
       const settings = await Storage.getSettings();
@@ -49,23 +46,23 @@ export const I18nProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
     };
-    loadLanguage();
+    void loadLanguage();
+  }, []);
 
-    // Listen for storage changes to sync language across contexts
+  useEffect(() => {
     const handleStorageChange = (changes: { [key: string]: Browser.storage.StorageChange }) => {
-      if (changes.settings && changes.settings.newValue) {
-        const newSettings = changes.settings.newValue as Settings;
-        if (newSettings.language && newSettings.language !== language) {
-          setLanguageState(newSettings.language);
-        }
-      }
+      if (!changes.settings?.newValue) return;
+      const urlLang = new URLSearchParams(window.location.search).get('lang') as Language | null;
+      if (urlLang && Object.values(Language).includes(urlLang)) return;
+      const newLanguage = (changes.settings.newValue as Settings).language;
+      if (newLanguage) setLanguageState((current) => (current === newLanguage ? current : newLanguage));
     };
 
     browser.storage.onChanged.addListener(handleStorageChange);
     return () => {
       browser.storage.onChanged.removeListener(handleStorageChange);
     };
-  }, [language]);
+  }, []);
 
   const setLanguage = useCallback(async (lang: Language) => {
     setLanguageState(lang);

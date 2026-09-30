@@ -1,10 +1,15 @@
-import { useState, useCallback } from 'react';
-import { v4 as uuidv4 } from 'uuid';
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { Storage } from '../storage';
-import { MockRule } from '../types';
+import { MockRule, RuleStats } from '../types';
 import { withContextCheck } from '../contextHandler';
-import { validateAllRules, ValidationWarning } from '../helpers';
-import { EditMode, MessageActionType } from '../enums';
+import {
+  attachRuleStats,
+  stripRuleStats,
+  validateAllRules,
+  refreshUnusedRuleWarnings,
+  ValidationWarning,
+} from '../helpers';
+import { EditMode } from '../enums';
 
 interface UseRulesManagerReturn {
   rules: MockRule[];
@@ -26,6 +31,8 @@ interface UseRulesManagerReturn {
  */
 export const useRulesManager = (): UseRulesManagerReturn => {
   const [rules, setRules] = useState<MockRule[]>([]);
+  const rulesRef = useRef(rules);
+  const [ruleStats, setRuleStats] = useState<RuleStats>({});
   const [ruleWarnings, setRuleWarnings] = useState<Map<string, ValidationWarning[]>>(new Map());
 
   const validateAndUpdateWarnings = useCallback((updatedRules: MockRule[]) => {
@@ -33,115 +40,155 @@ export const useRulesManager = (): UseRulesManagerReturn => {
     setRuleWarnings(warnings);
   }, []);
 
+  useEffect(() => {
+    const handleStorageChange = (changes: Record<string, Browser.storage.StorageChange>, areaName: string) => {
+      if (areaName !== 'local') return;
+      if (changes.ruleStats) {
+        const updatedStats = (changes.ruleStats.newValue as RuleStats | undefined) ?? {};
+        setRuleStats(updatedStats);
+        const updatedRules = attachRuleStats(stripRuleStats(rulesRef.current), updatedStats);
+        rulesRef.current = updatedRules;
+        setRules(updatedRules);
+        setRuleWarnings((currentWarnings) => refreshUnusedRuleWarnings(updatedRules, currentWarnings));
+      }
+      if (changes.mockRules) {
+        const storedRules = (changes.mockRules.newValue as MockRule[] | undefined) ?? [];
+        const updatedRules = attachRuleStats(storedRules, ruleStats);
+        rulesRef.current = updatedRules;
+        setRules(updatedRules);
+        validateAndUpdateWarnings(updatedRules);
+      }
+    };
+
+    browser.storage.onChanged.addListener(handleStorageChange);
+    return () => browser.storage.onChanged.removeListener(handleStorageChange);
+  }, [ruleStats, validateAndUpdateWarnings]);
+
   const updateRulesEverywhere = useCallback(
-    async (updatedRules: MockRule[]) => {
-      setRules(updatedRules);
-      validateAndUpdateWarnings(updatedRules);
+    async (update: (currentRules: MockRule[]) => MockRule[]) => {
+      const updatedRules = update(rulesRef.current);
+      const rulesWithStats = attachRuleStats(stripRuleStats(updatedRules), ruleStats);
+      rulesRef.current = rulesWithStats;
+      setRules(rulesWithStats);
+      validateAndUpdateWarnings(rulesWithStats);
 
       await Storage.saveRules(updatedRules);
-      await withContextCheck(() =>
-        browser.runtime.sendMessage({ action: MessageActionType.UpdateRules, rules: updatedRules })
-      ).catch(() => {});
     },
-    [validateAndUpdateWarnings]
+    [ruleStats, validateAndUpdateWarnings]
   );
 
   const loadRules = useCallback(async () => {
-    const loadedRules = await withContextCheck(() => Storage.getRules(), []);
-    setRules(loadedRules);
-    validateAndUpdateWarnings(loadedRules);
+    const [loadedRules, loadedStats] = await Promise.all([
+      withContextCheck(() => Storage.getRules(), []),
+      withContextCheck(() => Storage.getRuleStats(), {}),
+    ]);
+    setRuleStats(loadedStats);
+    const rulesWithStats = attachRuleStats(loadedRules, loadedStats);
+    rulesRef.current = rulesWithStats;
+    setRules(rulesWithStats);
+    validateAndUpdateWarnings(rulesWithStats);
   }, [validateAndUpdateWarnings]);
 
   const saveRule = useCallback(
     async (rule: MockRule, editingRuleId: string | null) => {
-      let updatedRules: MockRule[];
-      if (editingRuleId && editingRuleId !== EditMode.New) {
-        updatedRules = rules.map((r) => (r.id === editingRuleId ? rule : r));
-      } else {
-        updatedRules = [...rules, rule];
-      }
-      await updateRulesEverywhere(updatedRules);
-    },
-    [rules, updateRulesEverywhere]
-  );
-
-  const deleteRule = useCallback(
-    async (id: string) => {
-      const updatedRules = rules.filter((r) => r.id !== id);
-      await updateRulesEverywhere(updatedRules);
-    },
-    [rules, updateRulesEverywhere]
-  );
-
-  const toggleRule = useCallback(
-    async (id: string) => {
-      const updatedRules = rules.map((r) => (r.id === id ? { ...r, enabled: !r.enabled } : r));
-      await updateRulesEverywhere(updatedRules);
-    },
-    [rules, updateRulesEverywhere]
-  );
-
-  const duplicateRule = useCallback(
-    async (id: string) => {
-      const ruleToDuplicate = rules.find((r) => r.id === id);
-      if (!ruleToDuplicate) return;
-
-      const now = Date.now();
-      const duplicatedRule: MockRule = {
-        ...ruleToDuplicate,
-        id: uuidv4(),
-        name: `${ruleToDuplicate.name} (Copy)`,
-        created: now,
-        modified: now,
-      };
-
-      const updatedRules = [...rules, duplicatedRule];
-      await updateRulesEverywhere(updatedRules);
-    },
-    [rules, updateRulesEverywhere]
-  );
-
-  const resetRuleHits = useCallback(
-    async (id: string) => {
-      const updatedRules = rules.map((r) =>
-        r.id === id
-          ? {
-              ...r,
-              matchCount: 0,
-              lastMatched: undefined,
-            }
-          : r
+      await updateRulesEverywhere((currentRules) =>
+        editingRuleId && editingRuleId !== EditMode.New
+          ? currentRules.map((currentRule) => (currentRule.id === editingRuleId ? rule : currentRule))
+          : [...currentRules, rule]
       );
-      await updateRulesEverywhere(updatedRules);
-    },
-    [rules, updateRulesEverywhere]
-  );
-
-  const setRulesDirectly = useCallback(
-    (updatedRules: MockRule[]) => {
-      setRules(updatedRules);
-      validateAndUpdateWarnings(updatedRules);
-    },
-    [validateAndUpdateWarnings]
-  );
-
-  const saveRules = useCallback(
-    async (updatedRules: MockRule[]) => {
-      await updateRulesEverywhere(updatedRules);
     },
     [updateRulesEverywhere]
   );
 
-  return {
-    rules,
-    ruleWarnings,
-    loadRules,
-    saveRule,
-    deleteRule,
-    toggleRule,
-    duplicateRule,
-    resetRuleHits,
-    setRulesDirectly,
-    saveRules,
-  };
+  const deleteRule = useCallback(
+    async (id: string) => {
+      await updateRulesEverywhere((currentRules) => currentRules.filter((rule) => rule.id !== id));
+    },
+    [updateRulesEverywhere]
+  );
+
+  const toggleRule = useCallback(
+    async (id: string) => {
+      await updateRulesEverywhere((currentRules) =>
+        currentRules.map((rule) => (rule.id === id ? { ...rule, enabled: !rule.enabled } : rule))
+      );
+    },
+    [updateRulesEverywhere]
+  );
+
+  const duplicateRule = useCallback(
+    async (id: string) => {
+      await updateRulesEverywhere((currentRules) => {
+        const ruleToDuplicate = currentRules.find((rule) => rule.id === id);
+        if (!ruleToDuplicate) return currentRules;
+        const now = Date.now();
+        const duplicatedRule: MockRule = {
+          ...ruleToDuplicate,
+          id: crypto.randomUUID(),
+          name: `${ruleToDuplicate.name} (Copy)`,
+          created: now,
+          modified: now,
+        };
+        return [...currentRules, duplicatedRule];
+      });
+    },
+    [updateRulesEverywhere]
+  );
+
+  const resetRuleHits = useCallback(
+    async (id: string) => {
+      const updatedStats = { ...ruleStats, [id]: { count: 0 } };
+      setRuleStats(updatedStats);
+      const updatedRules = attachRuleStats(stripRuleStats(rulesRef.current), updatedStats);
+      rulesRef.current = updatedRules;
+      setRules(updatedRules);
+      setRuleWarnings((currentWarnings) => refreshUnusedRuleWarnings(updatedRules, currentWarnings));
+      await Storage.saveRuleStats(updatedStats);
+    },
+    [ruleStats]
+  );
+
+  const setRulesDirectly = useCallback(
+    (updatedRules: MockRule[]) => {
+      const rulesWithStats = attachRuleStats(stripRuleStats(updatedRules), ruleStats);
+      rulesRef.current = rulesWithStats;
+      setRules(rulesWithStats);
+      validateAndUpdateWarnings(rulesWithStats);
+    },
+    [ruleStats, validateAndUpdateWarnings]
+  );
+
+  const saveRules = useCallback(
+    async (updatedRules: MockRule[]) => {
+      await updateRulesEverywhere(() => updatedRules);
+    },
+    [updateRulesEverywhere]
+  );
+
+  return useMemo(
+    () => ({
+      rules,
+      ruleWarnings,
+      loadRules,
+      saveRule,
+      deleteRule,
+      toggleRule,
+      duplicateRule,
+      resetRuleHits,
+      setRulesDirectly,
+      saveRules,
+    }),
+    [
+      rules,
+      ruleWarnings,
+      loadRules,
+      saveRule,
+      deleteRule,
+      toggleRule,
+      duplicateRule,
+      resetRuleHits,
+      setRulesDirectly,
+      saveRules,
+    ]
+  );
 };

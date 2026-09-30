@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { v4 as uuidv4 } from 'uuid';
 import { MockRule, RequestLog, Folder, ResponseMode } from '../types';
 import { ButtonVariant } from '../enums';
 import { isValidJSON } from '../helpers/validation';
@@ -38,7 +37,7 @@ function buildMockRule(formData: RuleFormData, rule: MockRule | null): MockRule 
 
   const now = Date.now();
   return {
-    id: rule?.id || uuidv4(),
+    id: rule?.id || crypto.randomUUID(),
     name: formData.name,
     enabled: rule?.enabled ?? true,
     urlPattern: formData.urlPattern,

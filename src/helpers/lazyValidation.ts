@@ -23,41 +23,24 @@ export async function validateResponseHookLazy(hookCode: string, t: TranslateFn)
     return null;
   }
 
-  // Check for dangerous patterns (lightweight, no dependencies)
-  const dangerousPatterns = [
-    // Original patterns
-    { pattern: /\beval\b/i, key: 'editor.validationErrors.evalNotAllowed' },
-    { pattern: /\bimport\b/i, key: 'editor.validationErrors.importNotAllowed' },
-    { pattern: /\brequire\b/i, key: 'editor.validationErrors.requireNotAllowed' },
-    { pattern: /\bprocess\b/i, key: 'editor.validationErrors.processNotAllowed' },
-    { pattern: /\bwindow\b/i, key: 'editor.validationErrors.windowNotAllowed' },
-    { pattern: /\bdocument\b/i, key: 'editor.validationErrors.documentNotAllowed' },
-
-    // Enhanced security patterns
-    { pattern: /\blocation\b/i, key: 'editor.validationErrors.locationNotAllowed' },
-    { pattern: /\bcookie\b/i, key: 'editor.validationErrors.cookieNotAllowed' },
-    { pattern: /localStorage|sessionStorage/i, key: 'editor.validationErrors.storageNotAllowed' },
-    { pattern: /this\[/i, key: 'editor.validationErrors.dynamicThisNotAllowed' },
-    { pattern: /\bfetch\b/i, key: 'editor.validationErrors.fetchNotAllowed' },
-    { pattern: /XMLHttpRequest/i, key: 'editor.validationErrors.xhrNotAllowed' },
-    { pattern: /new\s+Image/i, key: 'editor.validationErrors.imageNotAllowed' },
-    { pattern: /\.src\s*=/i, key: 'editor.validationErrors.srcNotAllowed' },
-    { pattern: /\.innerHTML\b/i, key: 'editor.validationErrors.innerHTMLNotAllowed' },
-    { pattern: /\.outerHTML\b/i, key: 'editor.validationErrors.outerHTMLNotAllowed' },
-    { pattern: /\bFunction\b/i, key: 'editor.validationErrors.functionNotAllowed' },
-    { pattern: /globalThis/i, key: 'editor.validationErrors.globalThisNotAllowed' },
-    { pattern: /self\[/i, key: 'editor.validationErrors.dynamicSelfNotAllowed' },
-    {
-      pattern: /__proto__|constructor\s*\[|prototype\s*\[/i,
-      key: 'editor.validationErrors.prototypePollutionNotAllowed',
-    },
-  ];
-
-  for (const { pattern, key } of dangerousPatterns) {
-    if (pattern.test(hookCode)) {
-      return t(key);
-    }
-  }
+  const blockedGlobals: Record<string, string> = {
+    eval: 'editor.validationErrors.evalNotAllowed',
+    import: 'editor.validationErrors.importNotAllowed',
+    require: 'editor.validationErrors.requireNotAllowed',
+    process: 'editor.validationErrors.processNotAllowed',
+    window: 'editor.validationErrors.windowNotAllowed',
+    document: 'editor.validationErrors.documentNotAllowed',
+    location: 'editor.validationErrors.locationNotAllowed',
+    cookie: 'editor.validationErrors.cookieNotAllowed',
+    localStorage: 'editor.validationErrors.storageNotAllowed',
+    sessionStorage: 'editor.validationErrors.storageNotAllowed',
+    fetch: 'editor.validationErrors.fetchNotAllowed',
+    XMLHttpRequest: 'editor.validationErrors.xhrNotAllowed',
+    Image: 'editor.validationErrors.imageNotAllowed',
+    Function: 'editor.validationErrors.functionNotAllowed',
+    globalThis: 'editor.validationErrors.globalThisNotAllowed',
+    self: 'editor.validationErrors.dynamicSelfNotAllowed',
+  };
 
   // Lazy load validation dependencies only when needed
   if (!validationModule || !eslintModule) {
@@ -135,13 +118,15 @@ export async function validateResponseHookLazy(hookCode: string, t: TranslateFn)
         // ref.resolved is null if the variable is not defined in any scope
         // ref.identifier.name is the variable name
         if (!ref.resolved && !allowedGlobals.has(ref.identifier.name)) {
+          const blockedGlobalMessage = blockedGlobals[ref.identifier.name];
+          if (blockedGlobalMessage) return t(blockedGlobalMessage);
           return t('editor.validationErrors.undefinedVariable', { name: ref.identifier.name });
         }
       }
     }
 
     return null;
-  } catch (error: unknown) {
+  } catch {
     // If scope analysis fails, fall back to syntax-only validation
     return null;
   }

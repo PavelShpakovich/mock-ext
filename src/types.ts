@@ -66,6 +66,13 @@ export interface Settings {
   rulesView?: string;
 }
 
+export interface RuleStat {
+  count: number;
+  last?: number;
+}
+
+export type RuleStats = Record<string, RuleStat>;
+
 export interface RequestLog {
   id: string;
   url: string;
@@ -93,8 +100,6 @@ export interface StorageData {
 // ============================================================================
 
 export type MessageAction =
-  | { action: MessageActionType.UpdateRules; rules: MockRule[] }
-  | { action: MessageActionType.UpdateSettings; settings: Settings }
   | { action: MessageActionType.ToggleMocking; enabled: boolean }
   | { action: MessageActionType.GetRules }
   | { action: MessageActionType.GetSettings }
@@ -116,17 +121,11 @@ export type MessageAction =
       timestamp: number;
     }
   | { action: MessageActionType.IncrementRuleCounter; ruleId: string }
-  | { action: MessageActionType.RulesUpdated }
-  | { action: MessageActionType.SettingsUpdated }
-  | { action: MessageActionType.FoldersUpdated }
   | { action: MessageActionType.RequestLogUpdated }
   | { action: MessageActionType.RecordingTabUpdated; tabId: number; tabTitle: string }
   | { action: MessageActionType.OpenDevTools; language: Language; theme: string }
   | { action: MessageActionType.UpdateFolders; folders: Folder[] }
   | { action: MessageActionType.OpenStandaloneWindow; language?: Language }
-  | { action: MessageActionType.GetStandaloneWindowStatus }
-  | { action: MessageActionType.UpdateProxyRules; proxyRules: ProxyRule[] }
-  | { action: MessageActionType.ProxyRulesUpdated }
   | { action: MessageActionType.Ping };
 
 export type MessageResponse<T = unknown> = { success: true; data?: T } | { success: false; error: string };

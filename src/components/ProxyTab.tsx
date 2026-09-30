@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { ProxyRule, MockRule, RequestLog } from '../types';
 import { EditMode, RulesView, IconButtonVariant } from '../enums';
 import { findConflictingRules } from '../helpers/ruleValidation';
@@ -16,6 +16,7 @@ interface ProxyTabProps {
   proxyRules: ProxyRule[];
   mockRules: MockRule[];
   editingRuleId: string | null;
+  initialRequest?: RequestLog | null;
   onEditRule: (id: string | null) => void;
   onSaveRule: (rule: ProxyRule) => void;
   onDeleteRule: (id: string) => void;
@@ -31,6 +32,7 @@ const ProxyTab: React.FC<ProxyTabProps> = ({
   proxyRules,
   mockRules,
   editingRuleId,
+  initialRequest,
   onEditRule,
   onSaveRule,
   onDeleteRule,
@@ -43,7 +45,6 @@ const ProxyTab: React.FC<ProxyTabProps> = ({
 }) => {
   const { t } = useI18n();
   const [searchTerm, setSearchTerm] = useState('');
-  const [mockRequest, setMockRequest] = useState<RequestLog | null>(null);
   const [view, setView] = useState<RulesView>(RulesView.Detailed);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -59,22 +60,12 @@ const ProxyTab: React.FC<ProxyTabProps> = ({
 
   const conflicts = findConflictingRules(proxyRules, mockRules);
 
-  useEffect(() => {
-    const requestData = sessionStorage.getItem('proxyRequest');
-    if (requestData && editingRuleId === EditMode.New) {
-      setMockRequest(JSON.parse(requestData));
-      sessionStorage.removeItem('proxyRequest');
-    } else if (!editingRuleId) {
-      setMockRequest(null);
-    }
-  }, [editingRuleId]);
-
   if (editingRuleId) {
     return (
       <div className='p-6'>
         <ProxyEditor
           rule={editingRuleId === EditMode.New ? null : proxyRules.find((r) => r.id === editingRuleId) || null}
-          mockRequest={mockRequest}
+          mockRequest={editingRuleId === EditMode.New ? initialRequest : null}
           onSave={onSaveRule}
           onCancel={onCancelEdit}
         />

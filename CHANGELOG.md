@@ -5,6 +5,26 @@ All notable changes to Moq Extension will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.16.0] - 2026-09-30
+
+### Added
+- **Request capture controls**: Capture response bodies only while recording, skip server-sent events, and cap captured bodies at 1 MB.
+- **Request log performance**: Virtualize the request list and improve storage-backed synchronization for rules, folders, recording, and rule statistics.
+- **Interceptor regression coverage**: Cover fetch/XHR mocks, proxying, response hooks, capture limits, and abort behavior.
+
+### Changed
+- **Extension architecture**: Extract shared interceptor, request transformation, storage, and UI workflows into focused helpers and hooks.
+- **Lint tooling**: Migrate to ESLint 9 flat config, typescript-eslint 8, and React Hooks 5.
+
+### Fixed
+- Correct fetch/XHR behavior for relative URLs, null-body statuses, XHR response types, abortable delays, and proxy response headers.
+- Preserve background recording state across service-worker restarts and avoid clearing it on ordinary worker wake-ups.
+- Accept nullable React 19 textarea refs in the undo/redo history hook.
+
+### Tests
+- Expand automated coverage to 70% or higher across statements, branches, functions, and lines.
+- Validate all 459 tests; type-check, lint, and Chrome/Firefox/Safari builds pass.
+
 ## [2.15.7] - 2026-06-29
 
 ### Added

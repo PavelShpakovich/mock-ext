@@ -95,7 +95,9 @@ See [WXT_MIGRATION.md](WXT_MIGRATION.md) for migration-specific notes.
   - **Passthrough + Modify**: forward the real request and transform the real response
 - Hook context includes `response`, `request`, and helper utilities
 - Built-in helpers include `uuid()`, `timestamp()`, `randomNumber()`, and `randomString()`
-- Hook validation and runtime restrictions block dangerous globals such as `window`, `document`, `eval`, and `fetch`
+- Static validation rejects references to selected browser globals such as `window`, `document`, `eval`, and `fetch`; this is a usability guard, not a security boundary.
+- Hooks execute as JavaScript in the page's main world with the page's privileges. Only use hooks from sources you trust; they are not sandboxed.
+- Pages with a strict Content Security Policy that blocks dynamic code execution may prevent response hooks from running.
 
 ### Proxy Rules
 
@@ -413,6 +415,7 @@ Request logs are buffered and flushed in batches, capped at 1000 entries, and co
 
 - Moq warns when imported rules contain executable response hooks
 - Only import rules from sources you trust
+- Response hooks execute in the page's main world; validation does not isolate or sandbox them
 
 ## Testing
 

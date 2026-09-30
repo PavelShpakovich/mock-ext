@@ -1,7 +1,8 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { Storage } from '../storage';
+import { DEFAULT_SETTINGS } from '../constants';
 import { MessageActionType } from '../enums';
-import { Settings, RequestLog } from '../types';
+import { MessageAction, Settings, RequestLog } from '../types';
 import { withContextCheck } from '../contextHandler';
 import {
   findValidWebTab,
@@ -27,13 +28,6 @@ interface UseRecordingReturn {
   setRequestLogDirectly: (log: RequestLog[]) => void;
 }
 
-const DEFAULT_SETTINGS: Settings = {
-  enabled: true,
-  logRequests: false,
-  showNotifications: false,
-  corsAutoFix: false,
-};
-
 /**
  * Hook to manage recording state, settings, and request log
  * Handles recording lifecycle and settings management
@@ -53,6 +47,18 @@ export const useRecording = (): UseRecordingReturn => {
     setRequestLog(loadedRequestLog);
   }, []);
 
+  useEffect(() => {
+    const handleStorageChange = (changes: Record<string, Browser.storage.StorageChange>, areaName: string) => {
+      if (areaName === 'local' && changes.settings) {
+        setSettings({ ...DEFAULT_SETTINGS, ...(changes.settings.newValue as Partial<Settings> | undefined) });
+      }
+      if (areaName === 'session' && changes.requestLog) void loadRequestLog();
+    };
+
+    browser.storage.onChanged.addListener(handleStorageChange);
+    return () => browser.storage.onChanged.removeListener(handleStorageChange);
+  }, [loadRequestLog]);
+
   const startRecording = useCallback(
     async (tab: Browser.tabs.Tab): Promise<{ success: boolean; reloaded?: boolean }> => {
       const response = await withContextCheck(() => sendStartRecordingMessage(tab.id!), { success: false });
@@ -64,8 +70,6 @@ export const useRecording = (): UseRecordingReturn => {
         setActiveTabTitle(tab.title || 'Unknown Tab');
 
         // Notify other contexts about recording state change
-        browser.runtime.sendMessage({ action: MessageActionType.SettingsUpdated }).catch(() => {});
-
         return { success: true, reloaded: response.data?.reloaded };
       }
 
@@ -82,7 +86,6 @@ export const useRecording = (): UseRecordingReturn => {
     setActiveTabTitle('');
 
     // Notify other contexts about recording state change
-    browser.runtime.sendMessage({ action: MessageActionType.SettingsUpdated }).catch(() => {});
   }, [settings]);
 
   const handleGlobalToggle = useCallback(
@@ -96,8 +99,6 @@ export const useRecording = (): UseRecordingReturn => {
       ).catch(() => {});
 
       // Notify other contexts about settings change
-      browser.runtime.sendMessage({ action: MessageActionType.SettingsUpdated }).catch(() => {});
-
       if (!enabled && settings.logRequests) {
         setActiveTabTitle('');
       }
@@ -134,12 +135,6 @@ export const useRecording = (): UseRecordingReturn => {
       const newSettings = { ...settings, corsAutoFix };
       setSettings(newSettings);
       await Storage.saveSettings(newSettings);
-      await withContextCheck(() =>
-        browser.runtime.sendMessage({ action: MessageActionType.UpdateSettings, settings: newSettings })
-      ).catch(() => {});
-
-      // Notify other contexts about settings change
-      browser.runtime.sendMessage({ action: MessageActionType.SettingsUpdated }).catch(() => {});
     },
     [settings]
   );
@@ -171,7 +166,7 @@ export const useRecording = (): UseRecordingReturn => {
             try {
               const tab = await browser.tabs.get(response.data.tabId);
               setActiveTabTitle(tab.title || 'Unknown Tab');
-            } catch (error) {
+            } catch {
               // Recording tab no longer exists or is invalid
               // eslint-disable-next-line no-console
               console.log('[Moq] Recording tab is no longer valid, clearing recording state');
@@ -189,7 +184,6 @@ export const useRecording = (): UseRecordingReturn => {
             }
           }
         } catch (error) {
-          // eslint-disable-next-line no-console
           console.error('Failed to restore recording status:', error);
         }
       }
@@ -198,20 +192,10 @@ export const useRecording = (): UseRecordingReturn => {
     restoreRecordingStatus();
   }, []);
 
-  // Poll for request log updates when recording
-  useEffect(() => {
-    if (settings.logRequests) {
-      loadRequestLog();
-      const interval = setInterval(loadRequestLog, 500);
-      return () => clearInterval(interval);
-    }
-    return undefined;
-  }, [settings.logRequests, loadRequestLog]);
-
   // Listen for recording tab title updates
   useEffect(() => {
-    const messageListener = (message: { action: string; tabTitle?: string }) => {
-      if (message.action === 'recordingTabUpdated' && message.tabTitle) {
+    const messageListener = (message: Extract<MessageAction, { action: MessageActionType.RecordingTabUpdated }>) => {
+      if (message.tabTitle) {
         setActiveTabTitle(message.tabTitle);
       }
     };
@@ -223,19 +207,36 @@ export const useRecording = (): UseRecordingReturn => {
     };
   }, []);
 
-  return {
-    settings,
-    requestLog,
-    activeTabTitle,
-    loadSettings,
-    loadRequestLog,
-    startRecording,
-    stopRecording,
-    handleGlobalToggle,
-    handleRecordingToggle,
-    handleCorsToggle,
-    clearLog,
-    setSettingsDirectly,
-    setRequestLogDirectly,
-  };
+  return useMemo(
+    () => ({
+      settings,
+      requestLog,
+      activeTabTitle,
+      loadSettings,
+      loadRequestLog,
+      startRecording,
+      stopRecording,
+      handleGlobalToggle,
+      handleRecordingToggle,
+      handleCorsToggle,
+      clearLog,
+      setSettingsDirectly,
+      setRequestLogDirectly,
+    }),
+    [
+      settings,
+      requestLog,
+      activeTabTitle,
+      loadSettings,
+      loadRequestLog,
+      startRecording,
+      stopRecording,
+      handleGlobalToggle,
+      handleRecordingToggle,
+      handleCorsToggle,
+      clearLog,
+      setSettingsDirectly,
+      setRequestLogDirectly,
+    ]
+  );
 };
