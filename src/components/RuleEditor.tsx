@@ -43,7 +43,7 @@ function buildMockRule(formData: RuleFormData, rule: MockRule | null): MockRule 
     urlPattern: formData.urlPattern,
     matchType: formData.matchType,
     method: formData.method,
-    statusCode: formData.statusCode,
+    statusCode: Number.isFinite(formData.statusCode) ? formData.statusCode : 200,
     response,
     contentType: formData.contentType,
     delay: formData.delay,

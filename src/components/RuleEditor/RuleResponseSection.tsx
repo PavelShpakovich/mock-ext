@@ -83,7 +83,7 @@ export const RuleResponseSection: React.FC<RuleResponseSectionProps> = ({
           <Input
             label={t('editor.statusCode')}
             type='number'
-            value={statusCode}
+            value={Number.isNaN(statusCode) ? '' : statusCode}
             onChange={(e) => onStatusCodeChange(parseInt(e.target.value))}
             min='100'
             max='599'
